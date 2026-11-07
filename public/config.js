@@ -4,7 +4,7 @@
 window.NEXPATCH_CONFIG = {
   // Application (client) ID of your multi-tenant app registration in Microsoft Entra ID.
   // Leave empty to run the site with sample data only.
-  clientId: '',
+  clientId: '48f32ceb-7df24410-9e84-9729cb7293aa',
 
   // 'organizations' lets anyone with a work or school account sign in.
   authority: 'https://login.microsoftonline.com/organizations',

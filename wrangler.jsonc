@@ -1,6 +1,6 @@
 {
   // Cloudflare Workers static site. Only files in ./public are published.
-  "name": "nexpatch",
+  "name": "nexpatchonline",
   "compatibility_date": "2025-09-01",
   "assets": {
     "directory": "./public",

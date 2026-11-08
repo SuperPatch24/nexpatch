@@ -17,7 +17,7 @@ window.NEXPATCH_CONFIG = {
 
   // Backend API address, ending in /api. Leave empty until the backend is deployed.
   // Example: 'https://nexpatch-api.azurewebsites.net/api'
-  apiBaseUrl: '',
+  apiBaseUrl: 'https://nexpatch-api-20022.azurewebsites.net/api',
 
   // Optional. Defaults to api://<clientId>/access_as_user (the scope from "Expose an API").
   apiScope: ''

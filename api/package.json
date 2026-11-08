@@ -1,0 +1,18 @@
+{
+  "name": "nexpatch-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/functions/*.js",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/data-tables": "13.3.2",
+    "@azure/functions": "4.17.0",
+    "@azure/identity": "4.14.0",
+    "@azure/keyvault-secrets": "4.11.2",
+    "jose": "6.2.13"
+  }
+}

@@ -4,7 +4,7 @@
 window.NEXPATCH_CONFIG = {
   // Application (client) ID of your multi-tenant app registration in Microsoft Entra ID.
   // Leave empty to run the site with sample data only.
-  clientId: '',
+  clientId: 'fcf79416-b2f1-428b-8ad2-0004c127532f',
 
   // 'organizations' lets anyone with a work or school account sign in.
   authority: 'https://login.microsoftonline.com/organizations',
@@ -17,7 +17,7 @@ window.NEXPATCH_CONFIG = {
 
   // Backend API address, ending in /api. Leave empty until the backend is deployed.
   // Example: 'https://nexpatch-api.azurewebsites.net/api'
-  apiBaseUrl: '',
+  apiBaseUrl: 'https://nexpatch-api-20022.azurewebsites.net/api',
 
   // Optional. Defaults to api://<clientId>/access_as_user (the scope from "Expose an API").
   apiScope: ''

@@ -3,6 +3,7 @@ import { withUser, HttpError } from '../lib/http.js';
 import { graph } from '../lib/graph.js';
 import { getTenant, saveTenant, listMemberRows, saveMemberRow, memberKey, audit } from '../lib/store.js';
 import { isEntraAdmin } from '../lib/access.js';
+import { trialFields } from '../lib/plan.js';
 
 // POST /api/tenant/activate – called after an administrator approves NexpatchOnline.
 // Allowed for Entra Global/Intune administrators, existing owners, or the very first activation of an organization.
@@ -20,7 +21,7 @@ app.http('tenantActivate', {
     }
 
     await graph(tid, '/beta/deviceManagement/detectedApps?$top=1'); // proves the approval works
-    const t = await saveTenant(tid, { status: 'active', activatedAt: new Date().toISOString(), activatedBy: user.email || user.userId });
+    const t = await saveTenant(tid, { status: 'active', activatedAt: new Date().toISOString(), activatedBy: user.email || user.userId, ...trialFields(existing) });
 
     // The person who connects the organization becomes its first owner.
     if (!members.some(m => m.kind === 'member' && m.role === 'owner')) {

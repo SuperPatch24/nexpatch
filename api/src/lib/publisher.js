@@ -53,7 +53,7 @@ function buildAssignments(o) {
     return out;
   }
   return (o.assignments || []).map(a => ({
-    label: a.target === 'allDevices' ? 'All devices' : a.target === 'allUsers' ? 'All users' : a.group,
+    label: a.target === 'allDevices' ? 'All devices' : a.target === 'allUsers' ? 'All users' : (a.groupName || a.group),
     target: a.mode === 'exclude' ? 'group' : a.target, group: a.group, mode: a.mode, intent: a.intent,
     start: fromLocalInput(a.start), deadline: a.intent === 'available' ? null : fromLocalInput(a.deadline), filter: a.filter, filterMode: a.filterMode
   }));
@@ -196,11 +196,21 @@ export async function publishApp(tid, app, o, log) {
       const body = { '@odata.type': '#microsoft.graph.mobileAppAssignment', intent: a.intent, source: 'direct', target: t, settings: null };
       if (a.mode !== 'exclude') {
         body.settings = { '@odata.type': '#microsoft.graph.win32LobAppAssignmentSettings', notifications: o.notify || 'showAll', deliveryOptimizationPriority: o.dop || 'notConfigured', restartSettings: null, installTimeSettings: null };
-        if (a.start || a.deadline) body.settings.installTimeSettings = { useLocalTime: true, startDateTime: a.start || null, deadlineDateTime: a.deadline || null };
-        if (a.intent !== 'available' && o.graceOn) body.settings.restartSettings = { gracePeriodInMinutes: +o.graceMin || 1440, countdownDisplayBeforeRestartInMinutes: +o.countdown || 15, restartNotificationSnoozeDurationInMinutes: +o.snooze > 0 ? +o.snooze : null };
+        // Intune rejects device-local time and deadlines on Available assignments: send only the start, in UTC
+        if (a.intent === 'available') { if (a.start) body.settings.installTimeSettings = { startDateTime: a.start }; }
+        else if (a.start || a.deadline) body.settings.installTimeSettings = { useLocalTime: true, startDateTime: a.start || null, deadlineDateTime: a.deadline || null };
+        // Intune only accepts restart settings when the app's restart behavior is 'based on return codes'
+        if (a.intent !== 'available' && o.graceOn && o.restart === 'basedOnReturnCode') body.settings.restartSettings = { gracePeriodInMinutes: +o.graceMin || 1440, countdownDisplayBeforeRestartInMinutes: +o.countdown || 15, restartNotificationSnoozeDurationInMinutes: +o.snooze > 0 ? +o.snooze : null };
         if (a.intent === 'available' && o.autoUpd && superseded) body.settings.autoUpdateSettings = { autoUpdateSupersededAppsState: 'enabled' };
       }
-      await graph(tid, `${B}/${target.id}/assignments`, { method: 'POST', body: JSON.stringify(body) });
+      try {
+        await graph(tid, `${B}/${target.id}/assignments`, { method: 'POST', body: JSON.stringify(body) });
+      } catch (err) {
+        if (!/\(400\)/.test(err.message)) throw err;
+        // A freshly uploaded app can still be finishing in Intune; try once more shortly
+        await sleep(15000);
+        await graph(tid, `${B}/${target.id}/assignments`, { method: 'POST', body: JSON.stringify(body) });
+      }
       added++;
       log(`${a.mode === 'exclude' ? 'Excluded' : a.intent[0].toUpperCase() + a.intent.slice(1)}: ${a.label}${a.start ? ', from ' + a.start.slice(0, 16).replace('T', ' ') : a.mode === 'exclude' ? '' : ', as soon as possible'}${a.deadline ? ', deadline ' + a.deadline.slice(0, 16).replace('T', ' ') : ''}`);
     } catch (err) {

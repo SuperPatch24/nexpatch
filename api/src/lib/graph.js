@@ -53,11 +53,15 @@ export async function graph(tenantId, path, init = {}, attempt = 0) {
   if (!res.ok) {
     let detail = '';
     try { detail = ((await res.json()).error || {}).message || ''; } catch {}
-    detail = String(detail).split(/\r?\n/)[0].slice(0, 300);
+    // Intune often wraps the real reason as JSON text inside the message
+    try { const inner = JSON.parse(detail); detail = inner.Message || inner.message || detail; } catch {}
+    detail = String(detail).replace(/\s*-?\s*Operation ID.*$/is, '').replace(/\s+/g, ' ').trim().slice(0, 300);
     if (res.status === 403) throw new HttpError(403, 'NexpatchOnline doesn\u2019t have the Intune permissions it needs in this organization. Ask an administrator to approve it again.' + (detail ? ` (${detail})` : ''));
     throw new HttpError(502, `Microsoft Graph returned an error (${res.status})${detail ? ': ' + detail : '.'}`);
   }
-  return res.status === 204 ? null : res.json();
+  // Some Graph actions (for example commit) succeed with an empty body
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 // Follows @odata.nextLink until every page is read.

@@ -2,6 +2,7 @@ import { app } from '@azure/functions';
 import { withUser, HttpError } from '../lib/http.js';
 import { getTenant, getInventory, audit } from '../lib/store.js';
 import { syncInventory } from '../lib/inventory.js';
+import { planStatus } from '../lib/plan.js';
 
 async function requireActive(tenantId) {
   const t = await getTenant(tenantId);
@@ -27,6 +28,7 @@ app.http('inventorySync', {
   route: 'inventory/sync',
   handler: withUser(async (_req, _ctx, user) => {
     const t = await requireActive(user.tenantId);
+    if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to keep syncing inventory.');
     if (t.lastSyncAt && Date.now() - Date.parse(t.lastSyncAt) < 5 * 60 * 1000) {
       throw new HttpError(429, 'Inventory was synced in the last 5 minutes. Please try again shortly.');
     }

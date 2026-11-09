@@ -326,6 +326,21 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 .seg2 label{padding:8px 14px;cursor:pointer;font-weight:700;font-size:.9rem}
 .seg2 input{position:absolute;opacity:0;pointer-events:none}
 .seg2 label:has(input:checked){background:var(--teal-soft);color:var(--teal)}
+.gpick{position:relative}
+.gpick-list{position:absolute;left:0;right:0;top:100%;z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 30px -12px rgba(0,0,0,.35);max-height:260px;overflow:auto;margin-top:4px}
+.gpick-list button{display:block;width:100%;text-align:left;background:none;border:none;padding:8px 12px;cursor:pointer;color:var(--ink)}
+.gpick-list button:hover,.gpick-list button:focus{background:var(--teal-soft)}
+.gpick-list small{display:block;color:var(--muted);font-size:.78rem}
+.gpick-list .gp-empty{padding:8px 12px;color:var(--muted);font-size:.86rem}
+.spin{display:inline-block;width:10px;height:10px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-1px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.nav-h{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:14px 12px 4px}
+.plan-banner{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:.92rem}
+.plan-banner.trial{background:var(--teal-soft)} .plan-banner.ended{background:var(--red-soft)}
+.actabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 20px;flex-wrap:wrap}
+.actabs a{padding:10px 14px;text-decoration:none;color:var(--muted);font-weight:700;border-bottom:3px solid transparent}
+.actabs a[aria-current="page"]{color:var(--teal);border-color:var(--teal)}
+@media (max-width:860px){ .nav-h{display:none} }
 @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
 </style>
 </head>
@@ -470,13 +485,21 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       <span>NexpatchOnline</span>
     </div>
     <a href="#overview" data-view="overview">Overview</a>
-    <a href="#catalog" data-view="catalog">App catalog <span class="count" id="navCount"></span></a>
+    <div class="nav-h">Apps</div>
+    <a href="#catalog" data-view="catalog">Catalog and updates <span class="count" id="navCount"></span></a>
     <a href="#discovery" data-view="discovery">Discovery</a>
     <a href="#deployments" data-view="deployments">Deployments</a>
-    <a href="#reports" data-view="reports">Reports</a>
-    <a href="#app-control" data-view="app-control">App Control</a>
+    <a href="#reports" data-view="reports">App reports</a>
+    <div class="nav-h">App Control</div>
+    <a href="#app-control" data-view="app-control" data-actab-link="activity">Activity</a>
+    <a href="#ac-base" data-view="app-control" data-actab-link="base">Base policy</a>
+    <a href="#ac-supplemental" data-view="app-control" data-actab-link="supplemental">Supplemental policy</a>
+    <a href="#ac-reports" data-view="app-control" data-actab-link="reports">App Control reports</a>
+    <div class="nav-h">Organization</div>
     <a href="#users" data-view="users">Users and access</a>
     <a href="#connect" data-view="connect">Connect to Intune</a>
+    <div class="nav-h" id="navAdminH" hidden>NexpatchOnline admin</div>
+    <a href="#platform" data-view="platform" id="navPlatform" hidden>Catalog, clients and logs</a>
     <div class="foot">
       <div class="user"><span class="avatar" id="userAvatar"></span><div class="who"><b id="userName"></b><span id="userEmail"></span></div></div>
       <div id="tenantState">Not connected</div>
@@ -485,6 +508,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
   </nav>
 
   <main>
+    <div class="plan-banner" id="planBanner" hidden></div>
     <!-- OVERVIEW -->
     <section class="view" id="view-overview" aria-labelledby="ovHello">
       <div class="ov-head">
@@ -616,9 +640,37 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 
     <!-- APP CONTROL -->
     <section class="view" id="view-app-control" aria-labelledby="acTitle">
-      <h1 id="acTitle">App Control policy</h1>
-      <p class="lede">Build an App Control for Business (WDAC) policy without writing XML. Start in audit mode, review what would have been blocked, allow what you need, then switch to enforce.</p>
-      <div class="panel" id="acSourcePanel" style="margin-bottom:20px">
+      <h1 id="acTitle">App Control</h1>
+      <p class="lede">Only approved apps run. Build the base policy, watch what App Control blocks, allow what people need through a supplemental policy, and report on it.</p>
+      <nav class="actabs" aria-label="App Control">
+        <a href="#app-control" data-actab="activity">Activity</a>
+        <a href="#ac-base" data-actab="base">Base policy</a>
+        <a href="#ac-supplemental" data-actab="supplemental">Supplemental policy</a>
+        <a href="#ac-reports" data-actab="reports">Reports</a>
+      </nav>
+      <div class="panel" id="acSuppPanel" hidden>
+        <div class="panel-head"><div><h2>Supplemental policy</h2><p class="small" style="margin:0">Apps you allowed from Activity. It adds to your base policy without changing it, and can be updated any time.</p></div><div class="row"><button class="btn small primary" type="button" id="acSuppBtn2">Download policy XML</button></div></div>
+        <div class="stats" id="acSuppStats"></div>
+        <div class="table-wrap"><table class="compact"><thead><tr><th>Allowed</th><th>Rule</th><th>Allowed by</th><th>When</th><th></th></tr></thead><tbody id="acSuppBody"></tbody></table></div>
+        <h3 style="margin-top:20px">Deploy it with Intune</h3>
+        <ol class="steps" style="margin-top:12px">
+          <li>Set the base policy ID on the Activity tab (the ID of the policy built on the Base policy tab).</li>
+          <li>Download the policy XML after your latest allow decisions.</li>
+          <li>Intune → Endpoint security → App Control for Business → Create policy → upload the XML, or replace the file in the existing NexpatchOnline supplemental policy, and assign it to the same devices as the base policy.</li>
+        </ol>
+        <p class="small">Automatic deployment after each decision is coming next.</p>
+      </div>
+      <div class="panel" id="acReportsPanel" hidden>
+        <div class="panel-head"><div><h2>App Control reports</h2><p class="small" style="margin:0" id="acRepSub"></p></div><button class="btn small" type="button" data-rep="acTop">Copy for Excel</button></div>
+        <div class="stats" id="acRepStats"></div>
+        <div class="grid2" style="margin-top:0">
+          <div><h3>Most blocked or audited apps</h3><div class="table-wrap"><table class="compact" id="acRepTop"></table></div></div>
+          <div><h3>Top publishers</h3><div class="table-wrap"><table class="compact" id="acRepPub"></table></div></div>
+        </div>
+        <h3 style="margin-top:20px">Recent decisions</h3>
+        <ul class="todo" id="acRepDecisions"></ul>
+      </div>
+      <div class="panel" id="acSourcePanel" data-actab-panel="activity" style="margin-bottom:20px">
         <div class="panel-head"><div><h2>Live events: where NexpatchOnline gets them</h2><p class="small" style="margin:0">Choose one source for your organization. You can switch at any time.</p></div><span class="chip" id="acSourceState"></span></div>
         <div id="acSourceNote"></div>
         <div class="choice" id="acSourceChoice">
@@ -630,12 +682,12 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         </div>
         <div class="row"><button class="btn primary" type="button" id="acSourceSave">Save</button><button class="btn" type="button" id="acCheckBtn">Check connection</button><button class="btn" type="button" id="acKeyBtn" hidden>Create device key and installer</button><span class="small" id="acSourceInfo"></span></div>
       </div>
-      <div class="panel" id="acLivePanel" hidden style="margin-bottom:20px">
+      <div class="panel" id="acLivePanel" data-actab-panel="activity" hidden style="margin-bottom:20px">
         <div class="panel-head"><div><h2>App Control activity</h2><p class="small" style="margin:0" id="acLiveSub">Apps App Control blocked or would have blocked on your devices.</p></div><div class="row"><button class="btn small" type="button" id="acSuppBtn">Download supplemental policy</button><button class="btn small" type="button" id="acRefresh">Refresh</button></div></div>
         <div class="toolbar"><input class="search" id="acSearch" type="search" placeholder="Search file or publisher" aria-label="Search App Control events"><div class="seg" role="group" aria-label="Filter"><button type="button" data-acf="needs" aria-pressed="true">Needs a decision</button><button type="button" data-acf="blocked">Blocked</button><button type="button" data-acf="audited">Audited</button><button type="button" data-acf="allowed">Allowed</button><button type="button" data-acf="all">All</button></div></div>
         <div class="table-wrap"><table class="compact"><thead><tr><th>App</th><th>Publisher</th><th>Status</th><th>Devices</th><th>Last seen</th><th>Decision</th><th></th></tr></thead><tbody id="acLiveBody"></tbody></table></div>
       </div>
-      <div class="ac">
+      <div class="ac" data-actab-panel="base">
         <div>
           <div class="panel">
             <ol class="steps">
@@ -740,6 +792,25 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       </div>
     </section>
 
+    <!-- PLATFORM ADMIN -->
+    <section class="view" id="view-platform" aria-labelledby="platTitle">
+      <h1 id="platTitle">Platform admin</h1>
+      <p class="lede">Manage NexpatchOnline for every organization. Apps added here appear in every client’s catalog right away, without updating any files.</p>
+      <div class="panel">
+        <div class="panel-head"><div><h2>Shared app catalog</h2><p class="small" style="margin:0" id="platCatSub"></p></div><div class="row"><button class="btn small" type="button" id="platImport">Import built-in apps</button><button class="btn small primary" type="button" id="platAddBtn">Add app</button></div></div>
+        <div class="table-wrap"><table class="compact"><thead><tr><th>App</th><th>Winget ID</th><th>Category</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody id="platCatBody"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><h2>Organizations</h2><p class="small" style="margin:0">Every tenant that connected NexpatchOnline.</p></div><button class="btn small" type="button" id="platRefresh">Refresh</button></div>
+        <div class="table-wrap"><table class="compact"><thead><tr><th>Organization</th><th>Plan</th><th>People</th><th>Usage (30 days)</th><th>Last inventory sync</th><th></th></tr></thead><tbody id="platTenBody"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><h2>Deployment logs</h2><p class="small" style="margin:0">Every publish across all organizations, newest first.</p></div><button class="btn small" type="button" id="platJobsRefresh">Refresh</button></div>
+        <div class="toolbar"><div class="seg" role="group" aria-label="Filter"><button type="button" data-pjf="all" aria-pressed="true">All</button><button type="button" data-pjf="failed">Failed</button><button type="button" data-pjf="busy">In progress</button></div></div>
+        <div class="table-wrap"><table class="compact"><thead><tr><th>Organization</th><th>App</th><th>Status</th><th>By</th><th>Started</th><th></th></tr></thead><tbody id="platJobsBody"></tbody></table></div>
+      </div>
+    </section>
+
     <!-- CONNECT -->
     <section class="view" id="view-connect" aria-labelledby="conTitle">
       <h1 id="conTitle">Connect to Intune</h1>
@@ -796,7 +867,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       <div id="dGroupsBox">
         <div id="dAsgList"></div>
         <button class="btn small" type="button" id="dAsgAdd" style="margin-top:10px">+ Add assignment</button>
-        <p class="small" style="margin:10px 0 0">Leave the dates empty for “as soon as possible”. Times are each device’s local time. Groups can be a name or an object ID.</p>
+        <p class="small" style="margin:10px 0 0">Leave the dates empty for “as soon as possible”. Required and uninstall times are each device’s local time; Available times are UTC. Groups can be a name or an object ID.</p>
       </div>
       <div id="dRingsBox">
         <p class="small" style="margin:4px 0 10px">Each ring gets the update after its delay. Rings are set on the Connect page and can be changed here for this app.</p>
@@ -919,6 +990,24 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <p id="aErr" role="alert" style="color:var(--red);font-weight:700;margin:8px 0 0"></p>
   </div>
   <div class="dlg-foot"><button class="btn primary" type="button" id="aSave">Add to catalog</button></div>
+</dialog>
+
+<dialog id="platDlg" aria-labelledby="platDlgTitle">
+  <div class="dlg-head"><h2 id="platDlgTitle">Catalog app</h2><button class="btn ghost" type="button" id="platDlgClose">Close</button></div>
+  <div class="dlg-body">
+    <div class="grid2" style="margin-top:0;gap:0 16px">
+      <label class="field"><span>App name</span><input type="text" id="plName" placeholder="Bitwarden"></label>
+      <label class="field"><span>Winget ID</span><input type="text" id="plWinget" placeholder="Bitwarden.Bitwarden"></label>
+      <label class="field"><span>Publisher</span><input type="text" id="plVendor"></label>
+      <label class="field"><span>Name in Installed apps</span><input type="text" id="plReg" placeholder="Used to detect the app"></label>
+      <label class="field"><span>Processes to close (comma-separated)</span><input type="text" id="plProcs"></label>
+      <label class="field"><span>Category</span><input type="text" id="plCat" placeholder="Browser, Utility, Security…"></label>
+    </div>
+    <label class="field"><span>Main program file (for App Control, optional)</span><input type="text" id="plExe" placeholder="C:\\Program Files\\Vendor\\app.exe"></label>
+    <div class="check"><input type="checkbox" id="plEnabled" checked><label for="plEnabled"><b>Show in every organization’s catalog</b></label></div>
+    <p id="plMsg" class="small" style="margin:8px 0 0"></p>
+  </div>
+  <div class="dlg-foot"><button class="btn" type="button" id="plCheck">Check winget</button><button class="btn primary" type="button" id="plSave">Save</button></div>
 </dialog>
 
 <dialog id="codeDlg" aria-labelledby="codeTitle">
@@ -1048,6 +1137,16 @@ function Find-IntuneApp([string]$Name) {
 # Log: C:\\ProgramData\\NexpatchOnline\\Logs\\<winget id>.log
 $WrapperTemplate = @'
 param([switch]$Uninstall)
+# Intune can start install commands in 32-bit PowerShell; restart in 64-bit so paths and winget resolve correctly
+if ($env:PROCESSOR_ARCHITEW6432 -eq 'AMD64') {
+    $ps64 = Join-Path $env:windir 'sysnative\\WindowsPowerShell\\v1.0\\powershell.exe'
+    if (Test-Path $ps64) {
+        $argList = @('-ExecutionPolicy', 'Bypass', '-NoProfile', '-File', $PSCommandPath)
+        if ($Uninstall) { $argList += '-Uninstall' }
+        & $ps64 @argList
+        exit $LASTEXITCODE
+    }
+}
 $Id = '__ID__'
 $AppName = '__NAME__'
 $Procs = @(__PROCS__)
@@ -1073,10 +1172,47 @@ function Invoke-Embedded([string]$Base64, [string]$Label) {
     & ([scriptblock]::Create($code))
 }
 
+$ProgramFiles64 = if ($env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }
+function Find-Winget {
+    Get-ChildItem -Path (Join-Path $ProgramFiles64 'WindowsApps\\Microsoft.DesktopAppInstaller_*__8wekyb3d8bbwe\\winget.exe') -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+}
+# Installs App Installer (winget) for all users when it's missing, using Microsoft's own sources.
+function Install-AppInstaller {
+    Write-Output 'winget is missing. Installing App Installer for all users...'
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $ProgressPreference = 'SilentlyContinue'
+    # Method 1: Microsoft.WinGet.Client module (Repair-WinGetPackageManager)
+    try {
+        if (-not (Get-PackageProvider -ListAvailable -Name NuGet -ErrorAction SilentlyContinue)) { Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope AllUsers | Out-Null }
+        if (-not (Get-Module -ListAvailable -Name Microsoft.WinGet.Client)) { Install-Module -Name Microsoft.WinGet.Client -Repository PSGallery -Scope AllUsers -Force -AllowClobber | Out-Null }
+        Import-Module Microsoft.WinGet.Client -Force
+        Repair-WinGetPackageManager -AllUsers -Force -Latest | Out-Null
+        if (Find-Winget) { Write-Output 'App Installer installed with Repair-WinGetPackageManager.'; return }
+    } catch { Write-Output "Repair-WinGetPackageManager didn't work: $_" }
+    # Method 2: Microsoft's release package and its dependencies, provisioned for all users
+    try {
+        $tmp = Join-Path $env:TEMP ('nexpatchonline-winget-' + [guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+        $bundle = Join-Path $tmp 'AppInstaller.msixbundle'
+        $depsZip = Join-Path $tmp 'Dependencies.zip'
+        Invoke-WebRequest -Uri 'https://aka.ms/getwinget' -OutFile $bundle -UseBasicParsing
+        Invoke-WebRequest -Uri 'https://github.com/microsoft/winget-cli/releases/latest/download/DesktopAppInstaller_Dependencies.zip' -OutFile $depsZip -UseBasicParsing
+        Expand-Archive -Path $depsZip -DestinationPath (Join-Path $tmp 'deps') -Force
+        $arch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'x64' }
+        $deps = @(Get-ChildItem -Path (Join-Path $tmp 'deps') -Recurse -Filter '*.appx' | Where-Object { $_.Directory.Name -eq $arch } | ForEach-Object { $_.FullName })
+        Add-AppxProvisionedPackage -Online -PackagePath $bundle -DependencyPackagePath $deps -SkipLicense | Out-Null
+        Remove-Item -Path $tmp -Recurse -Force -ErrorAction SilentlyContinue
+        if (Find-Winget) { Write-Output 'App Installer installed from the Microsoft release package.' }
+    } catch { Write-Output "Installing the App Installer release package didn't work: $_" }
+}
+
 $exit = 0
 try {
-    $Winget = Get-ChildItem -Path (Join-Path $env:ProgramFiles 'WindowsApps\\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\\winget.exe') -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
-    if (-not $Winget) { throw 'winget was not found on this device' }
+    $Winget = Find-Winget
+    if (-not $Winget) { Install-AppInstaller; $Winget = Find-Winget }
+    if (-not $Winget) { Write-Output 'winget (App Installer) could not be installed on this device. Check internet access to PowerShell Gallery, aka.ms and github.com, or install App Installer from the Microsoft Store.'; Stop-Transcript | Out-Null; exit 2 }
+    Write-Output "Using winget at $($Winget.FullName)"
+    Set-Location -Path $Winget.DirectoryName   # winget finds its runtime files from its own folder when run as SYSTEM
 
     if (Get-Running) {
         switch ($ConflictMode) {
@@ -1091,7 +1227,7 @@ try {
         }
     }
 
-    $common = @('--id', $Id, '--exact', '--silent', '--scope', 'machine', '--accept-source-agreements', '--disable-interactivity')
+    $common = @('--id', $Id, '--exact', '--source', 'winget', '--silent', '--scope', 'machine', '--accept-source-agreements', '--disable-interactivity')
     if ($Uninstall) {
         & $Winget.FullName uninstall @common
         $exit = $LASTEXITCODE
@@ -1100,11 +1236,13 @@ try {
         Invoke-Embedded $PreScript 'pre-install'
         & $Winget.FullName __ACTION__ @common --accept-package-agreements
         $exit = $LASTEXITCODE
+        Write-Output "winget finished with exit code $exit"
         if ($exit -eq -1978335189 -or $exit -eq -1978335135) { $exit = 0 }   # no newer version / already installed
         if ($exit -eq 0) { Invoke-Embedded $PostScript 'post-install' }
     }
 } catch {
     Write-Output "Error: $_"
+    Write-Output $_.ScriptStackTrace
     $exit = 1
 }
 Stop-Transcript | Out-Null
@@ -1408,24 +1546,34 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','catalog','discovery','deployments','reports','app-control','users','connect'];
+const VIEWS=['overview','catalog','discovery','deployments','reports','app-control','users','connect','platform'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
-function route(){ const h=location.hash.slice(1);
+let AC_TAB='activity';
+const AC_TAB_HASH={'app-control':'activity','ac-base':'base','ac-supplemental':'supplemental','ac-reports':'reports'};
+function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? 'app-control' : h0; if(AC_TAB_HASH[h0]) AC_TAB=AC_TAB_HASH[h0];
   if(h==='home' || h==='login' || !SESSION){ showPublic(h==='login' || (!SESSION && VIEWS.includes(h)) ? 'login' : 'home'); return; }
   $('#public').hidden=true; $('#app').hidden=false; document.body.classList.remove('is-public');
   const v = VIEWS.includes(h) ? h : 'overview';
   VIEWS.forEach(x=>document.getElementById('view-'+x).classList.toggle('active', x===v));
-  $$('.nav a').forEach(a=>{ if(a.dataset.view===v) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  $$('.nav a').forEach(a=>{ const on = a.dataset.view===v && (!a.dataset.actabLink || a.dataset.actabLink===AC_TAB); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
   render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='users') renderUsers(); if(v==='platform') renderPlatform(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Owner'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
-function applyRole(){
+function renderPlanBanner(){
+  const b=$('#planBanner'); const pl=liveMode() && SERVER.me && SERVER.me.plan;
+  if(!pl || pl.plan==='active'){ b.hidden=true; return; }
+  const contact = CFG.salesEmail ? ' <a href="mailto:'+esc(CFG.salesEmail)+'?subject=NexpatchOnline%20subscription">Subscribe</a>' : '';
+  b.hidden=false; b.className='plan-banner '+(pl.active?'trial':'ended');
+  b.innerHTML = pl.active ? '<span><b>Free trial:</b> '+pl.daysLeft+' day'+(pl.daysLeft===1?'':'s')+' left'+(pl.trialEndsAt?', until '+new Date(pl.trialEndsAt).toLocaleDateString():'')+'.</span><span>'+contact+'</span>'
+    : '<span><b>Your free trial has ended.</b> Publishing and inventory sync are paused; everything else stays available.</span><span>'+contact+'</span>';
+}
+function applyRole(){ renderPlanBanner();
   const r=currentRole(); document.body.dataset.role=r;
   const none=r==='none'; $('#noAccess').hidden=!none;
   if(none) $('#noAccessText').textContent='You\u2019re signed in as '+(SESSION&&SESSION.email||'')+', but nobody has added you to NexpatchOnline for your organization.';
@@ -1503,12 +1651,22 @@ async function syncNow(){
   catch(e){ toast(e.message); }
   finally{ SERVER.busy=false; route(); }
 }
+async function mergeSharedCatalog(){
+  try{ const r=await api('/catalog'); let added=0;
+    r.apps.forEach(g=>{ if(S.apps.some(a=>a.winget.toLowerCase()===g.winget.toLowerCase())) return;
+      const app={id:'g-'+g.id,name:g.name,vendor:g.vendor||g.name,winget:g.winget,reg:g.reg||g.name,procs:g.procs?g.procs.split(',').map(x=>x.trim()).filter(Boolean):[],exe:g.exe||'',latest:'',fleet:[0,0,0,0],cves:0,shared:true};
+      S.apps.push(app); fleetFromInventory(app); added++; });
+    if(added) save();
+  }catch(e){}
+}
 async function loadFromServer(){
   if(!API_ON || !SESSION || SESSION.demo || !PCA) return;
   try{
     if(SERVER.pendingActivate){ SERVER.pendingActivate=false; await activateTenant(); CONSENT_MSG={ok:true,text:'Your organization is connected. Pulling your inventory from Intune now.'}; route(); SERVER.me=await api('/me'); await syncNow(); return; }
     SERVER.me=await api('/me');
+    $('#navPlatform').hidden=!SERVER.me.platformAdmin; $('#navAdminH').hidden=!SERVER.me.platformAdmin;
     const t=SERVER.me.tenant;
+    if(t && t.status==='active') await mergeSharedCatalog();
     if(t && t.status==='active'){
       if(!S.settings.tenant) S.settings.tenant=t.tenantId;
       const inv=await api('/inventory');
@@ -1637,9 +1795,9 @@ function renderAsg(){
       '<label class="field"><span>Intent</span><select data-af="intent">'+[['required','Required'],['available','Available'],['uninstall','Uninstall']].map(o=>'<option value="'+o[0]+'"'+(x.intent===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></label>'+
       '<label class="field"><span>Include or exclude</span><select data-af="mode"><option value="include"'+(x.mode==='include'?' selected':'')+'>Include</option><option value="exclude"'+(x.mode==='exclude'?' selected':'')+'>Exclude</option></select></label>'+
       '<label class="field"><span>Target</span><select data-af="target"'+(x.mode==='exclude'?' disabled':'')+'><option value="group"'+(x.target==='group'?' selected':'')+'>A group</option><option value="allDevices"'+(x.target==='allDevices'?' selected':'')+'>All devices</option><option value="allUsers"'+(x.target==='allUsers'?' selected':'')+'>All users</option></select></label>'+
-      (g?'<label class="field"><span>Group name or object ID</span><input type="text" data-af="group" value="'+esc(x.group)+'" placeholder="e.g. Pilot devices"></label>':'')+
+      (g?'<label class="field gpick"><span>Group'+(x.groupName?' <span class="small">(picked from Entra)</span>':'')+'</span><input type="text" data-af="group" data-gpick="'+i+'" autocomplete="off" value="'+esc(x.groupName||x.group)+'" placeholder="Type a group name"><div class="gpick-list" hidden></div></label>':'')+
       (x.mode==='exclude'?'':
-        '<label class="field"><span>Available from</span><input type="datetime-local" data-af="start" value="'+esc(x.start)+'"></label>'+
+        '<label class="field"><span>Available from'+(avail?' (UTC)':'')+'</span><input type="datetime-local" data-af="start" value="'+esc(x.start)+'"></label>'+
         (avail?'':'<label class="field"><span>Install deadline</span><input type="datetime-local" data-af="deadline" value="'+esc(x.deadline)+'"></label>')+
         '<label class="field"><span>Filter name (optional)</span><input type="text" data-af="filter" value="'+esc(x.filter)+'"></label>'+
         '<label class="field"><span>Filter mode</span><select data-af="filterMode"><option value="Include"'+(x.filterMode==='Include'?' selected':'')+'>Include matching</option><option value="Exclude"'+(x.filterMode==='Exclude'?' selected':'')+'>Exclude matching</option></select></label>')+
@@ -1696,7 +1854,7 @@ function updateDlg(){
   if(!S.settings.tenant) w.push('Add your tenant ID on the Connect page so the script can sign in without editing.');
   if(!it.length) w.push('Nothing is assigned yet, so the app will be created in Intune but not deployed.');
   if(c.method==='groups'){
-    c.assignments.forEach((a,i)=>{ if((a.target==='group'||a.mode==='exclude') && !a.group) w.push('Assignment '+(i+1)+' needs a group name or object ID.');
+    c.assignments.forEach((a,i)=>{ if((a.target==='group'||a.mode==='exclude') && !a.group) w.push('Assignment '+(i+1)+' needs a group. Start typing its name to pick it.');
       if(a.mode!=='exclude' && a.intent!=='available' && a.start && a.deadline && a.deadline < a.start) w.push('Assignment '+(i+1)+': the deadline is before the start.'); });
     const seen={}; c.assignments.filter(a=>a.target==='group'&&a.group&&a.mode!=='exclude').forEach(a=>{ const k=a.group.toLowerCase(); if(seen[k]&&seen[k]!==a.intent) w.push('\u201c'+a.group+'\u201d has two different intents. Intune doesn\u2019t allow that for one group.'); seen[k]=a.intent; });
     if(!c.updateOnly && c.assignments.some(a=>a.mode!=='exclude'&&a.intent==='required'&&a.target!=='group')) w.push('Required for All devices or All users installs the app everywhere. Turn on Update only if you just want to patch existing installs.');
@@ -1705,42 +1863,65 @@ function updateDlg(){
   if((c.conflict==='Notify'||c.conflict==='Wait') && c.maxTime < c.confMin+30) w.push('Maximum install time will be raised to '+(c.confMin+30)+' minutes so the wait doesn\u2019t time out.');
   if(c.detect==='file' && !c.detectFile) w.push('Enter the program file to use for detection.');
   if(c.detect==='script' && !c.detectScript) w.push('Enter a detection script, or switch back to the recommended detection.');
+  if(c.graceOn && c.restart!=='basedOnReturnCode' && it.some(x=>x!=='available')) w.push('The restart grace period only applies when Restart behavior is “Based on return codes”.');
   if(c.restart==='force' && c.notify==='hideAll') w.push('Devices will restart without any notification. Consider showing restart notifications.');
   $('#dWarn').innerHTML=w.map(x=>'<div class="note">'+esc(x)+'</div>').join('');
 }
 $('#dAsgAdd').addEventListener('click',()=>{ ASG.push(newAssignment(ASG.length?ASG[ASG.length-1].intent:'required')); renderAsg(); updateDlg(); });
 $('#dAsgList').addEventListener('click', e=>{ const b=e.target.closest('[data-arm]'); if(!b) return; ASG.splice(+b.dataset.arm,1); renderAsg(); updateDlg(); });
-function asgField(e){ const el=e.target.closest('[data-af]'); if(!el) return false; const i=+el.closest('[data-ai]').dataset.ai, k=el.dataset.af; ASG[i][k]=el.value; if(k==='mode'&&el.value==='exclude') ASG[i].target='group'; return k; }
-$('#dAsgList').addEventListener('input', e=>{ asgField(e); });
+function asgField(e){ const el=e.target.closest('[data-af]'); if(!el) return false; const i=+el.closest('[data-ai]').dataset.ai, k=el.dataset.af; ASG[i][k]=el.value; if(k==='group') ASG[i].groupName=''; if(k==='mode'&&el.value==='exclude') ASG[i].target='group'; return k; }
+$('#dAsgList').addEventListener('input', e=>{ asgField(e); if(e.target.dataset.gpick!==undefined) groupSearch(e.target); });
+let GP_TIMER=null;
+function groupSearch(input){
+  const list=input.parentElement.querySelector('.gpick-list'); const q=input.value.trim();
+  clearTimeout(GP_TIMER);
+  if(!liveMode() || q.length<2 || /^[0-9a-f-]{36}$/i.test(q)){ list.hidden=true; return; }
+  GP_TIMER=setTimeout(async ()=>{
+    list.hidden=false; list.innerHTML='<div class="gp-empty">Searching\u2026</div>';
+    try{ const r=await api('/groups?search='+encodeURIComponent(q)); if(input.value.trim()!==q) return;
+      list.innerHTML = r.groups.length ? r.groups.map(g=>'<button type="button" data-gid="'+esc(g.id)+'" data-gname="'+esc(g.name)+'">'+esc(g.name)+'<small>'+esc(g.kind)+(g.description?' \u00b7 '+esc(g.description):'')+'</small></button>').join('') : '<div class="gp-empty">No groups start with \u201c'+esc(q)+'\u201d.</div>';
+    }catch(err){ list.innerHTML='<div class="gp-empty">'+esc(err.message)+'</div>'; }
+  }, 300);
+}
+$('#dAsgList').addEventListener('mousedown', e=>{ const b=e.target.closest('[data-gid]'); if(!b) return; e.preventDefault();
+  const i=+b.closest('[data-ai]').dataset.ai; ASG[i].group=b.dataset.gid; ASG[i].groupName=b.dataset.gname; renderAsg(); updateDlg(); });
+$('#dAsgList').addEventListener('keydown', e=>{ const inp=e.target.closest('[data-gpick]'); if(!inp) return; const list=inp.parentElement.querySelector('.gpick-list');
+  if(e.key==='Escape'){ list.hidden=true; } else if(e.key==='Enter' && !list.hidden){ const first=list.querySelector('[data-gid]'); if(first){ e.preventDefault(); first.dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); } } });
+$('#dAsgList').addEventListener('focusout', e=>{ const inp=e.target.closest('[data-gpick]'); if(inp) setTimeout(()=>{ const l=inp.parentElement&&inp.parentElement.querySelector('.gpick-list'); if(l) l.hidden=true; },150); });
 $('#dAsgList').addEventListener('change', e=>{ const k=asgField(e); if(k==='intent'||k==='mode'||k==='target') renderAsg(); });
 function finalCfg(){ const c=dlgCfg(), it=intentsOf(c); if((c.conflict==='Notify'||c.conflict==='Wait') && c.maxTime < c.confMin+30) c.maxTime=c.confMin+30; if(!it.some(x=>x!=='available')) c.graceOn=false; if(!it.includes('available')){ c.autoUpd=false; c.allowUninst=false; } return c; }
 function rememberCfg(c){ S.pubPrefs=S.pubPrefs||{}; const k=JSON.parse(JSON.stringify(c)); delete k.rings; S.pubPrefs[current.id]=k; save(); }
 function canCloudPublish(){ return liveMode() && (currentRole()==='admin' || currentRole()==='owner'); }
 const JOB_LABEL={queued:['Queued','p-neutral'],running:['Publishing','p-upd'],succeeded:['Published','p-cur'],failed:['Failed','p-vuln']};
-async function watchJob(jobId, app, cfg){
-  const render=j=>{ $('#dProgLog').innerHTML=(j.log||[]).map(l=>'<li><i class="t-ic" style="background:'+(/^Failed|^Skipped/.test(l.text)?'var(--red)':'var(--teal)')+'"></i><div class="t-body"><span>'+esc(l.text)+'</span></div></li>').join('') || '<li><div class="t-body"><span>Waiting to start\u2026</span></div></li>';
-    const L=JOB_LABEL[j.status]||[j.status,'p-neutral']; $('#dProgState').innerHTML='<span class="pill '+L[1]+'">'+L[0]+'</span>'; };
-  for(let i=0;i<150;i++){
-    let j; try{ j=await api('/publish/'+encodeURIComponent(jobId)); }catch(e){ $('#dProgTitle').textContent='Lost track of the job: '+e.message; break; }
-    render(j);
-    if(j.status==='succeeded'){
-      $('#dProgTitle').textContent=app.name+' '+(j.version||'')+' is in Intune.';
-      S.deployments.unshift({id:jobId,appId:app.id,name:app.name,version:j.version||app.latest,summary:cfgSummary(cfg),method:cfg.method,assignments:cfg.method==='groups'?cfg.assignments:[],rings:cfg.method==='rings'?cfg.rings:[],ringIntent:cfg.ringIntent,grace:cfg.grace,notify:cfg.notify,conflict:cfg.conflict,at:new Date().toISOString(),cloud:true});
-      save(); toast(app.name+' published to Intune'); $('#dPublishNow').disabled=false; $('#dPublishNow').textContent='Publish again'; if(location.hash==='#deployments') renderDeployments(); return;
+const jobBusy=j=>j.status==='queued'||j.status==='running';
+// Publishing runs in the background; the Deployments page shows progress.
+const WATCH=new Map();
+let WATCH_TIMER=null;
+function watchJob(jobId, app, cfg){ WATCH.set(jobId,{app,cfg}); if(!WATCH_TIMER) WATCH_TIMER=setInterval(pollWatched, 4000); }
+async function pollWatched(){
+  if(!WATCH.size){ clearInterval(WATCH_TIMER); WATCH_TIMER=null; return; }
+  let finished=false;
+  for(const [jobId,w] of [...WATCH]){
+    let j; try{ j=await api('/publish/'+encodeURIComponent(jobId)); }catch(e){ continue; }
+    if(j.status==='succeeded'||j.status==='failed'){
+      WATCH.delete(jobId); finished=true;
+      if(j.status==='succeeded'){ const c=w.cfg;
+        S.deployments.unshift({id:jobId,appId:w.app.id,name:w.app.name,version:j.version||w.app.latest,summary:cfgSummary(c),method:c.method,assignments:c.method==='groups'?c.assignments:[],rings:c.method==='rings'?c.rings:[],ringIntent:c.ringIntent,grace:c.grace,notify:c.notify,conflict:c.conflict,at:new Date().toISOString(),cloud:true});
+        save(); toast(w.app.name+' '+(j.version||'')+' is in Intune'); }
+      else toast(w.app.name+': publishing failed. Open Deployments for the log.');
     }
-    if(j.status==='failed'){ $('#dProgTitle').textContent='Publishing failed. '+(j.error||''); $('#dPublishNow').disabled=false; return; }
-    await new Promise(r=>setTimeout(r,3000));
   }
-  $('#dPublishNow').disabled=false;
+  if(location.hash==='#deployments'){ if(finished) renderDeployments(); else renderJobs(true); }
 }
 $('#dPublishNow').addEventListener('click', async ()=>{
-  const c=finalCfg(); rememberCfg(c); const app=current;
-  $('#dPublishNow').disabled=true; $('#dProgress').hidden=false; $('#dProgTitle').textContent='Publishing '+app.name+'\u2026'; $('#dProgLog').innerHTML=''; $('#dProgState').textContent='';
-  $('#dProgress').scrollIntoView({behavior:'smooth',block:'nearest'});
+  const c=finalCfg(); rememberCfg(c); const app=current; const btn=$('#dPublishNow');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Starting\u2026';
   try{
     const r=await api('/publish','POST',{ app:{name:app.name, winget:app.winget, reg:app.reg, vendor:app.vendor}, options:Object.assign({}, c, {summary:cfgSummary(c)}) });
     watchJob(r.jobId, app, c);
-  }catch(e){ $('#dProgTitle').textContent='Couldn\u2019t start publishing. '+e.message; $('#dPublishNow').disabled=false; }
+    $('#pubDlg').close(); toast('Publishing '+app.name+'. Follow it on Deployments.'); location.hash='#deployments';
+  }catch(e){ toast('Couldn\u2019t start publishing. '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='Publish to Intune'; }
 });
 function openPublish(id){
   if(currentRole()==='viewer'){ toast('Viewers can’t publish apps. Ask an owner for the Admin role.'); return; }
@@ -1769,7 +1950,7 @@ function depSchedule(d){
   const at=new Date(d.at).getTime();
   if(d.method==='groups' || (d.assignments && d.assignments.length)){
     return (d.assignments||[]).filter(a=>a.mode!=='exclude').map(a=>{ const st=a.start?new Date(a.start).getTime():at; const dl=a.intent==='available'?null:(a.deadline?new Date(a.deadline).getTime():st);
-      return {label:a.target==='allDevices'?'All devices':a.target==='allUsers'?'All users':(a.group||'No group set'), intent:a.intent, start:st, deadline:dl, missing:a.target==='group'&&!a.group}; });
+      return {label:a.target==='allDevices'?'All devices':a.target==='allUsers'?'All users':(a.groupName||a.group||'No group set'), intent:a.intent, start:st, deadline:dl, missing:a.target==='group'&&!a.group}; });
   }
   const intent=d.ringIntent||(d.mode==='Available'?'available':d.mode==='Uninstall'?'uninstall':'required');
   return (d.rings||[]).map(r=>{ const st=at+r.defer*864e5; return {label:r.name, intent, start:st, deadline:intent==='available'?null:st+(d.grace||0)*36e5, missing:!r.group}; });
@@ -1782,12 +1963,13 @@ function depHTML(d){ const now=Date.now(); const sch=depSchedule(d);
     const txt = x.deadline===null ? (now>=x.start?'Available since '+fmtDate(new Date(x.start)):'Available from '+fmtDate(new Date(x.start)))
       : k==='done' ? 'Deadline passed '+fmtDate(new Date(x.deadline)) : k==='live' ? 'Installing, deadline '+fmtDate(new Date(x.deadline)) : 'Starts '+fmtDate(new Date(x.start));
     return '<div class="ring '+k+'"><b>'+esc(x.label)+'</b>'+INTENT_LABEL[x.intent]+' \u00b7 '+txt+(x.missing?'<br><span class="small">No group set</span>':'')+'</div>'; }).join('') : '<div class="ring wait"><b>Not assigned</b>Created in Intune only</div>')+'</div></div>'; }
-async function renderJobs(){
+async function renderJobs(quiet){
   const show=liveMode(); $('#jobsPanel').hidden=!show; if(!show) return;
-  $('#jobsBody').innerHTML='<tr><td colspan="6" class="empty">Loading\u2026</td></tr>';
+  if(!quiet) $('#jobsBody').innerHTML='<tr><td colspan="6" class="empty">Loading\u2026</td></tr>';
   try{ const r=await api('/publish'); JOBS=r.jobs;
+    r.jobs.filter(jobBusy).forEach(j=>{ if(!WATCH.has(j.id)){ const app=S.apps.find(a=>a.name===j.appName)||{name:j.appName,id:''}; watchJob(j.id, app, Object.assign(defaultCfg(app), (S.pubPrefs||{})[app.id]||{})); } });
     $('#jobsBody').innerHTML = r.jobs.length ? r.jobs.map(j=>{ const L=JOB_LABEL[j.status]||[j.status,'p-neutral'];
-      return '<tr><td><b>'+esc(j.appName)+'</b>'+(j.version?'<span class="sub">'+esc(j.version)+'</span>':'')+'</td><td><span class="pill '+L[1]+'">'+L[0]+'</span>'+(j.error?'<span class="sub" style="color:var(--red)">'+esc(j.error)+'</span>':'')+'</td><td>'+esc(j.summary||'')+'</td><td>'+esc(j.createdBy||'')+'</td><td>'+new Date(j.createdAt).toLocaleString()+'</td><td><button class="btn small ghost" type="button" data-job="'+esc(j.id)+'">View log</button></td></tr>'; }).join('')
+      return '<tr><td><b>'+esc(j.appName)+'</b>'+(j.version?'<span class="sub">'+esc(j.version)+'</span>':'')+'</td><td><span class="pill '+L[1]+'">'+(jobBusy(j)?'<span class="spin"></span>':'')+L[0]+'</span>'+(jobBusy(j)&&j.step?'<span class="sub">'+esc(j.step)+'</span>':'')+(j.error?'<span class="sub" style="color:var(--red)">'+esc(j.error)+'</span>':'')+'</td><td>'+esc(j.summary||'')+'</td><td>'+esc(j.createdBy||'')+'</td><td>'+new Date(j.createdAt).toLocaleString()+'</td><td><button class="btn small ghost" type="button" data-job="'+esc(j.id)+'">View log</button></td></tr>'; }).join('')
       : '<tr><td colspan="6" class="empty">Nothing published from NexpatchOnline yet. Open an app in the catalog and choose Publish to Intune.</td></tr>';
   }catch(e){ $('#jobsBody').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; }
 }
@@ -1812,7 +1994,7 @@ function summaryItems(){ const p=S.policy; const out=[];
   out.push(p.scripts ? 'Untrusted PowerShell runs in constrained language mode.' : 'Scripts are not restricted.');
   out.push(p.mode==='audit' ? '<b>Nothing is blocked yet.</b> Devices log what would be blocked.' : '<b>Everything else is blocked.</b>');
   return out; }
-function renderAC(){ renderACLive();
+function renderAC(){ renderACLive(); applyACTab();
   const p=S.policy;
   $('#pName').value=p.name; $('#pGroup').value=p.group;
   $$('input[name=base]').forEach(r=>r.checked=r.value===p.base); $$('input[name=mode]').forEach(r=>r.checked=r.value===p.mode);
@@ -1837,6 +2019,50 @@ function renderEvents(){ const ev=S.events.filter(e=>!S.reviewed[e.path]);
 $('#acEvents').addEventListener('click', e=>{ const a=e.target.closest('[data-allow]'), k=e.target.closest('[data-keep]'); const ev=S.events.filter(x=>!S.reviewed[x.path]);
   if(a){ const x=ev[+a.dataset.allow]; S.policy.custom.push({label:(a.dataset.level==='Publisher' ? x.publisher + ' (' + x.file + ')' : x.file + (x.publisher ? ' (' + x.publisher + ')' : '')), level:a.dataset.level, ref:'C:\\NexpatchOnline\\Reference\\' + x.file}); S.reviewed[x.path]='allowed'; save(); renderAC(); toast(a.dataset.level==='Publisher' ? x.publisher + ' allowed in the policy' : x.file + ' allowed by file hash'); }
   if(k){ const x=ev[+k.dataset.keep]; S.reviewed[x.path]='blocked'; save(); renderEvents(); toast(x.file + ' stays blocked'); } });
+/* ---------- App Control tabs ---------- */
+let AC_MOVED=false;
+function applyACTab(){
+  if(!AC_MOVED){ const sp=$('#acSamplePanel'); if(sp){ sp.dataset.actabPanel='activity'; $('#acLivePanel').after(sp); sp.style.marginBottom='20px'; } AC_MOVED=true; }
+  $$('[data-actab-panel]').forEach(el=>el.style.display = el.dataset.actabPanel===AC_TAB ? '' : 'none');
+  $('#acSuppPanel').hidden = AC_TAB!=='supplemental'; $('#acReportsPanel').hidden = AC_TAB!=='reports';
+  $$('.actabs a').forEach(a=>{ if(a.dataset.actab===AC_TAB) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  if(AC_TAB==='supplemental') renderACSupp(); if(AC_TAB==='reports') renderACReports();
+}
+// One event list for both modes: live events from the backend, or this browser's sample/imported events
+function acEventsForReports(){
+  if(liveMode()) return AC.events;
+  return (S.events||[]).map(e=>({key:e.path, file:e.file, path:e.path, publisher:e.publisher||'', action:(e.action||'Audited').toLowerCase(), deviceCount:e.devices||1,
+    decision: S.reviewed[e.path]==='allowed' ? (e.publisher?'allowPublisher':'allowFile') : S.reviewed[e.path] ? 'block' : '', decidedBy:'', decidedAt:null}));
+}
+function renderACSupp(){
+  const live=liveMode();
+  const rules = live ? AC.events.filter(e=>String(e.decision).startsWith('allow')).map(e=>({key:e.key,label:e.decision==='allowPublisher'?e.publisher:e.file,sub:e.decision==='allowPublisher'?'All apps signed by this publisher (seen with '+e.file+')':e.path,rule:e.decision==='allowPublisher'?'Publisher':'File hash',by:e.decidedBy,at:e.decidedAt}))
+    : (S.policy.custom||[]).map((c,i)=>({key:'local-'+i,label:c.label,sub:c.ref,rule:c.level==='Hash'?'File hash':'Publisher',by:'',at:null}));
+  const st=AC.settings||{};
+  $('#acSuppStats').innerHTML=[[rules.filter(r=>r.rule==='Publisher').length,'publishers allowed'],[rules.filter(r=>r.rule==='File hash').length,'files allowed by hash'],[live?(st.policyVersion||1):'\u2014','policy version'],[live?(st.basePolicyId?'Set':'Missing'):'\u2014','base policy ID']].map(x=>'<div class="stat"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('');
+  $('#acSuppBody').innerHTML = rules.length ? rules.map(r=>'<tr><td><b>'+esc(r.label)+'</b><span class="sub" style="overflow-wrap:anywhere;max-width:340px">'+esc(r.sub||'')+'</span></td><td>'+r.rule+'</td><td>'+esc(r.by||'')+'</td><td>'+(r.at?new Date(r.at).toLocaleDateString():'')+'</td><td>'+(live?'<button class="btn small ghost" type="button" data-sundo="'+esc(r.key)+'">Remove</button>':'')+'</td></tr>').join('')
+    : '<tr><td colspan="6" class="empty">Nothing allowed yet. Allow apps on the Activity tab and they appear here.</td></tr>';
+  $('#acSuppBtn2').disabled=!live;
+}
+$('#acSuppBody').addEventListener('click', async e=>{ const b=e.target.closest('[data-sundo]'); if(!b) return;
+  try{ await api('/appcontrol/decisions','POST',{key:b.dataset.sundo,decision:'undo'}); const ev=AC.events.find(x=>x.key===b.dataset.sundo); if(ev){ ev.decision=''; ev.decidedBy=''; } AC.settings&&(AC.settings.policyVersion=(AC.settings.policyVersion||1)+1); renderACSupp(); drawACEvents(); toast('Removed from the supplemental policy'); }catch(err){ toast(err.message); } });
+$('#acSuppBtn2').addEventListener('click',()=>$('#acSuppBtn').click());
+function renderACReports(){
+  const ev=acEventsForReports();
+  const blocked=ev.filter(e=>e.action==='blocked').length, audited=ev.length-blocked, needs=ev.filter(e=>!e.decision).length, allowed=ev.filter(e=>String(e.decision).startsWith('allow')).length;
+  const reports=ev.reduce((n,e)=>n+(e.deviceCount||0),0);
+  $('#acRepSub').textContent = liveMode() ? 'From your live App Control events.' : 'From sample or imported events in this browser.';
+  $('#acRepStats').innerHTML=[[ev.length,'apps seen'],[blocked,'blocked'],[audited,'audited only'],[needs,'need a decision'],[allowed,'allowed'],[reports,'device reports']].map(x=>'<div class="stat"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('');
+  const top=[...ev].sort((a,b)=>(b.deviceCount||0)-(a.deviceCount||0)).slice(0,10);
+  REP.acTop={head:['App','Publisher','Status','Devices','Decision'],rows:top.map(e=>[e.file,e.publisher||'Not signed',e.action,e.deviceCount||0,(AC_DEC[e.decision]||AC_DEC[''])[0]])};
+  $('#acRepTop').innerHTML=thead(['App','Status','Devices'])+'<tbody>'+(top.length?top.map(e=>'<tr><td><b>'+esc(e.file)+'</b><span class="sub">'+esc(e.publisher||'Not signed')+'</span></td><td><span class="pill '+(e.action==='blocked'?'p-vuln':'p-upd')+'">'+(e.action==='blocked'?'Blocked':'Audited')+'</span></td><td>'+(e.deviceCount||0)+'</td></tr>').join(''):emptyRow(3,'No events yet.'))+'</tbody>';
+  const pubs={}; ev.forEach(e=>{ const k=e.publisher||'Not signed'; pubs[k]=pubs[k]||{apps:0,devices:0}; pubs[k].apps++; pubs[k].devices+=e.deviceCount||0; });
+  const plist=Object.entries(pubs).sort((a,b)=>b[1].devices-a[1].devices).slice(0,10);
+  $('#acRepPub').innerHTML=thead(['Publisher','Apps','Device reports'])+'<tbody>'+(plist.length?plist.map(([k,v])=>'<tr><td>'+esc(k)+'</td><td>'+v.apps+'</td><td>'+v.devices+'</td></tr>').join(''):emptyRow(3,'No events yet.'))+'</tbody>';
+  const dec=ev.filter(e=>e.decision&&e.decidedAt).sort((a,b)=>String(b.decidedAt).localeCompare(String(a.decidedAt))).slice(0,15);
+  $('#acRepDecisions').innerHTML = dec.length ? dec.map(e=>'<li><i class="t-ic" style="background:'+(String(e.decision).startsWith('allow')?'var(--green)':'var(--muted)')+'"></i><div class="t-body"><b>'+esc((AC_DEC[e.decision]||AC_DEC[''])[0])+': '+esc(e.decision==='allowPublisher'?e.publisher:e.file)+'</b><span>'+esc(e.decidedBy||'')+' \u00b7 '+new Date(e.decidedAt).toLocaleString()+'</span></div></li>').join('') : '<li><div class="t-body"><span>No decisions yet.</span></div></li>';
+}
+
 /* ---------- App Control live events ---------- */
 const AC={settings:null, events:[], filter:'needs', timer:null};
 const AC_DEC={allowPublisher:['Publisher allowed','p-cur'], allowFile:['File allowed','p-cur'], block:['Blocked','p-vuln'], ignore:['Ignored','p-neutral'], '':['Needs a decision','p-upd']};
@@ -1859,7 +2085,7 @@ async function renderACLive(){
   clearInterval(AC.timer); AC.timer=setInterval(()=>{ if(location.hash==='#app-control' && liveMode()) loadACEvents(); else clearInterval(AC.timer); }, 60000);
 }
 async function loadACEvents(){ try{ AC.events=(await api('/appcontrol/events')).events; }catch(e){ $('#acLiveBody').innerHTML='<tr><td colspan="7" class="empty">'+esc(e.message)+'</td></tr>'; return; } drawACEvents(); }
-function drawACEvents(){
+function drawACEvents(){ if(AC_TAB==='supplemental') renderACSupp(); if(AC_TAB==='reports') renderACReports();
   const q=$('#acSearch').value.trim().toLowerCase(), f=AC.filter;
   let list=AC.events.filter(e=> f==='all' || (f==='needs'&&!e.decision) || (f==='blocked'&&e.action==='blocked') || (f==='audited'&&e.action==='audited') || (f==='allowed'&&String(e.decision).startsWith('allow')));
   if(q) list=list.filter(e=>(e.file+' '+e.publisher+' '+e.path).toLowerCase().includes(q));
@@ -2179,6 +2405,70 @@ $('#peopleBody').addEventListener('click', async e=>{
   toast(p.kind==='invite'?'Invitation cancelled':'Access removed'); renderUsers();
 });
 $('#noAccessSignOut').addEventListener('click',()=>$('#signOutBtn').click());
+
+/* ---------- Platform admin (operators only) ---------- */
+let PLAT={apps:[], editing:null};
+async function renderPlatform(){
+  if(!(SERVER.me && SERVER.me.platformAdmin)){ $('#platCatBody').innerHTML='<tr><td colspan="6" class="empty">Only platform administrators can see this page.</td></tr>'; $('#platTenBody').innerHTML=''; return; }
+  $('#platCatBody').innerHTML='<tr><td colspan="6" class="empty">Loading\u2026</td></tr>';
+  try{ PLAT.apps=(await api('/platform/catalog')).apps; }catch(e){ $('#platCatBody').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; return; }
+  $('#platCatSub').textContent=PLAT.apps.filter(a=>a.enabled).length+' apps shown to every organization, '+PLAT.apps.filter(a=>!a.enabled).length+' hidden.';
+  $('#platCatBody').innerHTML = PLAT.apps.length ? PLAT.apps.map(a=>'<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span></td><td><code>'+esc(a.winget)+'</code></td><td>'+esc(a.category||'')+'</td><td><span class="pill '+(a.enabled?'p-cur':'p-neutral')+'">'+(a.enabled?'Shown':'Hidden')+'</span></td><td>'+(a.updatedAt?new Date(a.updatedAt).toLocaleDateString():'')+'<span class="sub">'+esc(a.updatedBy)+'</span></td><td><div class="row" style="flex-wrap:nowrap"><button class="btn small" type="button" data-pedit="'+esc(a.id)+'">Edit</button><button class="btn small ghost" type="button" data-pdel="'+esc(a.id)+'">Delete</button></div></td></tr>').join('')
+    : '<tr><td colspan="6" class="empty">The shared catalog is empty. Import the built-in apps or add one.</td></tr>';
+  try{ PLAT.tenants=(await api('/platform/tenants')).tenants; drawPlatTenants(); }catch(e){ $('#platTenBody').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; }
+  loadPlatJobs();
+}
+const PLAN_PILL={active:['Paid','p-cur'],trial:['Trial','p-upd'],expired:['Trial ended','p-vuln']};
+function drawPlatTenants(){
+  const t=PLAT.tenants||[];
+  $('#platTenBody').innerHTML = t.length ? t.map(x=>{ const pl=x.plan||{plan:'trial'}; const P=PLAN_PILL[pl.plan]||[pl.plan,'p-neutral'];
+    return '<tr><td><code style="font-size:.8rem">'+esc(x.tenantId)+'</code><span class="sub">Connected by '+esc(x.activatedBy||'?')+(x.activatedAt?' on '+new Date(x.activatedAt).toLocaleDateString():'')+'</span></td>'+
+      '<td><span class="pill '+P[1]+'">'+P[0]+'</span><span class="sub">'+(pl.plan==='trial'?pl.daysLeft+' days left':pl.plan==='active'?esc(x.planNote||''):pl.trialEndsAt?'Ended '+new Date(pl.trialEndsAt).toLocaleDateString():'')+'</span></td>'+
+      '<td>'+x.members+(x.invites?'<span class="sub">'+x.invites+' invited</span>':'')+'</td>'+
+      '<td>'+x.publishes30d+' publish'+(x.publishes30d===1?'':'es')+(x.failed30d?' \u00b7 <span style="color:var(--red)">'+x.failed30d+' failed</span>':'')+'<span class="sub">'+x.appVersions+' app versions \u00b7 up to '+x.devicesSeen+' devices \u00b7 App Control: '+(x.acSource==='defender'?'Defender':x.acSource==='collector'?'Collector':'off')+(x.acApps?' ('+x.acApps+' apps)':'')+'</span></td>'+
+      '<td>'+(x.lastSyncAt?new Date(x.lastSyncAt).toLocaleString():'Never')+(x.lastSyncError?'<span class="sub" style="color:var(--red)">'+esc(x.lastSyncError)+'</span>':'')+'</td>'+
+      '<td><select data-plan="'+esc(x.tenantId)+'" aria-label="Change plan"><option value="">Change plan\u2026</option><option value="activate">Mark as paid</option><option value="extend">Extend trial 14 days</option><option value="restart">Restart 30-day trial</option><option value="expire">End trial now</option></select></td></tr>'; }).join('')
+    : '<tr><td colspan="6" class="empty">No organizations yet.</td></tr>';
+}
+$('#platTenBody').addEventListener('change', async e=>{ const sel=e.target.closest('[data-plan]'); if(!sel||!sel.value) return; const action=sel.value;
+  const note = action==='activate' ? (prompt('Optional note, for example the invoice or plan name:','')||'') : '';
+  if(action==='expire' && !confirm('End this organization\u2019s trial now? Publishing and sync pause until it\u2019s marked as paid.')){ sel.value=''; return; }
+  try{ await api('/platform/tenants/'+encodeURIComponent(sel.dataset.plan)+'/plan','PUT',{action,days:14,note}); toast('Plan updated'); renderPlatform(); }catch(err){ toast(err.message); sel.value=''; } });
+let PJ_FILTER='all';
+async function loadPlatJobs(){
+  try{ PLAT.jobs=(await api('/platform/jobs')).jobs; }catch(e){ $('#platJobsBody').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; return; }
+  const list=(PLAT.jobs||[]).filter(j=>PJ_FILTER==='all'||(PJ_FILTER==='failed'&&j.status==='failed')||(PJ_FILTER==='busy'&&jobBusy(j)));
+  $('#platJobsBody').innerHTML = list.length ? list.map(j=>{ const L=JOB_LABEL[j.status]||[j.status,'p-neutral'];
+    return '<tr><td><code style="font-size:.78rem">'+esc(j.tenantId.slice(0,8))+'\u2026</code></td><td><b>'+esc(j.appName)+'</b>'+(j.version?'<span class="sub">'+esc(j.version)+'</span>':'')+'</td><td><span class="pill '+L[1]+'">'+(jobBusy(j)?'<span class="spin"></span>':'')+L[0]+'</span>'+(j.error?'<span class="sub" style="color:var(--red)">'+esc(j.error)+'</span>':jobBusy(j)&&j.step?'<span class="sub">'+esc(j.step)+'</span>':'')+'</td><td>'+esc(j.createdBy||'')+'</td><td>'+new Date(j.createdAt).toLocaleString()+'</td><td><button class="btn small ghost" type="button" data-pjob="'+esc(j.tenantId)+'|'+esc(j.id)+'">View log</button></td></tr>'; }).join('')
+    : '<tr><td colspan="6" class="empty">No publishing jobs in this view.</td></tr>';
+}
+$$('[data-pjf]').forEach(b=>b.addEventListener('click',()=>{ PJ_FILTER=b.dataset.pjf; $$('[data-pjf]').forEach(x=>x.setAttribute('aria-pressed',x===b)); loadPlatJobs(); }));
+$('#platJobsRefresh').addEventListener('click', loadPlatJobs);
+$('#platJobsBody').addEventListener('click', async e=>{ const b=e.target.closest('[data-pjob]'); if(!b) return; const [tid,id]=b.dataset.pjob.split('|');
+  try{ const j=await api('/platform/jobs/'+encodeURIComponent(tid)+'/'+encodeURIComponent(id)); showCode(j.appName+' \u2013 '+tid, (JOB_LABEL[j.status]||[j.status])[0]+(j.error?': '+j.error:''), (j.log||[]).map(l=>new Date(l.at).toLocaleTimeString()+'  '+l.text).join('\n')||'No log yet.'); }catch(err){ toast(err.message); } });
+function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80); }
+function openPlatApp(a){ PLAT.editing=a?a.id:null; $('#platDlgTitle').textContent=a?'Edit '+a.name:'Add an app for every organization';
+  $('#plName').value=a?a.name:''; $('#plWinget').value=a?a.winget:''; $('#plVendor').value=a?a.vendor:''; $('#plReg').value=a?a.reg:''; $('#plProcs').value=a?a.procs:''; $('#plCat').value=a?a.category:''; $('#plExe').value=a?a.exe:''; $('#plEnabled').checked=a?a.enabled:true; $('#plMsg').textContent='';
+  $('#platDlg').showModal(); }
+$('#platAddBtn').addEventListener('click',()=>openPlatApp(null));
+$('#platDlgClose').addEventListener('click',()=>$('#platDlg').close());
+$('#platRefresh').addEventListener('click', renderPlatform);
+$('#platCatBody').addEventListener('click', async e=>{ const ed=e.target.closest('[data-pedit]'), del=e.target.closest('[data-pdel]');
+  if(ed) openPlatApp(PLAT.apps.find(a=>a.id===ed.dataset.pedit));
+  if(del && confirm('Delete this app from the shared catalog? Organizations that already use it keep it.')){ try{ await api('/platform/catalog/'+encodeURIComponent(del.dataset.pdel),'DELETE'); toast('Removed from the shared catalog'); renderPlatform(); }catch(err){ toast(err.message); } } });
+$('#plCheck').addEventListener('click', async ()=>{ $('#plMsg').textContent='Checking winget\u2026';
+  try{ const r=await api('/platform/catalog-check','POST',{winget:$('#plWinget').value.trim()}); $('#plMsg').textContent = r.ok ? 'Found on winget. Latest version: '+r.version : r.message; }catch(e){ $('#plMsg').textContent=e.message; } });
+$('#plSave').addEventListener('click', async ()=>{ const name=$('#plName').value.trim(); const id=PLAT.editing||slug($('#plWinget').value||name);
+  try{ await api('/platform/catalog/'+encodeURIComponent(id),'PUT',{name,winget:$('#plWinget').value.trim(),vendor:$('#plVendor').value.trim(),reg:$('#plReg').value.trim()||name,procs:$('#plProcs').value.trim(),category:$('#plCat').value.trim(),exe:$('#plExe').value.trim(),enabled:$('#plEnabled').checked});
+    $('#platDlg').close(); toast(name+' saved for every organization'); renderPlatform(); }catch(e){ $('#plMsg').textContent=e.message; } });
+$('#platImport').addEventListener('click', async ()=>{
+  const all=[...SEED_APPS.map(a=>({name:a.name,winget:a.winget,vendor:a.vendor,reg:a.reg,procs:a.procs.join(', '),exe:a.exe,category:''})),
+             ...KNOWN.map(k=>({name:k.n,winget:k.w,vendor:k.v,reg:k.r,procs:k.c,exe:winPath(k.e),category:''}))];
+  const have=new Set(PLAT.apps.map(a=>a.winget.toLowerCase())); const todo=all.filter(a=>!have.has(a.winget.toLowerCase()));
+  if(!todo.length){ toast('All built-in apps are already in the shared catalog'); return; }
+  if(!confirm('Add '+todo.length+' built-in apps to the shared catalog?')) return;
+  let n=0; for(const a of todo){ try{ await api('/platform/catalog/'+encodeURIComponent(slug(a.winget)),'PUT',Object.assign({enabled:true},a)); n++; }catch(e){} }
+  toast(n+' apps added to the shared catalog'); renderPlatform(); });
 
 /* ---------- Connect ---------- */
 function renderConnect(){

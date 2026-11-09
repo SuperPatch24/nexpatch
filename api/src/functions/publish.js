@@ -3,6 +3,7 @@ import { withUser, HttpError, readJson } from '../lib/http.js';
 import { getTenant, saveJob, getJob, listJobs, audit } from '../lib/store.js';
 import { publishApp } from '../lib/publisher.js';
 import { randomUUID } from 'node:crypto';
+import { planStatus } from '../lib/plan.js';
 
 const queue = output.storageQueue({ queueName: 'publish-jobs', connection: 'AzureWebJobsStorage' });
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
@@ -13,6 +14,7 @@ app.http('publishStart', {
   handler: withUser(async (req, context, user) => {
     const t = await getTenant(user.tenantId);
     if (!t || t.status !== 'active') throw new HttpError(409, 'Connect your organization on the Connect page before publishing.');
+    if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to keep publishing apps.');
     const { app: a, options } = await readJson(req);
     if (!a || !a.name || !WINGET_ID.test(a.winget || '') || !a.reg) throw new HttpError(400, 'The app needs a name, a winget ID and its name in Installed apps.');
     if (!options || typeof options !== 'object') throw new HttpError(400, 'Deployment options are missing.');
@@ -30,7 +32,7 @@ app.http('publishStart', {
 
 // GET /api/publish – recent publishing jobs. GET /api/publish/{id} – one job with its log.
 const shape = (j, withLog) => ({ id: j.rowKey, status: j.status, appName: j.appName, version: j.version || null, summary: j.summary || '', appId: j.appId || null,
-  createdBy: j.createdBy, createdAt: j.createdAt, finishedAt: j.finishedAt || null, error: j.error || '', ...(withLog ? { log: JSON.parse(j.log || '[]') } : {}) });
+  createdBy: j.createdBy, createdAt: j.createdAt, finishedAt: j.finishedAt || null, error: j.error || '', step: j.step || '', ...(withLog ? { log: JSON.parse(j.log || '[]') } : {}) });
 app.http('publishList', {
   methods: ['GET'], authLevel: 'anonymous', route: 'publish',
   handler: withUser(async (_req, _ctx, user) => ({ jobs: (await listJobs(user.tenantId, 30)).map(j => shape(j, false)) }), 'viewer')
@@ -54,7 +56,7 @@ app.storageQueue('publishWorker', {
     if (job.status === 'running') { await saveJob(tenantId, jobId, { status: 'failed', error: 'This job was interrupted. Start the publish again.', finishedAt: new Date().toISOString() }); return; }
     if (job.status !== 'queued') return; // already finished
     const lines = [];
-    const log = async text => { lines.push({ at: new Date().toISOString(), text }); context.log(`[${jobId}] ${text}`); await saveJob(tenantId, jobId, { log: JSON.stringify(lines) }).catch(() => {}); };
+    const log = async text => { lines.push({ at: new Date().toISOString(), text }); context.log(`[${jobId}] ${text}`); await saveJob(tenantId, jobId, { log: JSON.stringify(lines), step: String(text).slice(0, 200) }).catch(() => {}); };
     await saveJob(tenantId, jobId, { status: 'running', startedAt: new Date().toISOString() });
     try {
       const { app: a, options } = JSON.parse(job.request);

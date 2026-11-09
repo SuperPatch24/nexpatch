@@ -3,7 +3,7 @@ import { TableClient, odata } from '@azure/data-tables';
 import { DefaultAzureCredential } from '@azure/identity';
 import { createHash } from 'node:crypto';
 
-const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices'];
+const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices', 'Catalog'];
 const clients = {};
 let credential;
 let ready;
@@ -36,6 +36,13 @@ export async function saveTenant(tenantId, fields) {
   await ensureTables();
   await table('Tenants').upsertEntity({ partitionKey: 'tenant', rowKey: tenantId, ...fields }, 'Merge');
   return getTenant(tenantId);
+}
+
+export async function listAllTenants() {
+  await ensureTables();
+  const out = [];
+  for await (const t of table('Tenants').listEntities({ queryOptions: { filter: odata`PartitionKey eq 'tenant'` } })) out.push(t);
+  return out;
 }
 
 export async function listActiveTenants() {
@@ -149,7 +156,7 @@ export async function getJob(tenantId, jobId) {
 export async function listJobs(tenantId, limit = 30) {
   await ensureTables();
   const out = [];
-  for await (const j of table('PublishJobs').listEntities({ queryOptions: { filter: odata`PartitionKey eq ${tenantId}`, select: ['RowKey', 'status', 'appName', 'version', 'summary', 'appId', 'createdBy', 'createdAt', 'finishedAt', 'error'] } })) out.push(j);
+  for await (const j of table('PublishJobs').listEntities({ queryOptions: { filter: odata`PartitionKey eq ${tenantId}`, select: ['RowKey', 'status', 'appName', 'version', 'summary', 'appId', 'createdBy', 'createdAt', 'finishedAt', 'error', 'step'] } })) out.push(j);
   return out.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, limit);
 }
 

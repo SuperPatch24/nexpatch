@@ -15,6 +15,7 @@ api/                     Backend (Azure Functions, Node.js 22)
   src/lib/               token checks, Table Storage, Microsoft Graph with certificate
 wrangler.jsonc           Cloudflare settings (publishes ./public only)
 docs/
+  AUTO-DEPLOY.md         GitHub Actions deployment and platform administrators
   ENTRA-SETUP.md         App registration and sign-in
   BACKEND-SETUP.md       Azure resources, certificate, deploy, test
   WORKER-PLAN.md         Next phase: packaging worker and version checks
@@ -38,6 +39,11 @@ docs/
 - **App Control live events:** each organization picks Microsoft Defender (advanced hunting) or the NexpatchOnline collector
   (a scheduled script deployed with Intune). Live list with allow publisher, allow file, block and ignore; allow decisions
   produce a downloadable supplemental policy.
+- **Group picker:** type a few letters to find Entra groups when assigning.
+- **Platform admin:** operators manage a shared app catalog for every organization and see all connected tenants.
+- **Automatic deployment:** pushes to GitHub deploy the website (Cloudflare) and the backend (GitHub Actions). See `docs/AUTO-DEPLOY.md`.
+- **Free trial:** each organization gets 30 days from connecting; then publishing and sync pause until it's marked as paid in NexpatchOnline admin.
+- **App Control section:** Activity, Base policy, Supplemental policy and Reports tabs.
 - **Still in the browser:** catalog, rings, deployments, App Control and reports data.
 
 

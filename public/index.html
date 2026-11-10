@@ -649,7 +649,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <a href="#ac-reports" data-actab="reports">Reports</a>
       </nav>
       <div class="panel" id="acSuppPanel" hidden>
-        <div class="panel-head"><div><h2>Supplemental policy</h2><p class="small" style="margin:0">Apps you allowed from Activity. It adds to your base policy without changing it, and can be updated any time.</p></div><div class="row"><button class="btn small primary" type="button" id="acSuppBtn2">Download policy XML</button></div></div>
+        <div class="panel-head"><div><h2>Supplemental policy</h2><p class="small" style="margin:0">Apps you allowed from Activity. It adds to your base policy without changing it, and can be updated any time.</p></div><div class="row"><button class="btn small primary" type="button" id="acSuppDeployBtn">Deploy to Intune</button><button class="btn small" type="button" id="acSuppBtn2">Download XML</button></div></div>
         <div class="stats" id="acSuppStats"></div>
         <div class="table-wrap"><table class="compact"><thead><tr><th>Allowed</th><th>Rule</th><th>Allowed by</th><th>When</th><th></th></tr></thead><tbody id="acSuppBody"></tbody></table></div>
         <h3 style="margin-top:20px">Deploy it with Intune</h3>
@@ -742,9 +742,21 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <div class="ac-out panel">
           <div class="tabs" role="tablist">
             <button role="tab" aria-selected="true" data-tab="summary" type="button">Summary</button>
-            <button role="tab" aria-selected="false" data-tab="script" type="button">Build and deploy script</button>
+            <button role="tab" aria-selected="false" data-tab="deploy" type="button">Deploy from here</button>
+            <button role="tab" aria-selected="false" data-tab="script" type="button">PowerShell (advanced)</button>
           </div>
           <div id="acSummary" style="padding-top:16px"></div>
+          <div id="acDeploy" hidden>
+            <p class="small" style="margin-top:14px">NexpatchOnline builds the base policy and deploys it straight to Intune. No PowerShell, no reference device, no XML download.</p>
+            <div id="acDeployState"></div>
+            <label class="field"><span>Assign to groups (type a name, or All devices below)</span><input type="text" id="acbGroup" autocomplete="off" placeholder="Pilot devices"></label>
+            <div id="acbGroupList" class="gpick-list" hidden style="position:static;margin:-10px 0 10px"></div>
+            <div id="acbChips" style="margin-bottom:10px"></div>
+            <label class="check"><input type="checkbox" id="acbAllDevices"> <span><b>All devices</b> (use a pilot group first)</span></label>
+            <div class="note" style="margin:12px 0">Start in <b>Audit</b> mode on a pilot group for at least a week. Switch to <b>Enforce</b> on the Base policy options only after reviewing what it caught.</div>
+            <button class="btn primary" type="button" id="acbDeployBtn">Deploy base policy to Intune</button>
+            <ul class="todo" id="acbLog" style="margin-top:14px"></ul>
+          </div>
           <div id="acScript" hidden>
             <p class="small" style="margin-top:14px">Run on a reference device that has the trusted apps installed, in an elevated PowerShell. It builds the policy with Microsoft’s ConfigCI cmdlets, compiles it, and creates an Intune profile assigned to your group.</p>
             <div class="code"><button class="btn small copy" type="button" data-copy="acCode">Copy</button><pre id="acCode"></pre></div>
@@ -2012,7 +2024,7 @@ function readAC(){ const p=S.policy; p.name=$('#pName').value.trim()||'NexpatchO
   $$('[data-pubapp]').forEach(x=>x.disabled=!p.pubOn); save(); renderACOut(); }
 $('#view-app-control').addEventListener('input', e=>{ if(e.target.closest('.ac-out')||e.target.id==='evImport') return; readAC(); });
 $('#view-app-control').addEventListener('change', e=>{ if(e.target.closest('.ac-out')||e.target.id==='evImport') return; readAC(); });
-$$('.tabs button').forEach(b=>b.addEventListener('click',()=>{ $$('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b)); $('#acSummary').hidden=b.dataset.tab!=='summary'; $('#acScript').hidden=b.dataset.tab!=='script'; }));
+$$('.tabs button').forEach(b=>b.addEventListener('click',()=>{ $$('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b)); $('#acSummary').hidden=b.dataset.tab!=='summary'; $('#acScript').hidden=b.dataset.tab!=='script'; $('#acDeploy').hidden=b.dataset.tab!=='deploy'; if(b.dataset.tab==='deploy') renderAcBaseDeploy(); }));
 function renderEvents(){ const ev=S.events.filter(e=>!S.reviewed[e.path]);
   $('#acEvents').innerHTML = ev.length ? ev.map((e,i)=>'<div class="check" style="align-items:center"><div style="flex:1;min-width:0"><b>'+esc(e.file)+'</b> <span class="pill '+(e.action==='Blocked'?'p-vuln':'p-upd')+'">'+(e.action==='Blocked'?'Blocked':'Audited')+'</span><small style="overflow-wrap:anywhere">'+esc(e.path)+'</small><small>'+(e.publisher?'Signed by '+esc(e.publisher):'Not signed')+', '+e.devices+' device'+(e.devices>1?'s':'')+'</small></div><div class="row" style="flex:none">'+(e.publisher?'<button class="btn small" type="button" data-allow="'+i+'" data-level="Publisher">Allow publisher</button>':'')+'<button class="btn small" type="button" data-allow="'+i+'" data-level="Hash">'+(e.publisher?'Allow this file only':'Allow this file')+'</button><button class="btn small ghost" type="button" data-keep="'+i+'">Keep blocking</button></div></div>').join('')
   : '<p class="empty">'+(S.events.length?'Everything is reviewed. New events show up after your next import.':'No App Control events yet.')+'</p>'; }
@@ -2042,11 +2054,48 @@ function renderACSupp(){
   $('#acSuppStats').innerHTML=[[rules.filter(r=>r.rule==='Publisher').length,'publishers allowed'],[rules.filter(r=>r.rule==='File hash').length,'files allowed by hash'],[live?(st.policyVersion||1):'\u2014','policy version'],[live?(st.basePolicyId?'Set':'Missing'):'\u2014','base policy ID']].map(x=>'<div class="stat"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('');
   $('#acSuppBody').innerHTML = rules.length ? rules.map(r=>'<tr><td><b>'+esc(r.label)+'</b><span class="sub" style="overflow-wrap:anywhere;max-width:340px">'+esc(r.sub||'')+'</span></td><td>'+r.rule+'</td><td>'+esc(r.by||'')+'</td><td>'+(r.at?new Date(r.at).toLocaleDateString():'')+'</td><td>'+(live?'<button class="btn small ghost" type="button" data-sundo="'+esc(r.key)+'">Remove</button>':'')+'</td></tr>').join('')
     : '<tr><td colspan="6" class="empty">Nothing allowed yet. Allow apps on the Activity tab and they appear here.</td></tr>';
-  $('#acSuppBtn2').disabled=!live;
+  $('#acSuppBtn2').disabled=!live; const sd=$('#acSuppDeployBtn'); if(sd) sd.disabled=!live;
 }
 $('#acSuppBody').addEventListener('click', async e=>{ const b=e.target.closest('[data-sundo]'); if(!b) return;
   try{ await api('/appcontrol/decisions','POST',{key:b.dataset.sundo,decision:'undo'}); const ev=AC.events.find(x=>x.key===b.dataset.sundo); if(ev){ ev.decision=''; ev.decidedBy=''; } AC.settings&&(AC.settings.policyVersion=(AC.settings.policyVersion||1)+1); renderACSupp(); drawACEvents(); toast('Removed from the supplemental policy'); }catch(err){ toast(err.message); } });
 $('#acSuppBtn2').addEventListener('click',()=>$('#acSuppBtn').click());
+// Base policy: deploy straight to Intune
+let ACB_GROUPS=[];
+function renderAcbChips(){ $('#acbChips').innerHTML=ACB_GROUPS.map((g,i)=>'<span class="pill p-neutral" style="margin:0 6px 6px 0;display:inline-block">'+esc(g.name)+' <button type="button" data-acbrm="'+i+'" style="border:none;background:none;cursor:pointer;color:inherit">\u00d7</button></span>').join(''); }
+async function renderAcBaseDeploy(){
+  const live=liveMode();
+  $('#acbDeployBtn').disabled=!live;
+  if(!live){ $('#acDeployState').innerHTML='<div class="note">Connect the backend and your organization to deploy from here. Until then, use the PowerShell tab.</div>'; return; }
+  try{ const r=await api('/appcontrol/base'); $('#acDeployState').innerHTML = r.deployedAt ? '<div class="note info">Base policy deployed '+new Date(r.deployedAt).toLocaleString()+' in <b>'+esc(r.mode||'audit')+'</b> mode. Base policy ID '+esc(r.basePolicyId)+' (also saved on the Activity tab).</div>' : '';
+    if(r.base && !ACB_GROUPS.length && Array.isArray(r.base.groups)) ACB_GROUPS=r.base.groups.map(g=>({name:g,id:g})); renderAcbChips(); if(r.base) $('#acbAllDevices').checked=!!r.base.allDevices;
+  }catch(e){ $('#acDeployState').innerHTML='<div class="note">'+esc(e.message)+'</div>'; }
+}
+let ACB_TIMER=null;
+$('#acbGroup').addEventListener('input', ()=>{ const inp=$('#acbGroup'), list=$('#acbGroupList'), q=inp.value.trim(); clearTimeout(ACB_TIMER);
+  if(!liveMode()||q.length<2){ list.hidden=true; return; }
+  ACB_TIMER=setTimeout(async()=>{ list.hidden=false; list.innerHTML='<div class="gp-empty">Searching\u2026</div>';
+    try{ const r=await api('/groups?search='+encodeURIComponent(q)); if(inp.value.trim()!==q) return;
+      list.innerHTML=r.groups.length?r.groups.map(g=>'<button type="button" data-acbg="'+esc(g.id)+'" data-acbn="'+esc(g.name)+'">'+esc(g.name)+'<small>'+esc(g.kind)+'</small></button>').join(''):'<div class="gp-empty">No match.</div>';
+    }catch(e){ list.innerHTML='<div class="gp-empty">'+esc(e.message)+'</div>'; } },300); });
+$('#acbGroupList').addEventListener('mousedown', e=>{ const b=e.target.closest('[data-acbg]'); if(!b) return; e.preventDefault();
+  if(!ACB_GROUPS.some(g=>g.id===b.dataset.acbg)) ACB_GROUPS.push({id:b.dataset.acbg,name:b.dataset.acbn}); $('#acbGroup').value=''; $('#acbGroupList').hidden=true; renderAcbChips(); });
+$('#acbChips').addEventListener('click', e=>{ const b=e.target.closest('[data-acbrm]'); if(b){ ACB_GROUPS.splice(+b.dataset.acbrm,1); renderAcbChips(); } });
+$('#acbDeployBtn').addEventListener('click', async ()=>{
+  const p=S.policy; const btn=$('#acbDeployBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>Deploying\u2026'; $('#acbLog').innerHTML='';
+  try{
+    const r=await api('/appcontrol/base','POST',{ base:p.base, mode:p.mode, managedInstaller:p.mi, isg:p.isg, name:p.name, groups:ACB_GROUPS.map(g=>g.id), allDevices:$('#acbAllDevices').checked });
+    $('#acbLog').innerHTML=(r.log||[]).map(l=>'<li><i class="t-ic" style="background:var(--green)"></i><div class="t-body"><span>'+esc(l)+'</span></div></li>').join('');
+    if(AC.settings) AC.settings.basePolicyId=r.basePolicyId; S.settings.acBasePolicyId=r.basePolicyId; save();
+    toast('Base policy deployed to Intune'); renderAcBaseDeploy();
+  }catch(e){ $('#acbLog').innerHTML='<li><i class="t-ic" style="background:var(--red)"></i><div class="t-body"><span>'+esc(e.message)+'</span></div></li>'; }
+  finally{ btn.disabled=false; btn.textContent='Deploy base policy to Intune'; }
+});
+$('#acSuppDeployBtn').addEventListener('click', async ()=>{
+  const btn=$('#acSuppDeployBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>Deploying\u2026';
+  try{ const r=await api('/appcontrol/supplemental/deploy','POST',{}); toast('Supplemental policy deployed: '+((r.log||[]).slice(-1)[0]||'done')); }
+  catch(e){ toast(e.message); }
+  finally{ btn.disabled=false; btn.textContent='Deploy to Intune'; }
+});
 function renderACReports(){
   const ev=acEventsForReports();
   const blocked=ev.filter(e=>e.action==='blocked').length, audited=ev.length-blocked, needs=ev.filter(e=>!e.decision).length, allowed=ev.filter(e=>String(e.decision).startsWith('allow')).length;

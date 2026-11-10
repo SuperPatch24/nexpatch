@@ -157,6 +157,9 @@ In `public/config.js`, set `apiBaseUrl` to the address printed above (ending in 
 | GET | `/api/appcontrol/events` | Live App Control activity with decisions (Viewer) |
 | POST | `/api/appcontrol/decisions` | Allow publisher, allow file, block, ignore, undo (Admin) |
 | GET | `/api/appcontrol/supplemental` | Supplemental policy XML from allow decisions (Admin) |
+| GET/POST | `/api/appcontrol/base` | Build the base policy and deploy it to Intune (Admin) |
+| POST | `/api/appcontrol/supplemental/deploy` | Deploy the supplemental policy to Intune (Admin) |
+| GET | `/api/groups?search=` | Search Entra groups for pickers (Admin) |
 | timer | `appControlPoll` | Every 15 minutes, polls Defender for organizations that chose it |
 | queue | `publishWorker` | Builds the package, uploads it to Intune, sets relationships and assignments |
 | timer | `nightlySync` | Syncs every active organization daily at 07:00 UTC |

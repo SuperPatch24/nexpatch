@@ -4,6 +4,7 @@ import { withUser, HttpError, readJson, json } from '../lib/http.js';
 import { getTenant, saveTenant, listActiveTenants, getRow, putRow, deleteRow, listRows, audit } from '../lib/store.js';
 import { normalize, storeEvents, pollDefender, buildSupplemental } from '../lib/appcontrol.js';
 import { installerFor, UNINSTALLER } from '../lib/collector.js';
+import { graph } from '../lib/graph.js';
 
 const GUID = /^\{?[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\}?$/;
 const sha = v => createHash('sha256').update(v).digest();
@@ -138,3 +139,70 @@ app.timer('appControlPoll', { schedule: '0 */15 * * * *',
       catch (err) { context.warn(`App Control poll ${t.rowKey} failed: ${err.message}`); await saveTenant(t.rowKey, { acLastError: String(err.message).slice(0, 300) }).catch(() => {}); }
     }
   } });
+
+// ---- Base policy: build and deploy to Intune without any XML download ----
+import { buildBasePolicy } from '../lib/basepolicy.js';
+import { planStatus } from '../lib/plan.js';
+import { deployAcPolicy } from '../lib/acdeploy.js';
+
+async function resolveGroupIds(tid, names) {
+  const ids = [];
+  for (const n of names || []) {
+    const v = String(n).trim();
+    if (!v) continue;
+    if (/^\{?[0-9a-f-]{36}\}?$/i.test(v)) { ids.push(v.replace(/[{}]/g, '')); continue; }
+    const q = encodeURIComponent(`displayName eq '${v.replace(/'/g, "''")}'`);
+    const found = ((await graph(tid, `/v1.0/groups?$filter=${q}&$select=id`)).value || [])[0];
+    if (found) ids.push(found.id); else throw new HttpError(409, `No group named "${v}" was found.`);
+  }
+  return ids;
+}
+
+// GET /api/appcontrol/base – the saved base-policy settings for this organization.
+app.http('acBaseGet', { methods: ['GET'], authLevel: 'anonymous', route: 'appcontrol/base',
+  handler: withUser(async (_r, _c, user) => {
+    const t = await activeTenant(user.tenantId);
+    return { base: t.acBaseConfig ? JSON.parse(t.acBaseConfig) : null, basePolicyId: t.acBasePolicyId || '', deployedAt: t.acBaseDeployedAt || null, mode: t.acBaseMode || '' };
+  }, 'viewer') });
+
+// POST /api/appcontrol/base – build the base policy and deploy it to Intune.
+app.http('acBaseDeploy', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontrol/base',
+  handler: withUser(async (req, _c, user) => {
+    const t = await activeTenant(user.tenantId);
+    if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to deploy App Control policies.');
+    const cfg = await readJson(req);
+    const groups = Array.isArray(cfg.groups) ? cfg.groups : [];
+    const groupIds = await resolveGroupIds(user.tenantId, groups);
+    // Keep the same policy ID across updates, and bump the version each deploy.
+    const version = `10.0.0.${Number(t.acBaseVersion || 0) + 1}`;
+    const { xml, policyId } = await buildBasePolicy({
+      base: cfg.base === 'DefaultWindows' ? 'DefaultWindows' : 'AllowMicrosoft',
+      mode: cfg.mode === 'enforce' ? 'enforce' : 'audit',
+      managedInstaller: cfg.managedInstaller !== false, isg: !!cfg.isg,
+      name: cfg.name || 'NexpatchOnline base policy', policyId: t.acBasePolicyId || null, version
+    });
+    const log = [];
+    await deployAcPolicy(user.tenantId, { name: cfg.name || 'NexpatchOnline base policy', xml, kind: 'base', groupIds, allDevices: !!cfg.allDevices, log: m => log.push(m) });
+    await saveTenant(user.tenantId, { acBasePolicyId: policyId, acBaseConfig: JSON.stringify({ base: cfg.base, mode: cfg.mode, managedInstaller: cfg.managedInstaller !== false, isg: !!cfg.isg, name: cfg.name, groups, allDevices: !!cfg.allDevices }),
+      acBaseVersion: Number(t.acBaseVersion || 0) + 1, acBaseMode: cfg.mode, acBaseDeployedAt: new Date().toISOString() });
+    await audit(user.tenantId, user.email || user.userId, 'deployed base policy', `${cfg.mode} mode`);
+    return { basePolicyId: policyId, mode: cfg.mode, log };
+  }, 'admin') });
+
+// POST /api/appcontrol/supplemental/deploy – push the current allow decisions to Intune as a supplemental policy.
+app.http('acSuppDeploy', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontrol/supplemental/deploy',
+  handler: withUser(async (req, _c, user) => {
+    const t = await activeTenant(user.tenantId);
+    if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to deploy App Control policies.');
+    if (!t.acBasePolicyId) throw new HttpError(409, 'Deploy the base policy first; the supplemental policy extends it.');
+    const { xml } = await buildSupplemental(user.tenantId, t);
+    const cfg = t.acBaseConfig ? JSON.parse(t.acBaseConfig) : {};
+    const body = await readJson(req).catch(() => ({}));
+    const groups = Array.isArray(body.groups) && body.groups.length ? body.groups : (cfg.groups || []);
+    const groupIds = await resolveGroupIds(user.tenantId, groups);
+    const log = [];
+    await deployAcPolicy(user.tenantId, { name: 'NexpatchOnline allowed apps', xml, kind: 'supplemental', groupIds, allDevices: body.allDevices ?? cfg.allDevices, log: m => log.push(m) });
+    await saveTenant(user.tenantId, { acSuppDeployedAt: new Date().toISOString() });
+    await audit(user.tenantId, user.email || user.userId, 'deployed supplemental policy', '');
+    return { log };
+  }, 'admin') });

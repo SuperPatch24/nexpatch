@@ -43,6 +43,7 @@ docs/
 - **Platform admin:** operators manage a shared app catalog for every organization and see all connected tenants.
 - **Automatic deployment:** pushes to GitHub deploy the website (Cloudflare) and the backend (GitHub Actions). See `docs/AUTO-DEPLOY.md`.
 - **Free trial:** each organization gets 30 days from connecting; then publishing and sync pause until it's marked as paid in NexpatchOnline admin.
+- **Deploy App Control from the website:** build the base policy and push it to Intune, and deploy the supplemental policy from allow decisions, all through Microsoft Graph. No XML download, no reference device. PowerShell remains as an advanced option.
 - **App Control section:** Activity, Base policy, Supplemental policy and Reports tabs.
 - **Still in the browser:** catalog, rings, deployments, App Control and reports data.
 

@@ -88,3 +88,8 @@ The current brand mark is `public/nexpatch-logo.svg`. Expanded documentation is 
 - Apple inventory is currently read-only. It does not assign apps, force app updates, manage Apps and Books licenses, or determine that an app is outdated without a trusted latest-version source.
 - **Application packaging wizard** captures Windows app intake metadata and saves tenant-scoped packaging drafts. It is not yet an installer upload, malware scan, signature verification, Win32 Content Prep Tool conversion, install test or Intune publishing pipeline.
 - See `docs/IOS-IPADOS-APP-MANAGEMENT-GUIDE.md` and `docs/APPLICATION-PACKAGING-WIZARD-GUIDE.md` for current boundaries and the next infrastructure requirements.
+
+
+## Secure Windows packaging worker
+
+The MSI/EXE packaging wizard now has a private quarantine upload and queue-backed worker workflow. See [Secure Windows Packaging Worker](docs/SECURE-WINDOWS-PACKAGING-WORKER.md) for Azure storage configuration, worker prerequisites, Defender scanning, Microsoft Win32 Content Prep Tool setup, optional isolated Hyper-V testing, deployment order and current limitations. The worker must be deployed separately; API deployment alone does not enable packaging.

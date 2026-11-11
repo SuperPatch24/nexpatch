@@ -48,7 +48,7 @@ app.http('usersInvite', {
       textContent: `You have been invited to NexpatchOnline as ${role}. Sign in at ${invitationUrl} using ${email}. Access activates when you sign in with this exact Microsoft account.`,
       tags: ['nexpatchonline', 'user-invitation']
     });
-    return { ...shape(row), emailSent: !!emailResult.sent, emailReason: emailResult.sent ? '' : (emailResult.reason || 'email-not-configured') };
+    return { ...shape(row), emailSent: !!emailResult.sent, emailReason: emailResult.sent ? '' : (emailResult.reason || 'email-not-configured'), emailStatus: emailResult.status || null };
   }, 'owner')
 });
 

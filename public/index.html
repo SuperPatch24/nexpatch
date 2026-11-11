@@ -513,12 +513,12 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     </div>
     <a href="#overview" data-view="overview">Overview</a>
     <div class="nav-h">Apps</div>
-    <a href="#catalog" data-view="catalog">Catalog and updates <span class="count" id="navCount"></span></a>
+    <a href="#catalog" data-view="catalog">Catalog <span class="count" id="navCount"></span></a>
     <a href="#discovery" data-view="discovery">Discovery</a>
     <a href="#deployments" data-view="deployments">Deployments</a>
     <a href="#reports" data-view="reports">App reports</a>
     <a href="#apple" data-view="apple">Apple apps & devices</a>
-    <a href="#packaging" data-view="packaging">Application packaging</a>
+    <a href="#packaging" data-view="packaging">Application packaging wizard</a>
     <div class="nav-h">App Control</div>
     <a href="#app-control" data-view="app-control" data-actab-link="activity">Activity</a>
     <a href="#ac-base" data-view="app-control" data-actab-link="base">Base policy</a>
@@ -526,10 +526,11 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <a href="#ac-reports" data-view="app-control" data-actab-link="reports">App Control reports</a>
     <div class="nav-h">Organization</div>
     <a href="#users" data-view="users">Users and access</a>
-    <a href="#connect" data-view="connect">Connect to Intune</a>
+    <a href="#connect" data-view="connect" data-contab-link="setup">Connect to Intune</a>
     <div class="nav-h">Resources</div>
     <a href="#documentation" data-view="documentation">Documentation and guides</a>
     <a href="#requests" data-view="requests">Request an application</a>
+    <a href="#remediation" data-view="remediation">Remediation scripts</a>
     <div class="foot">
       <a href="/admin/" id="adminCenterLink" hidden style="font-size:12px">Open Admin Center ↗</a>
       <div class="user"><span class="avatar" id="userAvatar"></span><div class="who"><b id="userName"></b><span id="userEmail"></span></div></div>
@@ -585,8 +586,8 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           <button type="button" data-filter="vuln">Vulnerable</button>
           <button type="button" data-filter="auto">Auto-publish</button>
         </div>
-        <button class="btn primary" type="button" id="addAppBtn" style="margin-left:auto">Add app</button>
-        <button class="btn" type="button" id="runbookBtn">Get auto-publish runbook</button>
+        <a class="btn primary" href="#packaging" data-view="packaging" style="margin-left:auto">Package a new app</a>
+        
       </div>
       <div class="table-wrap">
         <table>
@@ -600,7 +601,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <!-- DISCOVERY -->
     <section class="view" id="view-discovery" aria-labelledby="discTitle">
       <h1 id="discTitle">Discovery</h1>
-      <p class="lede">Apps found on your devices that NexpatchOnline isn’t managing yet. Anything with a winget package can be patched. Add it to the catalog in one click.</p>
+      <p class="lede">Apps found on your devices that NexpatchOnline isn’t managing yet. Select an app for review and use the Application Packaging Wizard for any new installer or custom package.</p>
       <div class="stats" id="discStats"></div>
       <div class="toolbar">
         <input class="search" id="discSearch" type="search" placeholder="Search discovered apps" aria-label="Search discovered apps">
@@ -611,7 +612,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           <button type="button" data-dfilter="hidden">Microsoft, OEM, ignored</button>
           <button type="button" data-dfilter="all">All</button>
         </div>
-        <button class="btn primary" type="button" id="discAddAll" style="margin-left:auto">Add all known matches</button>
+        <a class="btn primary" href="#packaging" data-view="packaging" style="margin-left:auto">Open packaging wizard</a>
       </div>
       <div class="table-wrap"><table class="compact"><thead><tr><th>App</th><th>Installs</th><th>Versions</th><th>Status</th><th>Winget package</th><th></th></tr></thead><tbody id="discBody"></tbody></table></div>
       <p class="small" id="discSource" style="margin-top:12px"></p>
@@ -664,10 +665,6 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <div class="panel-head"><div><h2>Rollout history</h2><p class="small" style="margin:0">Every update you published and how far it has rolled out.</p></div><button class="btn small" type="button" data-rep="deployments">Copy for Excel</button></div>
         <div class="table-wrap"><table class="compact" id="repDeployments"></table></div>
       </div>
-      <div class="panel">
-        <div class="panel-head"><div><h2>App Control activity</h2><p class="small" style="margin:0" id="repACStats"></p></div><button class="btn small" type="button" data-rep="appcontrol">Copy for Excel</button></div>
-        <div class="table-wrap"><table class="compact" id="repAppControl"></table></div>
-      </div>
     </section>
 
     <!-- APPLE MANAGEMENT -->
@@ -686,21 +683,35 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <!-- APPLICATION PACKAGING WIZARD -->
     <section class="view" id="view-packaging" aria-labelledby="packTitle">
       <h1 id="packTitle">Application packaging wizard</h1>
-      <p class="lede">Prepare a Windows application for a secure Win32 packaging workflow. This first wizard saves an intake draft and packaging instructions; it does not upload, execute, scan or convert installers.</p>
+      <p class="lede">Prepare a Windows MSI or EXE for secure quarantine, security checks and conversion by a dedicated Windows worker. Installer execution is never performed by the Nexpatch API service.</p>
       <div class="grid2" style="align-items:start">
         <form class="panel" id="packWizard">
-          <div class="panel-head"><div><span class="eyebrow">Step 1 of 3 · Application intake</span><h2>Application details</h2></div><span class="pill p-neutral">Draft workflow</span></div>
+          <div class="panel-head"><div><span class="eyebrow">Step 1 of 4 · Application intake & secure upload</span><h2>Application details</h2></div><span class="pill p-neutral">Quarantine workflow</span></div>
           <label class="field"><span>Application name *</span><input id="pkName" required maxlength="160" placeholder="Example Business App"></label>
           <div class="grid2"><label class="field"><span>Publisher</span><input id="pkPublisher" maxlength="160"></label><label class="field"><span>Version</span><input id="pkVersion" maxlength="80" placeholder="1.0.0"></label></div>
-          <div class="grid2"><label class="field"><span>Installer type *</span><select id="pkType"><option value="msi">MSI</option><option value="exe">EXE</option><option value="msix">MSIX</option><option value="appx">APPX</option><option value="intunewin">Existing .intunewin</option></select></label><label class="field"><span>Architecture</span><select id="pkArch"><option value="unknown">Not sure</option><option value="x64">x64</option><option value="x86">x86</option><option value="arm64">ARM64</option><option value="all">Universal</option></select></label></div>
-          <label class="field"><span>Official HTTPS installer URL</span><input id="pkUrl" type="url" placeholder="https://vendor.example/download"></label>
-          <label class="field"><span>Silent install command</span><input id="pkInstall" placeholder="e.g. msiexec /i app.msi /qn /norestart"></label>
-          <label class="field"><span>Uninstall command</span><input id="pkUninstall" placeholder="e.g. msiexec /x {PRODUCT-CODE} /qn"></label>
-          <label class="field"><span>Detection rule / notes</span><textarea id="pkDetect" rows="2" placeholder="MSI product code, file path + version, registry key..."></textarea></label>
+          <div class="grid2"><label class="field"><span>Installer type *</span><select id="pkType"><option value="msi">MSI</option><option value="exe">EXE</option></select></label><label class="field"><span>Architecture</span><select id="pkArch"><option value="unknown">Not sure</option><option value="x64">x64</option><option value="x86">x86</option><option value="arm64">ARM64</option><option value="all">Universal</option></select></label></div>
+          <label class="field"><span>Optional official HTTPS installer URL</span><input id="pkUrl" type="url" placeholder="https://vendor.example/download"></label>
+          <label class="field"><span>Installer file (MSI or EXE, max 2 GB) *</span><input id="pkFile" type="file" accept=".msi,.exe,application/octet-stream" required><span class="small">Uploaded directly to private quarantine storage using a short-lived write link.</span></label>
+          <label class="field"><span>Silent install command (EXE test)</span><input id="pkInstall" placeholder="e.g. /S or /quiet"></label>
+          <label class="field"><span>Silent uninstall command (EXE test)</span><input id="pkUninstall" placeholder="e.g. C:\Program Files\Example\uninstall.exe /S"></label>
+          <h3>Detection configuration</h3>
+          <div class="grid2"><label class="field"><span>Detection method</span><select id="pkDetectType"><option value="auto">Recommend automatically</option><option value="msi">MSI product code</option><option value="file">File or folder exists</option><option value="file-version">File version</option><option value="registry">Registry key/value</option><option value="script">Custom detection script (record only)</option></select></label><label class="field"><span>Detection path / product code</span><input id="pkDetectPath" placeholder="Product code, file path or registry path"></label></div>
+          <label class="field"><span>Detection value / version</span><input id="pkDetectValue" placeholder="Expected version, registry value or data"></label>
+          <label class="field"><span>Detection notes</span><textarea id="pkDetect" rows="2" placeholder="Additional detection logic and validation notes"></textarea></label>
+          <h3>Installation behavior</h3>
+          <div class="grid2"><label class="field"><span>Install context</span><select id="pkContext"><option value="system">System</option><option value="user">User</option><option value="either">Either / validate</option></select></label><label class="field"><span>Restart behavior</span><select id="pkRestart"><option value="suppress">Suppress restart</option><option value="allow">Allow restart</option><option value="app-restart">Determine behavior from installer</option><option value="force">Force restart (review required)</option></select></label></div>
+          <label class="field"><span>Return codes and exit-code mapping</span><textarea id="pkReturnCodes" rows="2" placeholder="0=success; 3010=soft reboot; 1641=hard reboot"></textarea></label>
+          <h3>Dependencies and replacement</h3>
+          <label class="field"><span>Dependencies (app names / required versions)</span><textarea id="pkDependencies" rows="2" placeholder="Prerequisite runtimes, supporting applications, order of installation"></textarea></label>
+          <label class="field"><span>Supersedence / upgrade relationship</span><textarea id="pkSupersedence" rows="2" placeholder="Which app/version this package replaces; uninstall previous version? "></textarea></label>
+          <h3>Deployment planning</h3>
+          <div class="grid2"><label class="field"><span>Deployment schedule</span><select id="pkSchedule"><option value="manual">Manual approval and deployment</option><option value="maintenance">Next maintenance window</option><option value="date">Schedule date/time after approval</option></select></label><label class="field"><span>Deployment rings</span><select id="pkRings"><option value="pilot-early-broad">Pilot → Early adopters → Broad</option><option value="pilot-broad">Pilot → Broad</option><option value="single">Single approved group</option></select></label></div>
+          <label class="field"><span>Notifications</span><select id="pkNotifications"><option value="owner-admin">Notify owner and admins on status changes</option><option value="failure-only">Notify on failures only</option><option value="none">No notifications</option></select></label>
+          <label class="field"><span>Reporting requirements</span><textarea id="pkReporting" rows="2" placeholder="Required success/failure metrics, deadline, compliance reporting, export needs"></textarea></label>
           <label class="field"><span>Additional requirements</span><textarea id="pkNotes" rows="3" placeholder="Dependencies, reboot behavior, license requirements, install context..."></textarea></label>
-          <button class="btn primary" type="submit">Save packaging draft</button><span id="pkStatus" class="small" role="status"></span>
+          <button class="btn primary" type="submit">Upload securely & queue packaging</button><span id="pkStatus" class="small" role="status"></span>
         </form>
-        <div class="panel"><h2>Secure packaging pipeline</h2><ol class="steps"><li>Private installer intake and file-size validation</li><li>SHA-256 and Authenticode signature inspection</li><li>Malware scanning and publisher verification</li><li>Silent install / uninstall and detection review</li><li>Official Microsoft Win32 Content Prep Tool on an isolated Windows worker</li><li>Install / uninstall testing, approval and publication</li></ol><p class="small">The isolated Windows worker, malware scanner, upload storage and actual .intunewin conversion are not connected in this release. Do not treat a saved draft as a tested or deployable package.</p><h3 style="margin-top:22px">Saved packaging drafts</h3><div class="table-wrap"><table class="compact"><thead><tr><th>Application</th><th>Type</th><th>Status</th><th>Created</th></tr></thead><tbody id="pkDraftsBody"><tr><td colspan="4" class="empty">No drafts saved yet.</td></tr></tbody></table></div></div>
+        <div class="panel"><h2>Secure packaging pipeline</h2><ol class="steps"><li>Private, short-lived upload to quarantine storage</li><li>Server-side SHA-256 verification and Authenticode signature check</li><li>Microsoft Defender Antivirus scan on the dedicated Windows worker</li><li>Official Microsoft Win32 Content Prep Tool conversion</li><li>Isolated install / uninstall test VM (separate test stage)</li><li>Company approval before publication or deployment</li></ol><p class="small">Conversion requires the separately deployed Windows worker, Defender Antivirus, private Azure Blob Storage and Queue Storage. A converted package is still not tested or approved until its isolated test and customer approval are recorded.</p><h3 style="margin-top:22px">Packaging jobs</h3><div class="table-wrap"><table class="compact"><thead><tr><th>Application</th><th>Stage</th><th>Security</th><th>Test</th><th>Artifact</th></tr></thead><tbody id="pkJobsBody"><tr><td colspan="5" class="empty">No packaging jobs yet.</td></tr></tbody></table></div><h3 style="margin-top:22px">Saved packaging drafts</h3><div class="table-wrap"><table class="compact"><thead><tr><th>Application</th><th>Type</th><th>Status</th><th>Created</th></tr></thead><tbody id="pkDraftsBody"><tr><td colspan="4" class="empty">No drafts saved yet.</td></tr></tbody></table></div></div>
       </div>
     </section>
 
@@ -728,8 +739,8 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       </div>
       <div class="panel" id="acReportsPanel" hidden>
         <div class="panel-head"><div><h2>App Control reports</h2><p class="small" style="margin:0" id="acRepSub"></p></div><button class="btn small" type="button" data-rep="acTop">Copy for Excel</button></div>
-        <div class="stats" id="acRepStats"></div>
-        <div class="panel" style="margin-top:16px"><h2>Administrator permission review checklist</h2><p class="small">Preparation checklist only. Confirm the exact Microsoft Graph permissions shown in your tenant's consent screen and the current release permission matrix before granting consent. Optional integrations must remain off until separately approved.</p><div class="grid2"><div><h3>Core Intune services</h3><label><input type="checkbox"> Read managed devices and inventory</label><label><input type="checkbox"> Read discovered applications and versions</label><label><input type="checkbox"> Read app catalog and assignments</label><label><input type="checkbox"> Create/update Intune apps (deployment feature)</label><label><input type="checkbox"> Manage app assignments (only if enabled)</label></div><div><h3>Optional security and automation</h3><label><input type="checkbox"> App Control policy read / write (optional)</label><label><input type="checkbox"> Defender data access (optional, separately scoped)</label><label><input type="checkbox"> PowerShell remediation assignment (not enabled yet)</label><label><input type="checkbox"> Group lookup for deployment targeting</label><label><input type="checkbox"> Pilot group and rollback approved</label></div></div><p class="small">These are feature categories, not permission names or proof of consent. The app's actual configured Application permissions and the Microsoft consent dialog are authoritative. Do not grant Defender or script execution permissions unless you enable those integrations.</p></div>
+        <div class="stats" id="acRepStats"></div><div class="panel" style="margin-top:16px"><div class="panel-head"><h3>Event-level App Control report</h3><button class="btn small" type="button" data-rep="appcontrol">Copy for Excel</button></div><div class="table-wrap"><table class="compact" id="repAppControl"></table></div></div>
+
       <div class="grid2" style="margin-top:0">
           <div><h3>Most blocked or audited apps</h3><div class="table-wrap"><table class="compact" id="acRepTop"></table></div></div>
           <div><h3>Top publishers</h3><div class="table-wrap"><table class="compact" id="acRepPub"></table></div></div>
@@ -923,11 +934,14 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       </div>
     </section>
 
+    <!-- REMEDIATION SCRIPTS -->
+    <section class="view" id="view-remediation" aria-labelledby="remTitle"><h1 id="remTitle">Remediation scripts</h1><p class="lede">Customer-facing library of approved remediation guidance. Scripts are read-only here; no script is executed or assigned automatically.</p><div class="panel"><div class="panel-head"><h2>Available scripts</h2><button class="btn small" id="remPortalRefresh" type="button">Refresh</button></div><div id="remPortalList" class="todo"><li class="small">Loading approved scripts…</li></div><p class="small">Only scripts that pass platform review and customer authorization should appear here. Execution, assignment and per-device result reporting are not enabled in this release.</p></div></section>
+
     <!-- CONNECT -->
     <section class="view" id="view-connect" aria-labelledby="conTitle">
-      <h1 id="conTitle">Connect to Intune</h1>
+      <h1 id="conTitle">Connect to Intune</h1><nav class="actabs" aria-label="Intune connection"><a href="#connect" data-contab="setup">Connection setup</a><a href="#connect-permissions" data-contab="permissions">Required permissions</a></nav>
       <p class="lede">Approve NexpatchOnline for your organization, then set the tenant details the PowerShell scripts use. NexpatchOnline never sees your password.</p>
-      <div class="panel" style="margin-bottom:20px">
+      <div id="connectSetupPanel"><div class="panel" style="margin-bottom:20px">
         <div class="panel-head"><div><h2>Approve NexpatchOnline for your organization</h2><p class="small" style="margin:0">An administrator who can grant tenant-wide consent approves once. You can remove NexpatchOnline at any time in Entra ID under Enterprise applications.</p></div><span class="chip" id="consentState"></span></div>
         <div id="consentMsg"></div>
         <button class="btn primary" type="button" id="consentBtn">Approve for my organization</button>
@@ -950,7 +964,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
             <li><b>Add delegated Graph permissions.</b><br><span class="small">DeviceManagementApps.ReadWrite.All, DeviceManagementConfiguration.ReadWrite.All, DeviceManagementRBAC.Read.All, Group.Read.All. Then approve NexpatchOnline again above.</span></li>
             <li><b>Prepare the packaging machine.</b><br><span class="small">Windows with winget, then run: Install-Module IntuneWin32App, Microsoft.Graph.Authentication -Scope CurrentUser</span></li>
             <li><b>Import your real inventory</b> below so the catalog shows your fleet.</li>
-            <li><b>Schedule the auto-publish runbook</b> from the catalog to keep apps current every day.</li>
+            <li><b>Review deployment safeguards</b> and follow the platform-approved publishing runbook after package validation.</li>
           </ol>
         </div>
       </div>
@@ -961,7 +975,8 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <div id="invCodeWrap" hidden><div class="code"><button class="btn small copy" type="button" data-copy="invCode">Copy</button><pre id="invCode"></pre></div></div>
         <textarea id="invImport" style="margin-top:12px" placeholder='[{"displayName":"Google Chrome","version":"141.0.7390.123","deviceCount":120}, …]'></textarea>
         <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="invImportBtn">Import inventory</button><button class="btn ghost" type="button" id="resetBtn">Reset to sample data</button></div>
-      </div>
+      </div></div>
+      <div id="connectPermissionsPanel" hidden class="panel"><h2>Required permissions checklist</h2><p class="small">Review each permission with your Entra administrator. The checkboxes are a manual checklist, not a live consent verification.</p><div class="grid2"><div><h3>Core read access</h3><label><input type="checkbox"> DeviceManagementManagedDevices.Read.All — managed device inventory</label><label><input type="checkbox"> DeviceManagementApps.Read.All — app inventory and app records</label><label><input type="checkbox"> Group.Read.All — deployment group lookup</label><label><input type="checkbox"> User.Read — signed-in user profile</label></div><div><h3>Feature-specific write access</h3><label><input type="checkbox"> DeviceManagementApps.ReadWrite.All — create/update apps</label><label><input type="checkbox"> DeviceManagementConfiguration.ReadWrite.All — policy management features</label><label><input type="checkbox"> DeviceManagementRBAC.Read.All — Intune role review</label><label><input type="checkbox"> Additional App Control / Defender permissions — only when enabled</label></div></div><p class="small">The precise permission type (delegated or application), endpoint requirements and admin-consent need must be checked against the current release matrix and Entra consent dialog. Do not grant optional write access pre-emptively.</p></div>
     </section>
   </main>
 </div>
@@ -1661,13 +1676,14 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','catalog','discovery','deployments','reports','apple','packaging','app-control','users','connect','documentation','requests'];
+const VIEWS=['overview','catalog','discovery','deployments','reports','apple','packaging','app-control','users','connect','documentation','requests','remediation'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
 let AC_TAB='activity';
 const AC_TAB_HASH={'app-control':'activity','ac-base':'base','ac-supplemental':'supplemental','ac-reports':'reports'};
-function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? 'app-control' : h0; if(AC_TAB_HASH[h0]) AC_TAB=AC_TAB_HASH[h0];
+const CONNECT_HASH={'connect':'setup','connect-permissions':'permissions'};
+function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? 'app-control' : (CONNECT_HASH[h0] ? 'connect' : h0); if(AC_TAB_HASH[h0]) AC_TAB=AC_TAB_HASH[h0]; if(CONNECT_HASH[h0]){const perm=CONNECT_HASH[h0]==='permissions'; if($('#connectSetupPanel'))$('#connectSetupPanel').hidden=perm; if($('#connectPermissionsPanel'))$('#connectPermissionsPanel').hidden=!perm;}
   if(h==='home' || h==='login' || !SESSION){ showPublic(h==='login' || (!SESSION && VIEWS.includes(h)) ? 'login' : 'home'); return; }
   $('#public').hidden=true; $('#app').hidden=false; document.body.classList.remove('is-public');
   const v = VIEWS.includes(h) ? h : 'overview';
@@ -1676,7 +1692,7 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='apple') loadApple(); if(v==='packaging') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='apple') loadApple(); if(v==='packaging') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Owner'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
@@ -1896,7 +1912,7 @@ $('#catBody').addEventListener('change', e=>{ const id=e.target.dataset.auto; if
 $('#catBody').addEventListener('click', e=>{ const b=e.target.closest('[data-pub]'); if(b) openPublish(b.dataset.pub); });
 const addDlg=$('#addDlg');
 function openAddDialog(pre){ pre=pre||{}; $$('#addDlg input').forEach(i=>{ if(i.type==='checkbox') i.checked=false; else i.value=''; }); $('#aName').value=pre.name||''; $('#aWinget').value=pre.winget||''; $('#aSource').value=pre.source||'winget'; $('#aStoreFamily').value=pre.storeProductId||pre.storeFamily||''; $('#aStoreUrl').value=pre.appStoreUrl||''; $('#aVendor').value=pre.vendor||''; $('#aReg').value=pre.reg||''; $('#aProcs').value=pre.procs||''; $('#aExe').value=pre.exe||''; $('#aLatest').value=pre.latest||''; $('#aErr').textContent=''; addDlg.showModal(); $('#aName').focus(); }
-$('#addAppBtn').addEventListener('click',()=>openAddDialog());
+
 $('#aCancel').addEventListener('click',()=>addDlg.close());
 $('#aSave').addEventListener('click',()=>{ const v=id=>$('#'+id).value.trim(); const name=v('aName'), winget=v('aWinget'), source=v('aSource'), storeProductId=v('aStoreFamily');
   if(!name||(source==='winget'&&!winget)||(source==='msstore'&&!/^[A-Z0-9]{8,16}$/i.test(storeProductId))){ $('#aErr').textContent=source==='msstore'?'Add a valid Microsoft Store Product ID.':'Add a name and a WinGet ID. Find it with: winget search "'+(name||'app name')+'"'; return; }
@@ -1906,7 +1922,7 @@ $('#aSave').addEventListener('click',()=>{ const v=id=>$('#'+id).value.trim(); c
   S.apps.push({id:'c-'+source+'-'+packageKey.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name,vendor:v('aVendor'),winget:source==='winget'?winget:'',source,storeProductId,appStoreUrl:v('aStoreUrl')||(source==='msstore'?'https://apps.microsoft.com/detail/'+storeProductId:''),verificationStatus:'candidate',deployable:false,storeFamily:'',reg:v('aReg')||name,procs:v('aProcs').split(',').map(s=>s.trim().replace(/\.exe$/i,'')).filter(Boolean),exe:v('aExe'),latest:v('aLatest')||(source==='msstore'?'Store listing':'From winget'),fleet:[0,0,0,0],cves:0,custom:true,unsigned:$('#aUnsigned').checked});
   fleetFromInventory(S.apps[S.apps.length-1]); save(); addDlg.close(); renderNav(); renderCatalog(); if(location.hash==='#discovery') renderDiscovery(); toast(name+' added to the catalog'); });
 $('#catBody').addEventListener('click', e=>{ const b=e.target.closest('[data-del]'); if(!b) return; const a=S.apps.find(x=>x.id===b.dataset.del); if(!a||!confirm('Remove '+a.name+' from the catalog?')) return; S.apps=S.apps.filter(x=>x.id!==a.id); delete S.auto[a.id]; S.policy.pubs=S.policy.pubs.filter(p=>p!==a.id); save(); renderNav(); renderCatalog(); toast(a.name+' removed from the catalog'); });
-$('#runbookBtn').addEventListener('click', ()=>showCode('Auto-publish runbook', 'Checks winget for every app with auto-publish on and publishes anything newer than what Intune has. Schedule it daily with an app registration secret.', runbookScript()));
+
 
 /* ---------- Publish dialog ---------- */
 let current=null;
@@ -2252,6 +2268,8 @@ function renderACReports(){
   const reports=ev.reduce((n,e)=>n+(e.deviceCount||0),0);
   $('#acRepSub').textContent = liveMode() ? 'From your live App Control events.' : 'From sample or imported events in this browser.';
   $('#acRepStats').innerHTML=[[ev.length,'apps seen'],[blocked,'blocked'],[audited,'audited only'],[needs,'need a decision'],[allowed,'allowed'],[reports,'device reports']].map(x=>'<div class="stat"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('');
+  $('#repAppControl').innerHTML=thead(['File / app','Path','Action','Publisher','Devices','Decision'])+'<tbody>'+(ev.length?ev.map(e=>'<tr><td><b>'+esc(e.file)+'</b></td><td class="small" style="overflow-wrap:anywhere">'+esc(e.path||'')+'</td><td>'+esc(e.action||'Audited')+'</td><td>'+esc(e.publisher||'Not signed')+'</td><td>'+(e.deviceCount||0)+'</td><td>'+esc((AC_DEC[e.decision]||AC_DEC[''])[0])+'</td></tr>').join(''):emptyRow(6,'No App Control events yet.'))+'</tbody>';
+  REP.appcontrol={head:['File / app','Path','Action','Publisher','Devices','Decision'],rows:ev.map(e=>[e.file,e.path,e.action,e.publisher||'Not signed',e.deviceCount||0,(AC_DEC[e.decision]||AC_DEC[''])[0]])};
   const top=[...ev].sort((a,b)=>(b.deviceCount||0)-(a.deviceCount||0)).slice(0,10);
   REP.acTop={head:['App','Publisher','Status','Devices','Decision'],rows:top.map(e=>[e.file,e.publisher||'Not signed',e.action,e.deviceCount||0,(AC_DEC[e.decision]||AC_DEC[''])[0]])};
   $('#acRepTop').innerHTML=thead(['App','Status','Devices'])+'<tbody>'+(top.length?top.map(e=>'<tr><td><b>'+esc(e.file)+'</b><span class="sub">'+esc(e.publisher||'Not signed')+'</span></td><td><span class="pill '+(e.action==='blocked'?'p-vuln':'p-upd')+'">'+(e.action==='blocked'?'Blocked':'Audited')+'</span></td><td>'+(e.deviceCount||0)+'</td></tr>').join(''):emptyRow(3,'No events yet.'))+'</tbody>';
@@ -2454,8 +2472,11 @@ function renderApple(d){
 $('#appleSyncBtn').addEventListener('click',async()=>{const b=$('#appleSyncBtn');b.disabled=true;b.textContent='Syncing…';try{const r=await api('/apple/sync','POST',{});await loadApple();toast('Synced '+r.devices+' Apple devices and '+r.apps+' detected app records.');}catch(e){toast(e.message);}finally{b.disabled=false;b.textContent='Sync Apple inventory';}});
 $('#appleExcelBtn').addEventListener('click',async()=>{try{const d=await api('/apple/reports.xlsx');const raw=atob(d.base64),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:d.contentType})),a=document.createElement('a');a.href=url;a.download=d.filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Apple fleet Excel report exported.');}catch(e){toast(e.message);}});
 $('#applePrintBtn').addEventListener('click',()=>window.print());
-async function loadPackageDrafts(){ if(!liveMode()){ $('#pkStatus').textContent='Connect an active Intune tenant to save drafts.';return; } try{const d=await api('/apple/overview');const rows=d.packageDrafts||[];$('#pkDraftsBody').innerHTML=rows.length?rows.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).map(x=>'<tr><td><b>'+esc(x.name)+'</b><span class="sub">'+esc(x.publisher||'')+'</span></td><td>'+esc(x.installerType.toUpperCase())+'</td><td><span class="pill p-neutral">Draft</span></td><td>'+ (x.createdAt?fmtDate(new Date(x.createdAt)):'—')+'</td></tr>').join(''):'<tr><td colspan="4" class="empty">No drafts saved yet.</td></tr>';}catch(e){$('#pkStatus').textContent=e.message;} }
-$('#packWizard').addEventListener('submit',async e=>{e.preventDefault();try{const b={name:$('#pkName').value,publisher:$('#pkPublisher').value,version:$('#pkVersion').value,installerType:$('#pkType').value,architecture:$('#pkArch').value,sourceUrl:$('#pkUrl').value,installCommand:$('#pkInstall').value,uninstallCommand:$('#pkUninstall').value,detectionRule:$('#pkDetect').value,notes:$('#pkNotes').value};const r=await api('/packaging/drafts','POST',b);$('#pkStatus').textContent='Saved draft '+r.id+'. No installer has been packaged.';e.target.reset();await loadPackageDrafts();toast('Packaging draft saved.');}catch(err){$('#pkStatus').textContent=err.message;}});
+async function loadRemediationPortal(){const el=$('#remPortalList');if(!el)return;el.innerHTML='<li class="small">Loading approved scripts…</li>';try{const d=await api('/remediation-scripts');const rows=d.scripts||[];el.innerHTML=rows.length?rows.map(x=>'<li><b>'+esc(x.name)+'</b><span class="sub">'+esc(x.category||'General')+' · v'+esc(x.version||'1.0.0')+' — '+esc(x.description||'No description')+'</span></li>').join(''):'<li class="small">No approved remediation scripts are available yet.</li>';}catch(e){el.innerHTML='<li class="small">'+esc(e.message)+'</li>';}}
+$('#remPortalRefresh')?.addEventListener('click',loadRemediationPortal);
+async function loadPackageDrafts(){ if(!liveMode()){ $('#pkStatus').textContent='Connect an active Intune tenant to use secure packaging.';return; } try{const [d,j]=await Promise.all([api('/apple/overview'),api('/packaging/jobs')]);const rows=d.packageDrafts||[];$('#pkDraftsBody').innerHTML=rows.length?rows.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).map(x=>'<tr><td><b>'+esc(x.name)+'</b><span class="sub">'+esc(x.publisher||'')+'</span></td><td>'+esc(x.installerType.toUpperCase())+'</td><td><span class="pill p-neutral">'+esc(x.status||'Draft')+'</span></td><td>'+ (x.createdAt?fmtDate(new Date(x.createdAt)):'—')+'</td></tr>').join(''):'<tr><td colspan="4" class="empty">No drafts saved yet.</td></tr>';const jobs=j.jobs||[];$('#pkJobsBody').innerHTML=jobs.length?jobs.map(x=>'<tr><td><b>'+esc(x.name)+'</b><span class="sub">'+esc(x.fileName||'')+'</span></td><td>'+esc(x.stage||x.status)+'</td><td>'+esc((x.scanStatus||'pending')+' / '+(x.signatureStatus||'pending'))+'</td><td>'+esc(x.testStatus||'not run')+'</td><td>'+(x.artifactName?'<button class=\"btn small\" type=\"button\" data-package-artifact=\"'+esc(x.id)+'\">Download</button>':'—')+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">No packaging jobs yet.</td></tr>';}catch(e){$('#pkStatus').textContent=e.message;} }
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-package-artifact]');if(!b)return;try{const r=await api('/packaging/jobs/'+encodeURIComponent(b.dataset.packageArtifact)+'/artifact');window.open(r.url,'_blank','noopener');}catch(err){toast(err.message);}});
+$('#packWizard').addEventListener('submit',async e=>{e.preventDefault();const btn=e.target.querySelector('button[type=submit]'),file=$('#pkFile').files[0];if(!file){$('#pkStatus').textContent='Choose an MSI or EXE file.';return;}btn.disabled=true;try{const b={name:$('#pkName').value,publisher:$('#pkPublisher').value,version:$('#pkVersion').value,installerType:$('#pkType').value,architecture:$('#pkArch').value,sourceUrl:$('#pkUrl').value,installCommand:$('#pkInstall').value,uninstallCommand:$('#pkUninstall').value,detectionRule:$('#pkDetect').value,detectionType:$('#pkDetectType').value,detectionPath:$('#pkDetectPath').value,detectionValue:$('#pkDetectValue').value,installContext:$('#pkContext').value,restartBehavior:$('#pkRestart').value,returnCodes:$('#pkReturnCodes').value,dependencies:$('#pkDependencies').value,supersedence:$('#pkSupersedence').value,deploymentSchedule:$('#pkSchedule').value,deploymentRings:$('#pkRings').value,notificationSettings:$('#pkNotifications').value,reportingNotes:$('#pkReporting').value,notes:$('#pkNotes').value};const draft=await api('/packaging/drafts','POST',b);$('#pkStatus').textContent='Preparing private upload…';const session=await api('/packaging/drafts/'+encodeURIComponent(draft.id)+'/upload-session','POST',{fileName:file.name,fileSize:file.size});const up=await fetch(session.uploadUrl,{method:'PUT',headers:session.headers,body:file});if(!up.ok)throw new Error('Private installer upload failed ('+up.status+').');$('#pkStatus').textContent='Verifying upload and queueing Windows worker…';const queued=await api('/packaging/drafts/'+encodeURIComponent(draft.id)+'/finalize-upload','POST',{});$('#pkStatus').textContent='Queued job '+queued.jobId+'. SHA-256: '+queued.sha256; e.target.reset();await loadPackageDrafts();toast('Installer securely uploaded and queued.');}catch(err){$('#pkStatus').textContent=err.message;}finally{btn.disabled=false;}});
 
 /* ---------- Discovery ---------- */
 const KNOWN=[
@@ -2541,27 +2562,21 @@ function renderDiscovery(){
   $('#discBody').innerHTML = list.length ? list.map(r=>{ const st=r.c.st, pill=DPILL[st]; const vs=Object.keys(r.versions).sort((a,b)=>cmpVer(b,a)); const key=esc(r.key);
     const pkg= st==='known' ? esc(r.c.k.w)+(r.c.k.t?'<span class="sub" style="color:var(--amber)">'+esc(r.c.k.t)+'</span>':'') : st==='matched' ? esc(r.c.m.wingetId)+'<span class="sub">Lookup match: '+esc(r.c.m.wingetName||r.c.m.wingetId)+'</span>' : st==='catalog' ? esc(r.c.app.winget) : '<span class="small">None</span>';
     let act='';
-    if(st==='known'||st==='matched') act='<button class="btn small primary" type="button" data-dadd="'+key+'">Add to catalog</button><button class="btn small ghost" type="button" data-dign="'+key+'">Ignore</button>';
-    else if(st==='unknown') act='<button class="btn small" type="button" data-dadd="'+key+'">Add manually</button><button class="btn small ghost" type="button" data-dign="'+key+'">Ignore</button>';
+    if(st==='known'||st==='matched') act='<a class="btn small primary" href="#packaging" data-view="packaging">Review in packaging wizard</a><button class="btn small ghost" type="button" data-dign="'+key+'">Ignore</button>';
+    else if(st==='unknown') act='<a class="btn small" href="#packaging" data-view="packaging">Open packaging wizard</a><button class="btn small ghost" type="button" data-dign="'+key+'">Ignore</button>';
     else if(st==='ignored') act='<button class="btn small ghost" type="button" data-drestore="'+key+'">Restore</button>';
     else if(st==='catalog') act='<a class="btn small ghost" href="#catalog">Open catalog</a>';
     return '<tr><td><b>'+esc(r.name)+'</b>'+(r.raws.length>1?'<span class="sub">'+r.raws.length+' entries combined</span>':'')+'</td><td>'+r.installs+'</td><td>'+vs.length+' version'+(vs.length>1?'s':'')+'<span class="sub">Newest '+esc(vs[0])+'</span></td><td><span class="pill '+pill[1]+'">'+pill[0]+'</span></td><td>'+pkg+'</td><td><div class="row" style="flex-wrap:nowrap">'+act+'</div></td></tr>'; }).join('')
     : '<tr><td colspan="6" class="empty">'+(!rows.length?'No inventory yet. Sync from Intune on the Connect page to discover your apps.':dfilter==='patch'?'Nothing new to patch. Every recognized app is already in the catalog.':'No apps in this view.')+'</td></tr>';
-  const kn=of(['known']).length; $('#discAddAll').textContent='Add all known matches ('+kn+')'; $('#discAddAll').disabled=!kn;
+
   $('#discSource').textContent = (SERVER.me && SERVER.me.tenant && SERVER.me.tenant.lastSyncAt) ? 'Synced from Intune '+new Date(SERVER.me.tenant.lastSyncAt).toLocaleString()+'. Refreshes every night, or sync now on the Connect page.' : (S.imported && S.inventory) ? 'From your imported Intune inventory. Re-import on the Connect page to refresh.' : isSampleData() ? 'Showing sample inventory. Import your Intune inventory on the Connect page to see your own apps.' : 'No inventory yet. Approve NexpatchOnline and sync from Intune on the Connect page.';
 }
 $('#discSearch').addEventListener('input', renderDiscovery);
 $$('[data-dfilter]').forEach(b=>b.addEventListener('click',()=>{ dfilter=b.dataset.dfilter; $$('[data-dfilter]').forEach(x=>x.setAttribute('aria-pressed', x===b)); renderDiscovery(); }));
-$('#discBody').addEventListener('click', e=>{ const a=e.target.closest('[data-dadd]'), ig=e.target.closest('[data-dign]'), rs=e.target.closest('[data-drestore]');
-  if(a){ const g=DISC[a.dataset.dadd]; if(!g) return; const c=g.c;
-    if(c.st==='known') openAddDialog({name:c.k.n,winget:c.k.w,vendor:c.k.v,reg:c.k.r,procs:c.k.c,exe:winPath(c.k.e)});
-    else if(c.st==='matched') openAddDialog({name:g.name,winget:c.m.wingetId,reg:g.name,latest:c.m.version});
-    else openAddDialog({name:g.name,reg:g.name}); }
+$('#discBody').addEventListener('click', e=>{ const ig=e.target.closest('[data-dign]'), rs=e.target.closest('[data-drestore]');
   if(ig){ S.discIgnored[ig.dataset.dign]=true; save(); renderDiscovery(); toast('Hidden from discovery'); }
   if(rs){ delete S.discIgnored[rs.dataset.drestore]; save(); renderDiscovery(); toast('Back in discovery'); } });
-$('#discAddAll').addEventListener('click',()=>{ const list=Object.values(DISC).filter(g=>g.c.st==='known'); if(!list.length) return; if(!confirm('Add '+list.length+' apps to the catalog? You can remove any of them later.')) return;
-  let n=0; list.forEach(g=>{ if(S.apps.some(a=>a.winget.toLowerCase()===g.c.k.w.toLowerCase())) return; const app=appFromKnown(g.c.k); S.apps.push(app); fleetFromInventory(app); n++; });
-  save(); renderNav(); renderDiscovery(); toast(n+' apps added to the catalog'); });
+
 $('#discScriptBtn').addEventListener('click',()=>{ const names=Object.values(DISC).filter(g=>g.c.st==='unknown').sort((a,b)=>b.installs-a.installs).slice(0,200).map(g=>g.name); if(!names.length){ toast('Every discovered app is already matched'); return; }
   showCode('Winget lookup script','Searches winget for '+names.length+' unmatched apps and copies the matches to your clipboard. Paste them back on the Discovery page.', discScript(names)); });
 $('#discImportBtn').addEventListener('click',()=>{ try{ let d=JSON.parse($('#discImport').value); if(!Array.isArray(d)) d=[d]; let n=0;
@@ -2603,7 +2618,7 @@ async function renderUsers(){
 $('#inviteBtn').addEventListener('click', async ()=>{
   const email=$('#inviteEmail').value.trim().toLowerCase(), role=$('#inviteRole').value;
   if(!/^[^@ ]+@[^@ ]+[.][^@ ]+$/.test(email)){ toast('Enter their work email, like name@company.com'); $('#inviteEmail').focus(); return; }
-  if(liveMode()){ try{ const invited=await api('/users','POST',{email,role}); if(!invited.emailSent){toast('Invitation saved, but email was not sent. Check Brevo configuration and sender authorization.');} else {toast('Invitation email sent to '+email);} }catch(e){ toast(e.message); return; } }
+  if(liveMode()){ try{ const invited=await api('/users','POST',{email,role}); if(!invited.emailSent){toast('Invitation saved, but email failed: '+(invited.emailReason||'unknown error')+(invited.emailStatus?' (HTTP '+invited.emailStatus+')':''));} else {toast('Invitation email sent to '+email);} }catch(e){ toast(e.message); return; } }
   else { const d=sampleUsers(); if(d.people.some(p=>p.email===email)){ toast('This person already has access or an invitation.'); return; } d.people.push({id:'i_'+Date.now(),kind:'invite',role,name:'',email,lastSeenAt:null}); d.events.unshift({at:new Date().toISOString(),actor:SESSION.email,action:'invited',detail:email+' as '+role}); save(); }
   $('#inviteEmail').value=''; if(!liveMode()) toast('Invited '+email+' as '+ROLE_NAME[role]); renderUsers();
 });

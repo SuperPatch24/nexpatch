@@ -20,3 +20,6 @@ app.http('platformRemediationSave', { methods:['PUT'], authLevel:'anonymous', ro
   const row=await putRow(TABLE,'global',id,{name,description:String(b.description||'').slice(0,1000),category:String(b.category||'General').slice(0,60),platform:String(b.platform||'Windows').slice(0,40),scriptType:'PowerShell',version:String(b.version||'1.0.0').slice(0,30),approvalStatus,content,updatedAt:new Date().toISOString(),updatedBy:user.email||user.userId},'Replace');
   await audit('global',user.email||user.userId,'saved remediation script',`${name} (${id})`); return shape(row);
 },'any') });
+
+// Customer portal: expose only approved script metadata; never expose script source or drafts.
+app.http('customerRemediationList', { methods:['GET'], authLevel:'anonymous', route:'remediation-scripts', handler:withUser(async()=>({ scripts:(await listRows(TABLE,'global',1000)).filter(r=>r.approvalStatus==='approved').map(r=>({id:r.rowKey,name:r.name||'',description:r.description||'',category:r.category||'General',version:r.version||'1.0.0'})) }),'viewer') });

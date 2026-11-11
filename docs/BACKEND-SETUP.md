@@ -219,3 +219,20 @@ Never commit `local.settings.json` or any `.pem` file (both are in `.gitignore`)
 By default, anyone in an approved organization can sign in. Each client can limit this in
 **Entra ID → Enterprise applications → NexpatchOnline → Properties → Assignment required: Yes**,
 then assign only their IT admins under **Users and groups**.
+
+## Application requests, installer storage and Admin Center
+
+The client dashboard now includes **Request an application**. Requests are stored in the `AppRequests` Azure Table, partitioned by the requesting Entra tenant. Installer files are uploaded to the private `nexpatch-request-installers` Blob container; supported extensions are MSI, MSIX, APPX, EXE, ZIP and INTUNEWIN, with a 50 MB application limit. Uploads are quarantined for review (`scanStatus=pending`) and are never executed by the service.
+
+Configure one of the following for private Blob Storage access:
+
+- `BLOB_STORAGE_CONNECTION`: storage connection string (simplest setup), or
+- `BLOB_STORAGE_URL`: `https://<storage-account>.blob.core.windows.net` plus `BLOB_STORAGE_ACCOUNT_NAME` when needed.
+
+When using managed identity, grant the Function App **Storage Blob Data Contributor** and **Storage Blob Delegator** (for user-delegation SAS) on the storage account/container. The Function App also needs its existing Table Storage data permissions. Enable Microsoft Defender for Storage malware scanning (or an equivalent controlled malware-scanning workflow) before treating uploaded installers as safe. The admin download URL is short-lived (five minutes); the admin page labels it “Download installer (scan first)”. File extension validation is not malware scanning or package validation. A support/super admin must scan the downloaded file with the approved scanner and explicitly confirm the result before setting its scan status to `clean`; unsafe files can be marked `rejected`.
+
+### Admin Center sign-in
+
+The separate Admin Center is hosted at `/admin/`. Add `https://<your-site-hostname>/admin/` as an additional **Single-page application** redirect URI on the same Entra app registration. Configure the Function App allowlists with comma-separated administrator sign-in names (UPNs) or Entra object IDs: `PLATFORM_ADMINS` for Super Admin (full access), `PLATFORM_CATALOG_MANAGERS` for catalog-only access, and `PLATFORM_SUPPORT_ADMINS` for request triage and reporting. Optionally set `PLATFORM_TENANT_ID` to restrict all platform administrators to one Entra tenant. Only allowlisted platform roles can call platform APIs; site settings and tenant-wide billing/operations remain Super Admin only. The client portal remains at `/` and continues to use organization-scoped access.
+
+The Admin Center includes request triage, shared catalog editing, live graphical summaries, Excel workbook export (Summary, Catalog, Requests and Organizations sheets), and a controlled website editor for the public hero headline/description, announcement banner and support email. It is not an arbitrary source-code editor. Deploy the updated API dependencies with `npm install` in `api/` before publishing the Functions app.

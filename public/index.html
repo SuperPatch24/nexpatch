@@ -348,6 +348,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 <div id="public" hidden>
   <!-- LANDING -->
   <div id="pub-home">
+    <div id="siteAnnouncement" hidden style="padding:12px 20px;text-align:center;background:#e8f4ef;color:#174c3b;font-weight:600"></div>
     <header class="pub-header">
       <div class="inner">
         <div class="brand">
@@ -364,9 +365,9 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 
     <section class="wrap hero" aria-labelledby="heroTitle">
       <div>
-        <p class="eyebrow">For Microsoft Intune teams</p>
+        <p class="eyebrow" id="heroEyebrow">For Microsoft Intune teams</p>
         <h1 id="heroTitle">Keep every app patched. Let only approved apps run.</h1>
-        <p class="big">NexpatchOnline finds what’s installed across your Intune devices, packages new versions, rolls them out in rings, and builds App Control policies you can actually manage.</p>
+        <p class="big" id="heroSubtitle">NexpatchOnline finds what’s installed across your Intune devices, packages new versions, rolls them out in rings, and builds App Control policies you can actually manage.</p>
         <div class="row">
           <button class="btn primary lg" type="button" data-go="login">Sign in with Microsoft</button>
           <button class="btn lg" type="button" data-demo>Explore with sample data</button>
@@ -465,7 +466,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       </div>
     </div>
 
-    <footer class="pub-foot"><div class="wrap"><span>© <span id="yr"></span> NexpatchOnline</span><span>Built for Microsoft Intune. Not affiliated with Microsoft.</span></div></footer>
+    <footer class="pub-foot"><div class="wrap"><span>© <span id="yr"></span> NexpatchOnline</span><span>Built for Microsoft Intune. Not affiliated with Microsoft. <a id="siteSupportLink" hidden></a></span></div></footer>
   </div>
 
   <!-- LOGIN -->
@@ -526,9 +527,9 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <a href="#connect" data-view="connect">Connect to Intune</a>
     <div class="nav-h">Resources</div>
     <a href="#documentation" data-view="documentation">Documentation and guides</a>
-    <div class="nav-h" id="navAdminH" hidden>NexpatchOnline admin</div>
-    <a href="#platform" data-view="platform" id="navPlatform" hidden>Catalog, clients and logs</a>
+    <a href="#requests" data-view="requests">Request an application</a>
     <div class="foot">
+      <a href="/admin/" id="adminCenterLink" hidden style="font-size:12px">Open Admin Center ↗</a>
       <div class="user"><span class="avatar" id="userAvatar"></span><div class="who"><b id="userName"></b><span id="userEmail"></span></div></div>
       <div id="tenantState">Not connected</div>
       <div class="row" style="gap:6px"><button class="theme-btn" id="themeBtn" type="button">Switch theme</button><button class="theme-btn" id="signOutBtn" type="button">Sign out</button></div>
@@ -869,6 +870,27 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       <div class="toolbar"><input class="search" id="docsSearch" type="search" placeholder="Search guides and topics" aria-label="Search documentation"><span class="small" id="docsCount"></span></div>
       <div class="grid2" style="align-items:start"><div class="panel"><h2>Browse topics</h2><div id="docsTopics" class="todo"></div></div>
         <article class="panel" id="docsArticle" aria-live="polite"><p class="eyebrow">Getting started</p><h2>Welcome to NexpatchOnline</h2><p>Select a topic to read the guide.</p></article></div>
+    </section>
+
+    <!-- APPLICATION REQUESTS -->
+    <section class="view" id="view-requests" aria-labelledby="reqTitle">
+      <h1 id="reqTitle">Request an application</h1>
+      <p class="lede">Can’t find an application in the catalog? Send our team the installer, a secure download link, or both. We’ll review it for packaging or catalog inclusion.</p>
+      <div class="grid2" style="align-items:start">
+        <form class="panel" id="appRequestForm">
+          <h2>New application request</h2>
+          <label class="field"><span>Application name *</span><input id="rqName" required maxlength="160" placeholder="e.g. Example Pro"></label>
+          <div class="grid2"><label class="field"><span>Publisher</span><input id="rqPublisher" maxlength="160"></label><label class="field"><span>Version</span><input id="rqVersion" maxlength="80" placeholder="Latest or specific version"></label></div>
+          <label class="field"><span>Application website</span><input id="rqWebsite" type="url" placeholder="https://vendor.example"></label>
+          <label class="field"><span>Installer download URL</span><input id="rqUrl" type="url" placeholder="https://... (HTTPS only)"></label>
+          <label class="field"><span>Or upload installer (max 50 MB)</span><input id="rqFile" type="file" accept=".msi,.msix,.appx,.exe,.zip,.intunewin"></label>
+          <label class="field"><span>Architecture</span><select id="rqArch"><option value="unknown">Not sure</option><option value="x64">x64</option><option value="x86">x86</option><option value="arm64">ARM64</option><option value="all">All / universal</option></select></label>
+          <label class="field"><span>Additional requirements</span><textarea id="rqNotes" rows="3" maxlength="3000" placeholder="Silent install options, licensing, detection requirements, etc."></textarea></label>
+          <div class="row"><button class="btn primary" type="submit" id="rqSubmit">Submit request</button><span class="small" id="rqStatus" role="status"></span></div>
+          <p class="small">Uploads are stored privately for review. Files are not executed automatically. Your team must complete security validation before packaging.</p>
+        </form>
+        <div class="panel"><div class="panel-head"><h2>My application requests</h2><button class="btn small" type="button" id="rqRefresh">Refresh</button></div><div class="table-wrap"><table class="compact"><thead><tr><th>Application</th><th>Status</th><th>Submitted</th></tr></thead><tbody id="rqBody"><tr><td colspan="3" class="empty">Sign in and refresh to see your requests.</td></tr></tbody></table></div></div>
+      </div>
     </section>
 
     <!-- CONNECT -->
@@ -1609,7 +1631,7 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','catalog','discovery','deployments','reports','app-control','users','connect','documentation','platform'];
+const VIEWS=['overview','catalog','discovery','deployments','reports','app-control','users','connect','documentation','requests'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
@@ -1624,7 +1646,7 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='users') renderUsers(); if(v==='platform') renderPlatform(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Owner'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
@@ -1727,7 +1749,7 @@ async function loadFromServer(){
   try{
     if(SERVER.pendingActivate){ SERVER.pendingActivate=false; await activateTenant(); CONSENT_MSG={ok:true,text:'Your organization is connected. Pulling your inventory from Intune now.'}; route(); SERVER.me=await api('/me'); await syncNow(); return; }
     SERVER.me=await api('/me');
-    $('#navPlatform').hidden=!SERVER.me.platformAdmin; $('#navAdminH').hidden=!SERVER.me.platformAdmin;
+    $('#adminCenterLink').hidden=!SERVER.me.platformAdmin;
     const t=SERVER.me.tenant;
     if(t && t.status==='active') await mergeSharedCatalog();
     if(t && t.status==='active'){
@@ -2628,6 +2650,11 @@ $('#resetBtn').addEventListener('click',()=>{ if(!confirm('Replace your catalog,
 $('#themeBtn').addEventListener('click',()=>{ const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark?'light':'dark'; try{ localStorage.setItem('nexpatch-theme', r.dataset.theme); }catch(e){} });
 try{ const t=localStorage.getItem('nexpatch-theme'); if(t) document.documentElement.dataset.theme=t; }catch(e){}
 
+const REQUEST_STATUS_LABEL={'submitted':'Submitted','under-review':'Under review','need-information':'Need information','packaging':'Packaging','testing':'Testing','approved':'Approved','published':'Published','rejected':'Rejected'};
+async function loadMyRequests(){ if(!liveMode()) { $('#rqBody').innerHTML='<tr><td colspan="3" class="empty">Connect your organization to submit and track requests.</td></tr>'; return; } try { const r=await api('/requests'); $('#rqBody').innerHTML=r.requests.length?r.requests.map(x=>'<tr><td><b>'+esc(x.name)+'</b>'+(x.fileName?'<span class="sub">Installer: '+esc(x.fileName)+' · security scan: '+esc(x.scanStatus)+'</span>':'')+(x.adminNotes?'<span class="sub">Team: '+esc(x.adminNotes)+'</span>':'')+'</td><td><span class="pill p-neutral">'+esc(REQUEST_STATUS_LABEL[x.status]||x.status)+'</span></td><td>'+new Date(x.createdAt).toLocaleDateString()+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">No requests yet.</td></tr>'; } catch(e){ $('#rqBody').innerHTML='<tr><td colspan="3" class="empty">'+esc(e.message)+'</td></tr>'; } }
+$('#rqRefresh').addEventListener('click',loadMyRequests);
+$('#appRequestForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,btn=$('#rqSubmit'),st=$('#rqStatus');btn.disabled=true;st.textContent='Submitting…';try{if(!liveMode())throw new Error('Connect your organization before submitting a request.');const r=await api('/requests','POST',{name:$('#rqName').value,publisher:$('#rqPublisher').value,version:$('#rqVersion').value,website:$('#rqWebsite').value,downloadUrl:$('#rqUrl').value,architecture:$('#rqArch').value,notes:$('#rqNotes').value});const file=$('#rqFile').files[0];if(file){if(file.size>50*1024*1024)throw new Error('Installer files must be 50 MB or smaller.');const acct=PCA.getActiveAccount();const token=(await PCA.acquireTokenSilent({scopes:[API_SCOPE],account:acct})).accessToken;const up=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/requests/'+encodeURIComponent(r.request.id)+'/file',{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream','X-File-Name':encodeURIComponent(file.name)},body:file});const out=await up.json().catch(()=>({}));if(!up.ok)throw new Error(out.error||'Installer upload failed.');}f.reset();st.textContent='Request submitted. Your team will review it.';await loadMyRequests();}catch(err){st.textContent=err.message;}finally{btn.disabled=false;}});
+if(CFG.apiBaseUrl){fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/site-content').then(r=>r.ok?r.json():null).then(d=>{if(d){if(d.announcement){const n=$('#siteAnnouncement');n.textContent=d.announcement;n.hidden=false;}if(d.heroTitle)$('#heroTitle').textContent=d.heroTitle;if(d.heroSubtitle)$('#heroSubtitle').textContent=d.heroSubtitle;if(d.supportEmail){const a=$('#siteSupportLink');a.href='mailto:'+d.supportEmail;a.textContent='Contact support';a.hidden=false;}}}).catch(()=>{});}
 $('#salesForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,st=$('#salesStatus'),btn=f.querySelector('[type=submit]');st.textContent='Sending…';btn.disabled=true;try{if(!CFG.apiBaseUrl)throw new Error('Sales enquiries are not configured on this site yet.');const data=Object.fromEntries(new FormData(f).entries());data.consent=f.elements.consent.checked;const res=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/sales/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const out=await res.json().catch(()=>({}));if(!res.ok)throw new Error(out.error||'Could not send your enquiry.');f.reset();st.textContent='Thank you. Your enquiry has been received.';}catch(err){st.textContent=err.message;}finally{btn.disabled=false;}});
 
 initAuth().catch(()=>{}).finally(()=>{ route(); loadFromServer(); });

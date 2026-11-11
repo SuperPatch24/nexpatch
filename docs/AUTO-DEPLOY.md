@@ -51,15 +51,13 @@ Repository → **Settings → Secrets and variables → Actions**:
 Repository → **Actions → Deploy backend → Run workflow**. A green tick means the backend deployed.
 From then on, any change under `api/` that reaches `main` deploys automatically.
 
-## Platform administrators
+## Platform administrator roles
 
-The **Platform admin** page (shared app catalog, list of organizations) is shown to the accounts in the
-`PLATFORM_ADMINS` app setting:
+The separate Admin Center is available at `/admin/`. Add that URL as a Single-page application redirect URI in Entra ID. Configure one or more comma-separated UPNs or object IDs in the Function App settings:
 
-```bash
-az functionapp config appsettings set -g nexpatch-rg -n nexpatch-api-20022 -o none --settings \
-  "PLATFORM_ADMINS=MoHala@Nexpatch.onmicrosoft.com" \
-  "PLATFORM_TENANT_ID=<your home tenant ID>"
-```
+- `PLATFORM_ADMINS`: Super Admin; full platform access.
+- `PLATFORM_CATALOG_MANAGERS`: manage shared catalog entries.
+- `PLATFORM_SUPPORT_ADMINS`: triage application requests and view reports.
+- `PLATFORM_TENANT_ID` (optional): restrict these roles to your home tenant.
 
-Separate several accounts with commas. Sign in to NexpatchOnline with that account to see the page.
+For installer uploads, also configure `BLOB_STORAGE_CONNECTION` or managed-identity `BLOB_STORAGE_URL`, and assign the Function App the required Blob Storage roles. See `BACKEND-SETUP.md` for malware-scanning and storage setup.

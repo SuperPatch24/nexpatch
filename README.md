@@ -62,3 +62,10 @@ docs/
 - The client catalog shows its live loaded-app count. Platform administrators can import 56 unique built-in WinGet package IDs into the shared catalog.
 - Microsoft Store source entries can be imported with a verified Store product ID and package family name. Store entries are excluded from Nexpatch auto-publish; native Intune Store app publishing and its automatic-update lifecycle still require a separate validated integration.
 - Base-policy path rules are now sent to the backend and embedded in WDAC XML. Only administrator-protected directories should be allowed.
+
+## Client application requests and Admin Center
+
+- Clients can request missing applications, provide an HTTPS vendor/download URL and/or upload an installer (up to 50 MB). Requests are tenant-partitioned and clients can track status and admin notes.
+- Installers are stored in a private Azure Blob container and remain marked `pending` for malware/security review. They are not executed automatically. Configure Blob Storage and a malware-scanning workflow before production use; see `docs/BACKEND-SETUP.md`.
+- Platform administrators use the separate `/admin/` page for request triage, shared catalog editing, graphical metrics, Excel exports and public hero headline/description, announcement banner and support-email settings. Add `/admin/` as an Entra SPA redirect URI and configure `PLATFORM_ADMINS` (Super Admin), `PLATFORM_CATALOG_MANAGERS` (catalog-only) and/or `PLATFORM_SUPPORT_ADMINS` (request triage and reports).
+- Excel export contains Summary, Catalog, Requests and Organizations worksheets. Graphical status/catalog summaries are displayed in the Admin Center dashboard.

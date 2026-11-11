@@ -2,7 +2,7 @@ import { app } from '@azure/functions';
 import { withUser, HttpError, readJson } from '../lib/http.js';
 import { getRow, putRow, deleteRow, listRows, listAllTenants, saveTenant, getTenant, getJob, audit } from '../lib/store.js';
 import { planStatus, TRIAL_DAYS } from '../lib/plan.js';
-import { isPlatformAdmin } from '../lib/platform.js';
+import { platformRole } from '../lib/platform.js';
 import { latestWingetVersion } from '../lib/winget.js';
 
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
@@ -10,7 +10,7 @@ const ID = /^[a-z0-9-]{2,80}$/;
 const GLOBAL = 'global';
 const shape = r => ({ id: r.rowKey, name: r.name, vendor: r.vendor || '', winget: r.winget, reg: r.reg || r.name, procs: r.procs || '', exe: r.exe || '',
   category: r.category || '', enabled: r.enabled !== false, updatedBy: r.updatedBy || '', updatedAt: r.updatedAt || null });
-function requirePlatform(user) { if (!isPlatformAdmin(user)) throw new HttpError(403, 'Only platform administrators can do this.'); }
+function requirePlatform(user, roles = ['superadmin']) { const role = platformRole(user); if (!role || !roles.includes(role)) throw new HttpError(403, 'Your platform administrator role does not allow this action.'); }
 
 // GET /api/catalog – the shared app catalog every organization sees (enabled apps only).
 app.http('catalogList', { methods: ['GET'], authLevel: 'anonymous', route: 'catalog',
@@ -18,11 +18,11 @@ app.http('catalogList', { methods: ['GET'], authLevel: 'anonymous', route: 'cata
 
 // Platform administration
 app.http('platformCatalogList', { methods: ['GET'], authLevel: 'anonymous', route: 'platform/catalog',
-  handler: withUser(async (_r, _c, user) => { requirePlatform(user); return { apps: (await listRows('Catalog', GLOBAL)).map(shape).sort((a, b) => a.name.localeCompare(b.name)) }; }, 'any') });
+  handler: withUser(async (_r, _c, user) => { requirePlatform(user, ['superadmin','catalog']); return { apps: (await listRows('Catalog', GLOBAL)).map(shape).sort((a, b) => a.name.localeCompare(b.name)) }; }, 'any') });
 
 app.http('platformCatalogSave', { methods: ['PUT'], authLevel: 'anonymous', route: 'platform/catalog/{id}',
   handler: withUser(async (req, _c, user) => {
-    requirePlatform(user);
+    requirePlatform(user, ['superadmin','catalog']);
     const id = String(req.params.id || '').toLowerCase();
     if (!ID.test(id)) throw new HttpError(400, 'The app ID can only use lowercase letters, numbers and dashes.');
     const b = await readJson(req);
@@ -38,11 +38,11 @@ app.http('platformCatalogSave', { methods: ['PUT'], authLevel: 'anonymous', rout
   }, 'any') });
 
 app.http('platformCatalogDelete', { methods: ['DELETE'], authLevel: 'anonymous', route: 'platform/catalog/{id}',
-  handler: withUser(async (req, _c, user) => { requirePlatform(user); await deleteRow('Catalog', GLOBAL, String(req.params.id || '')); return { removed: true }; }, 'any') });
+  handler: withUser(async (req, _c, user) => { requirePlatform(user, ['superadmin','catalog']); await deleteRow('Catalog', GLOBAL, String(req.params.id || '')); return { removed: true }; }, 'any') });
 
 app.http('platformCatalogCheck', { methods: ['POST'], authLevel: 'anonymous', route: 'platform/catalog-check',
   handler: withUser(async (req, _c, user) => {
-    requirePlatform(user);
+    requirePlatform(user, ['superadmin','catalog']);
     const { winget } = await readJson(req);
     if (!WINGET_ID.test(String(winget || ''))) throw new HttpError(400, 'Enter a valid winget ID.');
     try { return { ok: true, version: await latestWingetVersion(winget) }; }
@@ -110,3 +110,18 @@ app.http('platformJobGet', { methods: ['GET'], authLevel: 'anonymous', route: 'p
 // GET /api/platform/sales-leads – public website quote and demo enquiries.
 app.http('platformSalesLeads', { methods: ['GET'], authLevel: 'anonymous', route: 'platform/sales-leads',
   handler: withUser(async (_r, _c, user) => { requirePlatform(user); const rows = await listRows('SalesLeads', 'sales', 500); return { leads: rows.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(x => ({ id:x.rowKey, name:x.name, email:x.email, company:x.company, country:x.country, devices:x.devices, message:x.message, createdAt:x.createdAt, status:x.status })) }; }, 'any') });
+
+
+// Global website settings are editable only by platform administrators.
+app.http('platformSiteContentGet', { methods:['GET'], authLevel:'anonymous', route:'platform/site-content', handler:withUser(async(_req,_ctx,user)=>{
+  requirePlatform(user); const r=await getRow('SiteContent',GLOBAL,'website'); return {announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||'',updatedAt:r?.updatedAt||null};
+},'any') });
+app.http('platformSiteContentSave', { methods:['PUT'], authLevel:'anonymous', route:'platform/site-content', handler:withUser(async(req,_ctx,user)=>{
+  requirePlatform(user); const b=await readJson(req); const fields={announcement:String(b.announcement||'').trim().slice(0,500),supportEmail:String(b.supportEmail||'').trim().slice(0,254),heroTitle:String(b.heroTitle||'').trim().slice(0,180),heroSubtitle:String(b.heroSubtitle||'').trim().slice(0,500),updatedAt:new Date().toISOString(),updatedBy:user.email||user.userId};
+  if(fields.supportEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.supportEmail)) throw new HttpError(400,'Enter a valid support email address.');
+  await putRow('SiteContent',GLOBAL,'website',fields,'Merge'); return {saved:true,...fields};
+},'any') });
+app.http('publicSiteContent', { methods:['GET'], authLevel:'anonymous', route:'site-content', handler:async()=>{
+  try { const r=await getRow('SiteContent',GLOBAL,'website'); return {status:200,jsonBody:{announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||''}}; }
+  catch { return {status:200,jsonBody:{announcement:'',supportEmail:''}}; }
+} });

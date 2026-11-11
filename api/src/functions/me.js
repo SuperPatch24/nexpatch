@@ -1,7 +1,7 @@
 import { app } from '@azure/functions';
 import { withUser } from '../lib/http.js';
 import { getTenant } from '../lib/store.js';
-import { isPlatformAdmin } from '../lib/platform.js';
+import { isPlatformAdmin, platformRole } from '../lib/platform.js';
 import { planStatus } from '../lib/plan.js';
 
 // GET /api/me – who is signed in, their role, and whether their organization is connected.
@@ -16,6 +16,7 @@ app.http('me', {
       role: user.role,
       access: user.access,
       platformAdmin: isPlatformAdmin(user),
+      platformRole: platformRole(user),
       plan: t && t.status === 'active' ? planStatus(t) : null,
       tenant: t ? { tenantId: t.rowKey, status: t.status, activatedAt: t.activatedAt, lastSyncAt: t.lastSyncAt || null, lastSyncCount: t.lastSyncCount || 0, lastSyncError: t.lastSyncError || '' } : null
     };

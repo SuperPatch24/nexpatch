@@ -5,7 +5,11 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "CLIENT_ID": "<your-app-registration-client-id>",
     "TABLES_CONNECTION": "UseDevelopmentStorage=true",
-    "CERT_PEM_PATH": "./dev-cert.pem"
+    "CERT_PEM_PATH": "./dev-cert.pem",
+    "BLOB_STORAGE_CONNECTION": "<optional private blob storage connection string>",
+    "PLATFORM_ADMINS": "<super-admin UPNs or object IDs>",
+    "PLATFORM_CATALOG_MANAGERS": "<catalog-manager UPNs or object IDs>",
+    "PLATFORM_SUPPORT_ADMINS": "<support-admin UPNs or object IDs>"
   },
   "Host": {
     "CORS": "http://localhost:8787",

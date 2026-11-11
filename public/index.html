@@ -2083,7 +2083,7 @@ $('#acbChips').addEventListener('click', e=>{ const b=e.target.closest('[data-ac
 $('#acbDeployBtn').addEventListener('click', async ()=>{
   const p=S.policy; const btn=$('#acbDeployBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>Deploying\u2026'; $('#acbLog').innerHTML='';
   try{
-    const r=await api('/appcontrol/base','POST',{ base:p.base, mode:p.mode, managedInstaller:p.mi, isg:p.isg, name:p.name, groups:ACB_GROUPS.map(g=>g.id), allDevices:$('#acbAllDevices').checked });
+    const r=await api('/appcontrol/base','POST',{ base:p.base, mode:p.mode, managedInstaller:p.mi, isg:p.isg, enforceScripts:p.scripts, name:p.name, groups:ACB_GROUPS.map(g=>g.id), allDevices:$('#acbAllDevices').checked });
     $('#acbLog').innerHTML=(r.log||[]).map(l=>'<li><i class="t-ic" style="background:var(--green)"></i><div class="t-body"><span>'+esc(l)+'</span></div></li>').join('');
     if(AC.settings) AC.settings.basePolicyId=r.basePolicyId; S.settings.acBasePolicyId=r.basePolicyId; save();
     toast('Base policy deployed to Intune'); renderAcBaseDeploy();

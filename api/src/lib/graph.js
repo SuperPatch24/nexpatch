@@ -56,6 +56,12 @@ export async function graph(tenantId, path, init = {}, attempt = 0) {
     // Intune often wraps the real reason as JSON text inside the message
     try { const inner = JSON.parse(detail); detail = inner.Message || inner.message || detail; } catch {}
     detail = String(detail).replace(/\s*-?\s*Operation ID.*$/is, '').replace(/\s+/g, ' ').trim().slice(0, 300);
+    // Intune answers a missing application permission with 401 (not 403). Drop the cached token so the
+    // next attempt picks up a fresh one after the admin re-approves.
+    if (res.status === 401) {
+      credentials.delete(tenantId);
+      throw new HttpError(403, 'NexpatchOnline doesn\u2019t have permission for this in your tenant yet. An administrator needs to approve it again on the Connect page' + (detail ? ` (${detail})` : '.'));
+    }
     if (res.status === 403) throw new HttpError(403, 'NexpatchOnline doesn\u2019t have the Intune permissions it needs in this organization. Ask an administrator to approve it again.' + (detail ? ` (${detail})` : ''));
     throw new HttpError(502, `Microsoft Graph returned an error (${res.status})${detail ? ': ' + detail : '.'}`);
   }

@@ -14,7 +14,7 @@ function ruleOptionsXml(o) {
   if (o.mode !== 'enforce') on.push('Enabled:Audit Mode');
   if (o.managedInstaller) on.push('Enabled:Managed Installer');
   if (o.isg) on.push('Enabled:Intelligent Security Graph Authorization');
-  if (!o.enforceScripts) on.push('Enabled:Dynamic Code Security'); // leave script enforcement default unless asked
+  if (o.enforceScripts === false) on.push('Disabled:Script Enforcement'); // scripts are enforced unless turned off
   return '  <Rules>\n' + on.map(x => `    <Rule>\n      <Option>${x}</Option>\n    </Rule>`).join('\n') + '\n  </Rules>';
 }
 

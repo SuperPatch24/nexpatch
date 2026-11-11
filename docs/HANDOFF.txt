@@ -1,0 +1,284 @@
+NEXPATCHONLINE - PROJECT HANDOFF
+================================
+Last updated: 10 November 2026
+Purpose: everything needed for another AI assistant or developer to continue this project.
+Read this whole file before changing anything.
+
+
+1. WHAT THIS IS
+---------------
+NexpatchOnline is a multi-tenant SaaS platform for Microsoft Intune, similar to Patch My PC,
+plus managed App Control for Business (WDAC). Client IT teams sign in with their Microsoft work
+account, approve NexpatchOnline for their tenant, and then from the website:
+  - see apps installed on their devices (inventory/discovery from Intune)
+  - publish third-party app updates to Intune with full deployment options (one click, cloud-side)
+  - build and deploy App Control base and supplemental policies, and review blocked/audited apps
+  - manage which of their people can use the platform (roles)
+The operator (owner of NexpatchOnline) has an admin area: shared app catalog, all client
+organizations with usage, cross-client deployment logs, and trial/paid plan control.
+
+Business model: 30-day free trial per organization, then paid. Suggested pricing (not final):
+  Patch  $0.50/device/month (min $25/month), Secure (Patch + App Control) $1.00/device/month
+  (min $50/month), volume discounts at 500+ devices, annual = 2 months free, CAD and USD.
+  Competitor reference (third-party listing, verify): Patch My PC $2.00-$3.50/device/year with
+  $1,499-$2,499/year minimums. Edge: low minimums for small businesses + App Control as a service.
+
+Owner context (important):
+  - This is the owner's PERSONAL business. The owner is employed elsewhere (an IT services company).
+    Keep all work on personal accounts/devices. The owner was advised to have an employment lawyer
+    (Quebec) review IP/non-compete/outside-activity clauses before selling. Not yet confirmed done.
+  - Owner is in Halifax, Nova Scotia / Quebec market focus. First clients likely in Quebec:
+    French-language requirements (Bill 96) and Law 25 privacy apply.
+  - Name decided: "NexpatchOnline" (domain nexpatchonline.com). Trademark check not yet done.
+
+
+2. LIVE RESOURCES (non-secret identifiers)
+------------------------------------------
+Website (Cloudflare Workers, static):
+  Production:  https://nexpatchonline.com
+  Also:        https://nexpatchonline.nexpatchonline.workers.dev
+  Worker name: nexpatchonline (wrangler.jsonc "name" must match this)
+  Old/unused:  nexpatch.ahalawani02.workers.dev (can be deleted)
+  Note: brand-new domain is blocked by some corporate web filters. Submit nexpatchonline.com for
+  categorization to Zscaler, Palo Alto, Fortinet, Cisco Talos, Microsoft Defender before selling.
+
+Source code: GitHub repo SuperPatch24/nexpatch (should be PRIVATE).
+  Cloudflare redeploys the website on every push. GitHub Actions deploys the backend.
+
+Microsoft Entra ID (home tenant "Nexpatch"):
+  Home tenant ID:     c30a1c16-4fab-45b4-8aaa-c34f90e05e91
+  Operator account:   MoHala@Nexpatch.onmicrosoft.com
+  App registration:   "Nexpatch" (multi-tenant)
+  Client ID:          fcf79416-b2f1-428b-8ad2-0004c127532f
+  Redirect URIs:
+    SPA:   https://nexpatchonline.com/  and  https://nexpatchonline.nexpatchonline.workers.dev/
+    Web:   https://nexpatchonline.com/consent  (admin consent return)
+    Mobile/desktop: http://localhost  (PowerShell fallback scripts)
+  Allow public client flows: Yes
+  Expose an API: api://fcf79416-b2f1-428b-8ad2-0004c127532f , scope access_as_user
+  Manifest: "requestedAccessTokenVersion": 2 , "groupMembershipClaims": "DirectoryRole"
+  Delegated Graph permissions: User.Read, access_as_user (own API),
+    DeviceManagementApps.ReadWrite.All, DeviceManagementConfiguration.ReadWrite.All,
+    DeviceManagementRBAC.Read.All, Group.Read.All
+  Application Graph permissions (backend, app-only with certificate):
+    DeviceManagementApps.ReadWrite.All, DeviceManagementConfiguration.ReadWrite.All,
+    DeviceManagementManagedDevices.Read.All, Group.Read.All,
+    optional ThreatHunting.Read.All (only if a client uses Defender for App Control events)
+  Certificate credential: "CN=CLIGetDefaultPolicy" from Key Vault, EXPIRES 2027-11-08.
+    >>> Renew in October 2027 or every client stops syncing/publishing. <<<
+
+Azure (personal subscription "Azure subscription 1", 2f9a77b8-be63-4c95-83f6-a66b59169d71):
+  Region:           canadacentral
+  Resource group:   nexpatch-rg
+  Storage account:  nexpatchst20022   (Table Storage + function storage + publish queue)
+  Key Vault:        nexpatch-kv-20022 (RBAC mode), certificate name: nexpatch-graph (PEM)
+  Function app:     nexpatch-api-20022 (Flex Consumption, Node 22, Linux)
+  API base URL:     https://nexpatch-api-20022.azurewebsites.net/api
+  App Insights:     nexpatch-api-20022
+  Function managed identity principal: 44d3b42f-74e3-4dc4-936b-5d0a659537d2
+    Roles: Storage Table Data Contributor + Storage Queue Data Contributor (storage),
+           Key Vault Secrets User (vault)
+  App settings: CLIENT_ID, KEY_VAULT_URL, CERT_NAME=nexpatch-graph,
+    TABLES_URL=https://nexpatchst20022.table.core.windows.net,
+    GITHUB_TOKEN (read-only fine-grained token, for winget version lookups - needed for publishing),
+    PLATFORM_ADMINS=MoHala@Nexpatch.onmicrosoft.com,
+    PLATFORM_TENANT_ID=c30a1c16-4fab-45b4-8aaa-c34f90e05e91
+  CORS: https://nexpatchonline.com , https://nexpatchonline.nexpatchonline.workers.dev
+  Note: for new Flex apps "az functionapp show --query defaultHostName" returns empty; use the URL above.
+
+GitHub Actions backend deploy (.github/workflows/deploy-backend.yml):
+  Entra app "nexpatchonline-github-deploy" with federated credentials:
+    github-main     subject repo:SuperPatch24/nexpatch:ref:refs/heads/main
+    github-main-ids subject repo:SuperPatch24@353595989/nexpatch@1448997258:ref:refs/heads/main
+      (GitHub now sends the ID-based subject; this is the one that works)
+  Role: Website Contributor on the function app (use Contributor on RG if auth errors).
+  Repo secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID. Variable: FUNCTION_APP_NAME.
+  Triggers on pushes to main that change api/**, or manually (Actions > Deploy backend > Run workflow).
+
+Test client tenant: Microsoft 365 Business Premium trial (has Intune), admin account
+  admin@<testname>.onmicrosoft.com. Has at least one test device; winget was missing on it.
+
+Planning documents also exist in the owner's Claude workspace (may not be accessible to you):
+  "Nexpatch - Setup Guide and Next Steps", "Nexpatch - App Control Live Events Design".
+  The repo docs/ folder is the authoritative copy.
+
+
+3. REPOSITORY LAYOUT
+--------------------
+public/                     Website, published by Cloudflare (single-page app, no build step)
+  index.html                The whole app: intro page, sign-in, console. Vanilla JS, one file.
+  config.js                 clientId, authority, redirect URIs, apiBaseUrl, apiScope, salesEmail.
+                            NEVER overwrite this when uploading new files (holds live values).
+  vendor/msal-browser.min.js  MSAL.js 5.26.0 (MIT)
+  _headers                  security headers
+api/                        Backend, Azure Functions (Node 22, ESM, @azure/functions v4 model)
+  package.json              pinned deps: @azure/functions 4.17.0, @azure/data-tables 13.3.2,
+                            @azure/identity 4.14.0, @azure/keyvault-secrets 4.11.2, jose 6.2.13
+  host.json                 queues maxDequeueCount 1 (no retries -> no duplicate Intune apps)
+  src/lib/
+    auth.js         validates Entra v2 access tokens (multi-tenant, issuer must match tid,
+                    scope access_as_user, audience clientId); exposes wids (directory roles)
+    http.js         withUser(handler, minRole) wrapper, HttpError, JSON helpers
+    access.js       roles viewer/admin/owner; invites; Global Admin + Intune Admin = owner always
+    store.js        Table Storage (all rows partitioned by tenant ID). Tables: Tenants, Inventory,
+                    SyncRuns, Members, AuditLog, PublishJobs, AcEvents, AcDecisions, AcDevices, Catalog
+    graph.js        app-only Graph calls per client tenant with Key Vault certificate; retries
+                    429/5xx; parses empty bodies; surfaces Intune's inner error message
+    inventory.js    pulls detectedApps from Intune
+    winget.js       latest version from github.com/microsoft/winget-pkgs (needs GITHUB_TOKEN)
+    intunewin.js    builds encrypted Win32 content in Node (zip + AES-256-CBC + HMAC), no Windows
+    templates.js    device-side PowerShell (install wrapper, detection, requirement) - MUST stay
+                    identical to the copy embedded in public/index.html (psCore)
+    publisher.js    full Win32 publish flow to Intune: create app, upload, commit, relationships
+                    (dependencies/supersedence), assignments, filters, group resolution
+    appcontrol.js   App Control events (normalize/aggregate), Defender advanced-hunting poll,
+                    supplemental policy XML builder
+    collector.js    App Control collector scripts (installer/collector/uninstaller)
+    basepolicy.js   builds base policy XML from Microsoft WDAC templates
+    acdeploy.js     deploys base/supplemental App Control policies to Intune (settings catalog)
+    plan.js         30-day trial status
+    platform.js     isPlatformAdmin (PLATFORM_ADMINS / PLATFORM_TENANT_ID)
+  src/policy-templates/  Microsoft WDAC Toolkit templates (MIT): AllowMicrosoft.xml,
+                    DefaultWindows_Audit.xml, Empty_Supplemental.xml + licence. Must be deployed.
+  src/functions/    me, tenant (activate), inventory, nightlySync, users, publish (+queue worker),
+                    groups, appcontrol (+appControlPoll timer), platform
+docs/  ENTRA-SETUP.md, BACKEND-SETUP.md (has API table), AUTO-DEPLOY.md, WORKER-PLAN.md, this file
+wrangler.jsonc   Cloudflare Worker config (name nexpatchonline, assets ./public, SPA fallback)
+.github/workflows/deploy-backend.yml
+
+
+4. HOW KEY FLOWS WORK
+---------------------
+Sign-in: MSAL.js redirect flow (fragment response), authority "organizations". When apiBaseUrl is
+  set, login requests api://<clientId>/access_as_user. Sample/demo mode needs no sign-in.
+Connect organization: admin consent via https://login.microsoftonline.com/{tenant}/v2.0/adminconsent
+  -> returns to /consent -> site calls POST /api/tenant/activate -> backend tests Graph access,
+  marks tenant active, first user becomes owner, starts 30-day trial, then syncs inventory.
+Inventory: GET deviceManagement/detectedApps (Windows only) on connect, on demand, nightly 07:00 UTC.
+Publish to Intune: website POSTs app + options to /api/publish -> job row + storage queue message
+  -> publishWorker builds package (only a small PowerShell wrapper; winget installs on device),
+  encrypts, uploads, sets relationships and assignments. Website closes dialog and polls job on
+  Deployments page. Same version already in Intune => only assignments are added.
+Device install wrapper (Install-Update.ps1): relaunches in 64-bit PowerShell if started 32-bit;
+  finds winget under %ProgramW6432%\WindowsApps; if missing, installs App Installer for all users
+  (Repair-WinGetPackageManager, fallback: provision aka.ms/getwinget msixbundle + dependencies);
+  handles running apps (close/notify/wait/defer exit 1618); pre/post scripts (base64); uses
+  --source winget --scope machine; logs to C:\ProgramData\NexpatchOnline\Logs\<wingetId>.log.
+  Exit codes: 2 = winget unavailable (Intune shows 0x80070002), 1 = other error.
+App Control:
+  Event sources (client chooses): Microsoft Defender advanced hunting (needs E5/MDE P2) polled every
+    15 min, OR Nexpatch collector (scheduled task deployed as Intune platform script, reads
+    CodeIntegrity events 3076/3077/3089, posts to /api/appcontrol/ingest with per-tenant key).
+  Decisions: allowPublisher / allowFile / block / ignore / undo.
+  Base policy: built from Microsoft template, deployed via Graph configurationPolicies
+    (template 4321b946-b76b-4450-8afd-769c08b16ffc_1, family endpointSecurityApplicationControl).
+  Supplemental: built from allow decisions, deployed via Graph
+    (template 08441ae9-e0c0-4e57-8e8b-6e72405cd64f_1, family
+    endpointSecurityApplicationControlSupplementalPolicy). Same policy ID kept across updates.
+Roles: viewer (read), admin (publish/sync/App Control), owner (also manage people).
+Platform admin: shared catalog (Catalog table, partition "global"), organizations + usage,
+  deployment logs across tenants, plan changes (activate/extend/restart/expire).
+Trial: plan fields on Tenants row; publishing and sync return HTTP 402 when trial ended.
+
+
+5. STATUS
+---------
+Verified working in the real environment:
+  - website live with real Microsoft sign-in and admin approval
+  - backend deployed (all functions listed), certificate attached, CORS set
+  - Publish to Intune creates the Win32 app and uploads content successfully
+  - group assignments (Required) work; Available without a time works
+  - GitHub Actions deploy (after adding the ID-based federated credential)
+
+Built and tested only with simulations/mocks (NOT yet confirmed on a real tenant/device):
+  - Company Portal install after the 64-bit + winget auto-install fixes (last real result was
+    0x80070001 "winget not found" - fixed since; needs a fresh publish + install test)
+  - Available assignments with an availability time (fixed to send UTC start only)
+  - Users and access / invitations, App Control collector + Defender polling, decisions,
+    base + supplemental deployment from the website, trial banner/enforcement, platform admin,
+    group picker, shared catalog import
+  Testing approach used: Node syntax checks, jsdom browser simulation of public/index.html,
+  Azurite (local Table Storage), PowerShell 7 parser + mocked IntuneWin32App/winget commands.
+  These test scripts were temporary and are not in the repo.
+
+Items marked to verify:
+  - Defender advanced hunting: join keys between block events and signing-information events,
+    exact AdditionalFields names, and whether an Authenticode hash is available (Defender rows
+    currently only offer Allow publisher).
+  - Licensing: Business Premium (Defender for Business) likely lacks advanced hunting.
+  - Intune App Control XML deployment via Graph payload (taken from a published working script;
+    confirm on the test tenant).
+  - Competitor pricing figures.
+
+Known limitations:
+  - Website-deployed base policy uses template + rule options only. Folder path rules, catalog
+    publisher rules, hash rules and Microsoft recommended block rules are only in the PowerShell
+    (advanced) path.
+  - Catalog, auto-publish switches, rings, saved publish options, App Control base builder options
+    are still stored in each user's browser (localStorage, per tenant). Not shared between admins.
+  - The auto-publish "runbook" is still a PowerShell script run on a schedule by the client.
+  - Collector requires internet to PowerShell Gallery / aka.ms / github.com on first winget setup.
+  - @azure/identity 4.14.0 has an advisory in msal-node affecting the auth-code flow only (backend
+    uses certificate client-credentials, not affected). Upgrade to 4.14.1+ after 12 Nov 2026.
+    Policy used throughout: only use package versions published at least 14 days ago.
+
+
+6. HOW TO DEPLOY CHANGES
+------------------------
+Normal path: commit/push to main (GitHub Desktop or github.com upload). Website -> Cloudflare.
+  api/** changes -> GitHub Actions deploys the function app. Never overwrite public/config.js.
+Manual fallback (Azure Cloud Shell, Bash):
+  cd ~/nexpatchonline/api && npm install --omit=dev
+  func azure functionapp publish nexpatch-api-20022 --javascript      (the --javascript flag is required)
+  az functionapp restart -g nexpatch-rg -n nexpatch-api-20022
+Health check: https://nexpatch-api-20022.azurewebsites.net/api/me -> 401 "Sign in required" is correct.
+After changing device scripts: existing Intune apps keep the OLD script. Delete those app versions
+  in Intune and publish again (same version present => only assignments are added).
+
+
+7. LESSONS / GOTCHAS ALREADY SOLVED
+-----------------------------------
+- Some Graph actions (file commit, updateRelationships, assignments) return EMPTY bodies: parse text.
+- Intune Available assignments reject useLocalTime and deadline: send only startDateTime (UTC).
+- Restart grace settings only valid when app restart behavior = basedOnReturnCode.
+- A freshly uploaded app may reject assignments briefly: retry once after 15 s.
+- Win32 install commands can run in 32-bit PowerShell: relaunch via %windir%\sysnative, use
+  %ProgramW6432%. Run winget from its own folder as SYSTEM. Use --source winget.
+- IntuneWin32App PowerShell module param names were verified against its source (used for the
+  PowerShell fallback). The cloud publisher mirrors the module's Graph request bodies.
+- Flex Consumption: defaultHostName empty in CLI; func publish needs --javascript in Cloud Shell.
+- GitHub OIDC subject includes owner/repo IDs (repo:Owner@id/repo@id:ref:...).
+- Browser saves re-downloads as "name (1).zip" - verify file size before uploading.
+- New domains get blocked by corporate web filters.
+- Each signed-in organization gets an empty browser workspace; sample data only in demo mode.
+
+
+8. ROADMAP / WHAT TO DO NEXT
+----------------------------
+Immediate checks (owner):
+  1. Upload the latest zip contents to GitHub (keep config.js); confirm Actions deploy is green.
+  2. Enable Intune Managed Installer once (Endpoint security > App Control for Business >
+     Managed Installer > Add) so NexpatchOnline-published apps are trusted by App Control.
+  3. Real tests: publish 7-Zip to a pilot group and install from Company Portal (check device log),
+     deploy base policy in Audit from the website, invite a Viewer, admin page Import built-in apps.
+
+Next builds (agreed order):
+  1. Custom installer upload (MSI/EXE): browser -> Azure Blob (SAS), MSI property reading, EXE
+     silent switches + detection, package and publish with the same dialog, supersede on new upload.
+  2. Stripe billing (self-serve subscribe when trial ends; device count from Intune managedDevices).
+  3. Automatic supplemental-policy deployment after each allow decision (endpoint exists:
+     POST /api/appcontrol/supplemental/deploy - just call it after decisions, with a toggle).
+  4. Phase 5: move catalog/rings/publish options/App Control builder settings to the backend.
+  5. Phase 6: server-side auto-publish (daily winget version check -> publish with saved options),
+     Teams/email alerts.
+  6. Catalog agent: weekly job reading the winget index, matched against client Discovery data,
+     suggestions for platform admin approval (verify index format first).
+  7. Website-deployed base policy: add path rules and Microsoft recommended block rules.
+  8. Defender block via file indicators; deny rules for enforce mode.
+  9. Later/optional: Microsoft Store apps, iOS/Android, French UI.
+
+Business tasks (owner):
+  employment agreement legal review, trademark check, register business, liability + cyber
+  insurance, domain categorization with web-filter vendors, choose salesEmail (config.js),
+  Microsoft AI Cloud Partner Program + publisher verification, privacy terms (paths can contain
+  user names), 2-3 pilot clients.

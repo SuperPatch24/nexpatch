@@ -178,7 +178,7 @@ app.http('acBaseDeploy', { methods: ['POST'], authLevel: 'anonymous', route: 'ap
     const { xml, policyId } = await buildBasePolicy({
       base: cfg.base === 'DefaultWindows' ? 'DefaultWindows' : 'AllowMicrosoft',
       mode: cfg.mode === 'enforce' ? 'enforce' : 'audit',
-      managedInstaller: cfg.managedInstaller !== false, isg: !!cfg.isg,
+      managedInstaller: cfg.managedInstaller !== false, isg: !!cfg.isg, enforceScripts: cfg.enforceScripts !== false,
       name: cfg.name || 'NexpatchOnline base policy', policyId: t.acBasePolicyId || null, version
     });
     const log = [];

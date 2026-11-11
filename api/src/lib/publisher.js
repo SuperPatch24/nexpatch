@@ -75,7 +75,7 @@ async function uploadContent(tid, appId, content, log) {
     throw new Error(`Intune took too long (${stage}).`);
   };
   const ready = await waitFor('azureStorageUriRequest');
-  log('Uploading the package');
+  await log('Uploading the package');
   const blockId = Buffer.from('0000').toString('base64');
   let res = await fetch(`${ready.azureStorageUri}&comp=block&blockid=${encodeURIComponent(blockId)}`, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob' }, body: content.encrypted });
   if (!res.ok) throw new Error(`Uploading the package failed (${res.status}).`);
@@ -83,7 +83,7 @@ async function uploadContent(tid, appId, content, log) {
     body: `<?xml version="1.0" encoding="utf-8"?><BlockList><Latest>${blockId}</Latest></BlockList>` });
   if (!res.ok) throw new Error(`Finishing the upload failed (${res.status}).`);
   await graph(tid, `${fileUri}/commit`, { method: 'POST', body: JSON.stringify({ fileEncryptionInfo: content.encryptionInfo }) });
-  log('Waiting for Intune to process the package');
+  await log('Waiting for Intune to process the package');
   await waitFor('commitFile');
   await graph(tid, `${B}/${appId}`, { method: 'PATCH', body: JSON.stringify({ '@odata.type': '#microsoft.graph.win32LobApp', committedContentVersion: cv.id }) });
 }
@@ -100,16 +100,16 @@ export async function publishApp(tid, app, o, log) {
     if (!target) throw new Error(`${app.name} isn\u2019t in Intune, so there\u2019s nothing to uninstall.`);
     if (/exit 0/.test(target.uninstallCommandLine || '')) throw new Error(`${app.name} was published by an older NexpatchOnline version without an uninstall command. Publish it again first.`);
     version = target.displayVersion;
-    log(`Using ${app.name} ${version}, already in Intune`);
+    await log(`Using ${app.name} ${version}, already in Intune`);
   } else {
-    log('Checking winget for the latest version');
+    await log('Checking winget for the latest version');
     version = await latestWingetVersion(app.winget);
     const same = existing.find(a => a.displayVersion === version);
     if (same) {
       target = same;
-      log(`${app.name} ${version} is already in Intune, so only the assignments are added`);
+      await log(`${app.name} ${version} is already in Intune, so only the assignments are added`);
     } else {
-      log(`Building ${app.name} ${version}`);
+      await log(`Building ${app.name} ${version}`);
       const procs = (o.procs || []).filter(Boolean).map(p => `'${psq(p)}'`).join(',');
       const wrapper = WRAPPER.replace('__ID__', app.winget).replace('__NAME__', psq(app.name)).replace('__PROCS__', procs)
         .replace('__CONFLICT__', o.conflict || 'Close').replace('__MINUTES__', String(+o.confMin || 10))
@@ -153,7 +153,7 @@ export async function publishApp(tid, app, o, log) {
       if (requirementRules.length) body.requirementRules = requirementRules;
       if (o.allowUninst) body.allowAvailableUninstall = true;
 
-      log('Creating the app in Intune');
+      await log('Creating the app in Intune');
       target = await graph(tid, B, { method: 'POST', body: JSON.stringify(body) });
       try {
         await uploadContent(tid, target.id, content, log);
@@ -167,17 +167,17 @@ export async function publishApp(tid, app, o, log) {
       for (const name of o.deps || []) {
         const dep = (await findApps(tid, name)).at(-1);
         if (dep) relationships.push({ '@odata.type': '#microsoft.graph.mobileAppDependency', dependencyType: o.depType === 'Detect' ? 'detect' : 'autoInstall', targetId: dep.id });
-        else log(`Dependency \u201c${name}\u201d isn\u2019t in Intune yet, skipped`);
+        else await log(`Dependency \u201c${name}\u201d isn\u2019t in Intune yet, skipped`);
       }
       const old = [];
       if (o.supersede && existing.length) old.push(existing.at(-1));
-      for (const name of o.superOther || []) { const x = (await findApps(tid, name)).at(-1); if (x) old.push(x); else log(`\u201c${name}\u201d isn\u2019t in Intune, so it can\u2019t be superseded`); }
+      for (const name of o.superOther || []) { const x = (await findApps(tid, name)).at(-1); if (x) old.push(x); else await log(`\u201c${name}\u201d isn\u2019t in Intune, so it can\u2019t be superseded`); }
       for (const x of old) relationships.push({ '@odata.type': '#microsoft.graph.mobileAppSupersedence', supersedenceType: (o.superType || 'Update').toLowerCase(), targetId: x.id });
       if (relationships.length) {
         await graph(tid, `${B}/${target.id}/updateRelationships`, { method: 'POST', body: JSON.stringify({ relationships }) });
         superseded = old.length > 0;
-        if (old.length) log(`Supersedes ${old.map(x => `${x.displayName} ${x.displayVersion}`).join(', ')}`);
-        if (relationships.length > old.length) log(`Dependencies: ${(o.deps || []).join(', ')}`);
+        if (old.length) await log(`Supersedes ${old.map(x => `${x.displayName} ${x.displayVersion}`).join(', ')}`);
+        if (relationships.length > old.length) await log(`Dependencies: ${(o.deps || []).join(', ')}`);
       }
     }
   }
@@ -190,7 +190,7 @@ export async function publishApp(tid, app, o, log) {
     try {
       const groupId = a.target === 'group' ? await resolveGroup(tid, a.group) : null;
       const type = a.mode === 'exclude' ? '#microsoft.graph.exclusionGroupAssignmentTarget' : TARGET[a.target];
-      if (current.includes(`${type}|${groupId || ''}|${a.intent}`)) { log(`${a.label}: already assigned`); continue; }
+      if (current.includes(`${type}|${groupId || ''}|${a.intent}`)) { await log(`${a.label}: already assigned`); continue; }
       const t = { '@odata.type': type, groupId: groupId || undefined, deviceAndAppManagementAssignmentFilterId: null, deviceAndAppManagementAssignmentFilterType: 'none' };
       if (a.mode !== 'exclude' && a.filter) { t.deviceAndAppManagementAssignmentFilterId = await resolveFilter(tid, a.filter, filters); t.deviceAndAppManagementAssignmentFilterType = (a.filterMode || 'Include').toLowerCase(); }
       const body = { '@odata.type': '#microsoft.graph.mobileAppAssignment', intent: a.intent, source: 'direct', target: t, settings: null };
@@ -212,9 +212,9 @@ export async function publishApp(tid, app, o, log) {
         await graph(tid, `${B}/${target.id}/assignments`, { method: 'POST', body: JSON.stringify(body) });
       }
       added++;
-      log(`${a.mode === 'exclude' ? 'Excluded' : a.intent[0].toUpperCase() + a.intent.slice(1)}: ${a.label}${a.start ? ', from ' + a.start.slice(0, 16).replace('T', ' ') : a.mode === 'exclude' ? '' : ', as soon as possible'}${a.deadline ? ', deadline ' + a.deadline.slice(0, 16).replace('T', ' ') : ''}`);
+      await log(`${a.mode === 'exclude' ? 'Excluded' : a.intent[0].toUpperCase() + a.intent.slice(1)}: ${a.label}${a.start ? ', from ' + a.start.slice(0, 16).replace('T', ' ') : a.mode === 'exclude' ? '' : ', as soon as possible'}${a.deadline ? ', deadline ' + a.deadline.slice(0, 16).replace('T', ' ') : ''}`);
     } catch (err) {
-      log(`Skipped ${a.label}: ${err.message}`);
+      await log(`Skipped ${a.label}: ${err.message}`);
     }
   }
   return { appId: target.id, version, assignmentsAdded: added };

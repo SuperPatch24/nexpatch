@@ -3,7 +3,7 @@ import { TableClient, odata } from '@azure/data-tables';
 import { DefaultAzureCredential } from '@azure/identity';
 import { createHash } from 'node:crypto';
 
-const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices', 'Catalog'];
+const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices', 'Catalog', 'SalesLeads'];
 const clients = {};
 let credential;
 let ready;
@@ -21,7 +21,12 @@ function table(name) {
 }
 
 async function ensureTables() {
-  ready ??= Promise.all(TABLES.map(n => table(n).createTable().catch(e => { if (e.statusCode !== 409) throw e; })));
+  // Share table creation across concurrent requests, but don't cache a transient failure
+  // forever: a cold-start storage outage must be recoverable without restarting the app.
+  if (!ready) {
+    ready = Promise.all(TABLES.map(n => table(n).createTable().catch(e => { if (e.statusCode !== 409) throw e; })))
+      .catch(err => { ready = null; throw err; });
+  }
   return ready;
 }
 

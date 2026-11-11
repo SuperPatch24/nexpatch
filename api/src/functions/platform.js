@@ -106,3 +106,7 @@ app.http('platformJobGet', { methods: ['GET'], authLevel: 'anonymous', route: 'p
     if (!j) throw new HttpError(404, 'Job not found.');
     return { tenantId: req.params.tid, id: j.rowKey, status: j.status, appName: j.appName, version: j.version || null, error: j.error || '', log: JSON.parse(j.log || '[]') };
   }, 'any') });
+
+// GET /api/platform/sales-leads – public website quote and demo enquiries.
+app.http('platformSalesLeads', { methods: ['GET'], authLevel: 'anonymous', route: 'platform/sales-leads',
+  handler: withUser(async (_r, _c, user) => { requirePlatform(user); const rows = await listRows('SalesLeads', 'sales', 500); return { leads: rows.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(x => ({ id:x.rowKey, name:x.name, email:x.email, company:x.company, country:x.country, devices:x.devices, message:x.message, createdAt:x.createdAt, status:x.status })) }; }, 'any') });

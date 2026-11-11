@@ -16,13 +16,15 @@ app.http('publishStart', {
     if (!t || t.status !== 'active') throw new HttpError(409, 'Connect your organization on the Connect page before publishing.');
     if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to keep publishing apps.');
     const { app: a, options } = await readJson(req);
+    const source = a?.source === 'msstore' ? 'msstore' : 'winget';
+    if (source === 'msstore') throw new HttpError(409, 'This Microsoft Store entry is catalog-only for now. Native Intune Store app publishing and update handling must be enabled before deployment.');
     if (!a || !a.name || !WINGET_ID.test(a.winget || '') || !a.reg) throw new HttpError(400, 'The app needs a name, a winget ID and its name in Installed apps.');
     if (!options || typeof options !== 'object') throw new HttpError(400, 'Deployment options are missing.');
     const jobId = randomUUID();
     await saveJob(user.tenantId, jobId, {
       status: 'queued', appName: a.name, wingetId: a.winget, summary: String(options.summary || '').slice(0, 200),
       createdBy: user.email || user.userId, createdAt: new Date().toISOString(), log: JSON.stringify([]),
-      request: JSON.stringify({ app: { name: a.name, winget: a.winget, reg: a.reg, vendor: a.vendor || '' }, options })
+      request: JSON.stringify({ app: { name: a.name, winget: a.winget, reg: a.reg, vendor: a.vendor || '', source, storeFamily: a.storeFamily || '' }, options })
     });
     context.extraOutputs.set(queue, { tenantId: user.tenantId, jobId });
     await audit(user.tenantId, user.email || user.userId, 'started publishing', a.name);

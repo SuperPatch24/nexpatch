@@ -52,3 +52,13 @@ docs/
 
 - **Website:** Cloudflare Workers, root `/`, no build command, deploy command `npx wrangler deploy`.
 - **Backend:** see `docs/BACKEND-SETUP.md`.
+
+
+## Commercial and documentation additions
+
+- Public pricing and Enterprise enquiry form are included as a proposal. Prices are not connected to billing or entitlement enforcement.
+- Enterprise enquiries are stored in the `SalesLeads` Azure Table and visible to platform administrators. Configure storage permissions and anti-spam controls before public launch.
+- Signed-in users have a searchable Documentation centre; the expanded guide is in `docs/USER-GUIDE.md`.
+- The client catalog shows its live loaded-app count. Platform administrators can import 56 unique built-in WinGet package IDs into the shared catalog.
+- Microsoft Store source entries can be imported with a verified Store product ID and package family name. Store entries are excluded from Nexpatch auto-publish; native Intune Store app publishing and its automatic-update lifecycle still require a separate validated integration.
+- Base-policy path rules are now sent to the backend and embedded in WDAC XML. Only administrator-protected directories should be allowed.

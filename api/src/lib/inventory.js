@@ -1,9 +1,11 @@
 // Pulls the apps Intune has discovered on a tenant's Windows devices and stores them.
+import { randomUUID } from 'node:crypto';
 import { graphAll } from './graph.js';
 import { replaceInventory, saveTenant, logSyncRun } from './store.js';
 
 export async function syncInventory(tenantId, trigger) {
-  const syncId = Date.now().toString(36);
+  // Distinct even when manual and scheduled syncs start in the same millisecond.
+  const syncId = randomUUID();
   try {
     const apps = await graphAll(tenantId, '/beta/deviceManagement/detectedApps');
     const rows = apps

@@ -357,6 +357,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <button class="linkbtn opt" type="button" data-scroll="pub-features">Features</button>
         <button class="linkbtn opt" type="button" data-scroll="pub-how">How it works</button>
         <button class="linkbtn opt" type="button" data-scroll="pub-security">Security</button>
+        <button class="linkbtn opt" type="button" data-scroll="pub-pricing">Pricing</button>
         <button class="btn primary" type="button" id="pubCta" style="margin-left:8px">Sign in</button>
       </div>
     </header>
@@ -432,6 +433,31 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       </div>
     </section>
 
+    <section class="wrap sec" id="pub-pricing" aria-labelledby="pricingTitle">
+      <p class="eyebrow">Simple pricing</p><h2 class="big" id="pricingTitle">Plans that grow with your device fleet.</h2>
+      <p class="lede">Proposed launch pricing in USD. Final subscriptions, billing and plan limits will be confirmed before paid checkout is enabled.</p>
+      <div class="features">
+        <div class="feature"><p class="eyebrow">Starter</p><h3 style="font-size:2rem;margin:4px 0">$49 <small>/ month</small></h3><p>Up to 50 managed devices</p><p>App catalog, automated publishing, deployment rings and documentation.</p></div>
+        <div class="feature"><p class="eyebrow">Growth</p><h3 style="font-size:2rem;margin:4px 0">$149 <small>/ month</small></h3><p>Up to 250 managed devices</p><p>Starter features plus reporting, scheduling and multiple administrators.</p></div>
+        <div class="feature"><p class="eyebrow">Business</p><h3 style="font-size:2rem;margin:4px 0">$399 <small>/ month</small></h3><p>Up to 1,000 managed devices</p><p>Growth features plus advanced App Control, path rules and audit history.</p></div>
+        <div class="feature"><p class="eyebrow">Enterprise</p><h3 style="font-size:2rem;margin:4px 0">Custom</h3><p>For larger and multi-tenant environments</p><p>Custom limits, onboarding, security reviews and priority support.</p><button class="btn primary" type="button" data-scroll="enterpriseContact">Contact Enterprise sales</button></div>
+      </div>
+      <p class="small">Annual billing: proposed 15% discount. These are recommendations, not active billing terms.</p>
+      <div class="panel" id="enterpriseContact" style="margin-top:28px"><div class="panel-head"><div><h2>Talk to Enterprise sales</h2><p class="small" style="margin:0">Request a quote or product demonstration.</p></div></div>
+        <form id="salesForm" class="grid2" style="margin-top:12px">
+          <label class="field"><span>Your name *</span><input name="name" required maxlength="120" autocomplete="name"></label>
+          <label class="field"><span>Business email *</span><input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+          <label class="field"><span>Company *</span><input name="company" required maxlength="160" autocomplete="organization"></label>
+          <label class="field"><span>Country</span><input name="country" maxlength="80" autocomplete="country-name"></label>
+          <label class="field"><span>Managed devices</span><select name="devices"><option value="Not sure">Not sure yet</option><option>1–250</option><option>251–1,000</option><option>1,001–5,000</option><option>5,001–10,000</option><option>10,000+</option></select></label>
+          <label class="field"><span>What would you like to discuss?</span><textarea name="message" rows="3" maxlength="3000" placeholder="Tenants, requirements, demo request…"></textarea></label>
+          <label class="check" style="grid-column:1/-1"><input type="checkbox" name="consent" required><span>It’s okay for NexpatchOnline to contact me about this enquiry.</span></label>
+          <label hidden aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+          <div class="row" style="grid-column:1/-1;align-items:center"><button class="btn primary" type="submit">Send Enterprise enquiry</button><span class="small" id="salesStatus" role="status"></span></div>
+        </form>
+      </div>
+    </section>
+
     <div class="wrap">
       <div class="cta-band">
         <div><h2>See your own fleet in minutes.</h2><p>Connect a tenant, import your inventory, and NexpatchOnline shows what’s out of date.</p></div>
@@ -498,6 +524,8 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <div class="nav-h">Organization</div>
     <a href="#users" data-view="users">Users and access</a>
     <a href="#connect" data-view="connect">Connect to Intune</a>
+    <div class="nav-h">Resources</div>
+    <a href="#documentation" data-view="documentation">Documentation and guides</a>
     <div class="nav-h" id="navAdminH" hidden>NexpatchOnline admin</div>
     <a href="#platform" data-view="platform" id="navPlatform" hidden>Catalog, clients and logs</a>
     <div class="foot">
@@ -544,6 +572,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <!-- CATALOG -->
     <section class="view" id="view-catalog" aria-labelledby="catTitle">
       <h1 id="catTitle">App catalog</h1>
+      <p class="lede" id="catalogCount" style="margin-top:-8px">0 applications in the catalog</p>
       <p class="lede">Third-party apps NexpatchOnline can package for Intune. Turn on auto-publish for apps you want the scheduled runbook to keep current, or publish one now.</p>
       <div class="toolbar">
         <input class="search" id="catSearch" type="search" placeholder="Search apps or publishers" aria-label="Search apps">
@@ -562,7 +591,14 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           <tbody id="catBody"></tbody>
         </table>
       </div>
-      <p class="small" style="margin-top:12px">Versions shown are sample data until you import inventory on the Connect page. The packaging script always reads the current version from winget at the moment it runs.</p>
+      <details class="panel" style="margin-top:18px"><summary style="cursor:pointer;font-weight:700">Import Microsoft Store apps in bulk</summary>
+        <p class="small">Find Store product IDs with WinGet on a trusted Windows workstation. Include the app’s Package Family Name (PFN), obtained from a test device after installing the app.</p>
+        <pre class="code" style="white-space:pre-wrap">winget search --source msstore "app name"</pre>
+        <p class="small">Paste a JSON array containing <code>name</code>, <code>id</code>, <code>packageFamily</code>, optional <code>publisher</code> and optional <code>reg</code> (installed display name).</p>
+        <textarea id="storeImport" rows="5" placeholder='[{"name":"Example app","id":"9ABC12345678","packageFamily":"Example.App_abc123","publisher":"Example publisher"}]'></textarea>
+        <button class="btn small primary" type="button" id="storeImportBtn" style="margin-top:8px">Import Store apps</button><span class="small" id="storeImportStatus" style="margin-left:10px"></span>
+      </details>
+      <p class="small" style="margin-top:12px">Versions shown are sample data until you import inventory. Store app IDs and PFNs must be verified before use. Store entries are catalog-only until native Intune Store publishing is implemented and validated; they cannot be published from NexpatchOnline yet.</p>
     </section>
 
     <!-- DISCOVERY -->
@@ -718,9 +754,9 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
                 <div class="pubs" id="pPubs"></div>
               </li>
               <li>
-                <h3>Extra rules</h3>
-                <label class="field"><span>Allowed folders, one per line</span><textarea id="pPaths" placeholder="C:\Program Files\LineOfBusiness\*"></textarea></label>
-                <p class="small" style="margin-top:-6px">Use folders only admins can write to. App Control ignores path rules in folders users can write to.</p>
+                <h3>Path rules and additional controls</h3>
+                <label class="field"><span>Allowed path directories (one absolute path per line)</span><textarea id="pPaths" placeholder="C:\Program Files\LineOfBusiness\*"></textarea></label>
+                <p class="small" style="margin-top:-6px">Path rules are deployed with the base policy. Only list protected directories that standard users cannot modify. Never allow Downloads, Desktop, Temp, AppData or user profile paths.</p>
                 <div id="pCustom"></div>
                 <div class="field" style="margin-top:10px"><label for="pHashPath" style="display:block;font-weight:700;font-size:.9rem;margin-bottom:5px">Allow a specific file by hash</label><div class="row" style="flex-wrap:nowrap"><input type="text" id="pHashPath" placeholder="C:\NexpatchOnline\Reference\tool.exe"><button class="btn small" type="button" id="pHashAdd">Add</button></div><p class="small" style="margin:4px 0 0">The file’s path on the reference device where you run the script. Only this exact file is allowed; a new version needs a new rule.</p></div>
                 <div class="check"><input type="checkbox" id="pBlock"><label for="pBlock"><b>Block tools attackers misuse</b><small>Merges Microsoft’s recommended block rules (for example old mshta and wmic abuse paths).</small></label></div>
@@ -817,10 +853,22 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <div class="table-wrap"><table class="compact"><thead><tr><th>Organization</th><th>Plan</th><th>People</th><th>Usage (30 days)</th><th>Last inventory sync</th><th></th></tr></thead><tbody id="platTenBody"></tbody></table></div>
       </div>
       <div class="panel">
+        <div class="panel-head"><div><h2>Enterprise enquiries</h2><p class="small" style="margin:0">New quote and demo requests submitted from the public pricing page.</p></div><button class="btn small" type="button" id="platLeadsRefresh">Refresh</button></div>
+        <div class="table-wrap"><table class="compact"><thead><tr><th>Contact</th><th>Company</th><th>Devices</th><th>Country</th><th>Message</th><th>Received</th></tr></thead><tbody id="platLeadsBody"></tbody></table></div>
+      </div>
+      <div class="panel">
         <div class="panel-head"><div><h2>Deployment logs</h2><p class="small" style="margin:0">Every publish across all organizations, newest first.</p></div><button class="btn small" type="button" id="platJobsRefresh">Refresh</button></div>
         <div class="toolbar"><div class="seg" role="group" aria-label="Filter"><button type="button" data-pjf="all" aria-pressed="true">All</button><button type="button" data-pjf="failed">Failed</button><button type="button" data-pjf="busy">In progress</button></div></div>
         <div class="table-wrap"><table class="compact"><thead><tr><th>Organization</th><th>App</th><th>Status</th><th>By</th><th>Started</th><th></th></tr></thead><tbody id="platJobsBody"></tbody></table></div>
       </div>
+    </section>
+
+    <!-- DOCUMENTATION -->
+    <section class="view" id="view-documentation" aria-labelledby="docsTitle">
+      <h1 id="docsTitle">Documentation centre</h1><p class="lede">Practical, step-by-step guides for setting up and operating NexpatchOnline.</p>
+      <div class="toolbar"><input class="search" id="docsSearch" type="search" placeholder="Search guides and topics" aria-label="Search documentation"><span class="small" id="docsCount"></span></div>
+      <div class="grid2" style="align-items:start"><div class="panel"><h2>Browse topics</h2><div id="docsTopics" class="todo"></div></div>
+        <article class="panel" id="docsArticle" aria-live="polite"><p class="eyebrow">Getting started</p><h2>Welcome to NexpatchOnline</h2><p>Select a topic to read the guide.</p></article></div>
     </section>
 
     <!-- CONNECT -->
@@ -988,10 +1036,12 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 <dialog id="addDlg" aria-labelledby="addTitle">
   <div class="dlg-head"><h2 id="addTitle">Add an app</h2><button class="btn ghost" type="button" id="aCancel">Close</button></div>
   <div class="dlg-body">
-    <p class="small" style="margin-top:0">Any app in winget can be patched. Run <b>winget search "app name"</b> on a Windows machine to find its ID.</p>
+    <p class="small" style="margin-top:0">WinGet: <b>winget search "app name"</b>. Store: <b>winget search --source msstore "app name"</b>. Store apps also need a verified Package Family Name for detection.</p>
     <div class="grid2" style="margin-top:0;gap:0 16px">
       <label class="field"><span>App name</span><input type="text" id="aName" placeholder="Bitwarden"></label>
-      <label class="field"><span>Winget ID</span><input type="text" id="aWinget" placeholder="Bitwarden.Bitwarden"></label>
+      <label class="field"><span>Package ID</span><input type="text" id="aWinget" placeholder="WinGet ID or Store product ID"></label>
+      <label class="field"><span>Package source</span><select id="aSource"><option value="winget">WinGet community catalog</option><option value="msstore">Microsoft Store</option></select></label>
+      <label class="field"><span>Store Package Family Name (Store only)</span><input type="text" id="aStoreFamily" placeholder="PackageFamilyName_abcdefgh"></label>
       <label class="field"><span>Publisher</span><input type="text" id="aVendor" placeholder="Shown in Company Portal"></label>
       <label class="field"><span>Name in Installed apps</span><input type="text" id="aReg" placeholder="Used to detect the app"></label>
       <label class="field"><span>Processes to close</span><input type="text" id="aProcs" placeholder="bitwarden, other"></label>
@@ -1476,7 +1526,7 @@ function psOptions(c, withProcs){
 }
 function newAssignment(intent){ return {intent:intent||'required', target:'group', group:'', mode:'include', start:'', deadline:'', filter:'', filterMode:'Include'}; }
 function defaultCfg(app){
-  return {updateOnly:true, method:'groups', assignments:[newAssignment('required')],
+  return {updateOnly:app.source==='msstore'?false:true, method:'groups', assignments:[newAssignment('required')],
     rings:JSON.parse(JSON.stringify(S.settings.rings)), ringIntent:'required', exclude:'', filter:'', filterMode:'Include', grace:S.settings.grace,
     notify:'showReboot', restart:'suppress', dop:'notConfigured', maxTime:60, graceOn:false, graceMin:1440, countdown:15, snooze:240,
     conflict:'Close', procs:(app.procs||[]).slice(), confMin:10, deps:[], depType:'AutoInstall',
@@ -1499,8 +1549,9 @@ function publishScript(app, c){
     '\n# Deployment options chosen in NexpatchOnline\n$Options = ' + psOptions(c, true) + '\n\nPublish-NexpatchOnlineApp -App ' + psApp(app) + ' -Options $Options\n';
 }
 function runbookScript(){
-  const autos = S.apps.filter(a=>S.auto[a.id]);
+  const autos = S.apps.filter(a=>S.auto[a.id] && a.source!=='msstore');
   return psHeader('auto-publish runbook (' + autos.length + ' apps)', true) + psCore() +
+  '# Microsoft Store entries are excluded: Store app update behaviour is controlled by Microsoft Store / Intune and must be validated separately.\n' +
   '\n# Each app uses the assignments last chosen for it in NexpatchOnline, always as update only.\n# Apps never opened in the publish dialog use the rollout rings from the Connect page.\n' +
   (autos.length ? autos.map(a=>{ const saved=migrateCfg(JSON.parse(JSON.stringify((S.pubPrefs||{})[a.id]||{})));
       const c=Object.assign(defaultCfg(a), saved.method?saved:{method:'rings'}, {updateOnly:true}); if(!saved.method) c.rings=JSON.parse(JSON.stringify(S.settings.rings));
@@ -1558,7 +1609,7 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','catalog','discovery','deployments','reports','app-control','users','connect','platform'];
+const VIEWS=['overview','catalog','discovery','deployments','reports','app-control','users','connect','documentation','platform'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
@@ -1573,7 +1624,7 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='users') renderUsers(); if(v==='platform') renderPlatform(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='users') renderUsers(); if(v==='platform') renderPlatform(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Owner'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
@@ -1762,6 +1813,7 @@ $('#ovTodo').addEventListener('click', e=>{ const b=e.target.closest('[data-pub]
 /* ---------- Catalog ---------- */
 let filter='all';
 function renderCatalog(){
+  $('#catalogCount').textContent = S.apps.length.toLocaleString() + ' applications in the catalog';
   const q=$('#catSearch').value.trim().toLowerCase();
   let rows=[...S.apps].sort((a,b)=>risk(b)-risk(a));
   if(q) rows=rows.filter(a=>(a.name+' '+a.vendor).toLowerCase().includes(q));
@@ -1769,12 +1821,12 @@ function renderCatalog(){
   if(filter==='vuln') rows=rows.filter(a=>status(a).k==='vuln');
   if(filter==='auto') rows=rows.filter(a=>S.auto[a.id]);
   $('#catBody').innerHTML = rows.length ? rows.map(a=>{ const st=status(a); const t=sum(a.fleet); const behind=t-a.fleet[0];
-    return '<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span></td>'+
+    return '<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span><span class="sub">'+(a.source==='msstore'?'Microsoft Store':'WinGet')+'</span></td>'+
     '<td>'+(a.latest?esc(a.latest):'<span class="small">Checked at publish</span>')+'<span class="sub">'+esc(a.winget)+'</span></td>'+
     '<td>'+bar(a,true)+'<span class="sub">'+t+' installs, '+behind+' behind'+(a.fleet[3]?', '+a.fleet[3]+' vulnerable':'')+'</span></td>'+
     '<td><span class="pill '+st.cls+'">'+st.t+'</span>'+(a.cves?'<span class="sub">'+a.cves+' CVE'+(a.cves>1?'s':'')+' fixed in latest</span>':'')+'</td>'+
-    '<td><label class="switch"><input type="checkbox" data-auto="'+a.id+'" '+(S.auto[a.id]?'checked':'')+' aria-label="Auto-publish '+esc(a.name)+'"><span></span></label></td>'+
-    '<td><div class="row" style="flex-wrap:nowrap"><button class="btn small'+(st.k==='vuln'?' primary':'')+'" type="button" data-pub="'+a.id+'">Publish</button>'+(a.custom?'<button class="btn small ghost" type="button" data-del="'+a.id+'" aria-label="Remove '+esc(a.name)+'">Remove</button>':'')+'</div></td></tr>'; }).join('')
+    '<td><label class="switch"><input type="checkbox" data-auto="'+a.id+'" '+(S.auto[a.id]?'checked':'')+' '+(a.source==='msstore'?'disabled title="Store updates are managed outside Nexpatch auto-publish"':'')+' aria-label="Auto-publish '+esc(a.name)+'"><span></span></label></td>'+
+    '<td><div class="row" style="flex-wrap:nowrap">'+(a.source==='msstore'?'<span class="small" title="Native Intune Store publishing is not enabled yet">Store catalog only</span>':'<button class="btn small'+(st.k==='vuln'?' primary':'')+'" type="button" data-pub="'+a.id+'">Publish</button>')+(a.custom?'<button class="btn small ghost" type="button" data-del="'+a.id+'" aria-label="Remove '+esc(a.name)+'">Remove</button>':'')+'</div></td></tr>'; }).join('')
   : '<tr><td colspan="6" class="empty">No apps match. Clear the search or pick another filter.</td></tr>';
 }
 $('#catSearch').addEventListener('input', renderCatalog);
@@ -1782,14 +1834,15 @@ $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>{ filter=b.dataset
 $('#catBody').addEventListener('change', e=>{ const id=e.target.dataset.auto; if(!id) return; S.auto[id]=e.target.checked; save(); renderNav(); toast(e.target.checked?'Auto-publish on':'Auto-publish off'); });
 $('#catBody').addEventListener('click', e=>{ const b=e.target.closest('[data-pub]'); if(b) openPublish(b.dataset.pub); });
 const addDlg=$('#addDlg');
-function openAddDialog(pre){ pre=pre||{}; $$('#addDlg input').forEach(i=>{ if(i.type==='checkbox') i.checked=false; else i.value=''; }); $('#aName').value=pre.name||''; $('#aWinget').value=pre.winget||''; $('#aVendor').value=pre.vendor||''; $('#aReg').value=pre.reg||''; $('#aProcs').value=pre.procs||''; $('#aExe').value=pre.exe||''; $('#aLatest').value=pre.latest||''; $('#aErr').textContent=''; addDlg.showModal(); $('#aName').focus(); }
+function openAddDialog(pre){ pre=pre||{}; $$('#addDlg input').forEach(i=>{ if(i.type==='checkbox') i.checked=false; else i.value=''; }); $('#aName').value=pre.name||''; $('#aWinget').value=pre.winget||''; $('#aSource').value=pre.source||'winget'; $('#aStoreFamily').value=pre.storeFamily||''; $('#aVendor').value=pre.vendor||''; $('#aReg').value=pre.reg||''; $('#aProcs').value=pre.procs||''; $('#aExe').value=pre.exe||''; $('#aLatest').value=pre.latest||''; $('#aErr').textContent=''; addDlg.showModal(); $('#aName').focus(); }
 $('#addAppBtn').addEventListener('click',()=>openAddDialog());
 $('#aCancel').addEventListener('click',()=>addDlg.close());
-$('#aSave').addEventListener('click',()=>{ const v=id=>$('#'+id).value.trim(); const name=v('aName'), winget=v('aWinget');
-  if(!name||!winget){ $('#aErr').textContent='Add a name and a winget ID. Find the ID with: winget search "'+(name||'app name')+'"'; return; }
-  if(S.apps.some(a=>a.winget.toLowerCase()===winget.toLowerCase())){ $('#aErr').textContent='An app with that winget ID is already in the catalog.'; return; }
-  S.apps.push({id:'c-'+winget.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name:name,vendor:v('aVendor')||name,winget:winget,reg:v('aReg')||name,procs:v('aProcs').split(',').map(s=>s.trim().replace(/\.exe$/i,'')).filter(Boolean),exe:v('aExe'),latest:v('aLatest')||'From winget',fleet:[0,0,0,0],cves:0,custom:true,unsigned:$('#aUnsigned').checked});
+$('#aSave').addEventListener('click',()=>{ const v=id=>$('#'+id).value.trim(); const name=v('aName'), winget=v('aWinget'), source=v('aSource'), storeFamily=v('aStoreFamily');
+  if(!name||!winget||(source==='msstore'&&!storeFamily)){ $('#aErr').textContent=source==='msstore'?'Add a name, Store product ID and Package Family Name.':'Add a name and a WinGet ID. Find it with: winget search "'+(name||'app name')+'"'; return; }
+  if(S.apps.some(a=>(a.source||'winget')===source && a.winget.toLowerCase()===winget.toLowerCase())){ $('#aErr').textContent='An app with that winget ID is already in the catalog.'; return; }
+  S.apps.push({id:'c-'+source+'-'+winget.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name:name,vendor:v('aVendor')||name,winget:winget,source:source,storeFamily:storeFamily,reg:v('aReg')||name,procs:v('aProcs').split(',').map(s=>s.trim().replace(/\.exe$/i,'')).filter(Boolean),exe:v('aExe'),latest:v('aLatest')||(source==='msstore'?'Store listing':'From winget'),fleet:[0,0,0,0],cves:0,custom:true,unsigned:$('#aUnsigned').checked});
   fleetFromInventory(S.apps[S.apps.length-1]); save(); addDlg.close(); renderNav(); renderCatalog(); if(location.hash==='#discovery') renderDiscovery(); toast(name+' added to the catalog'); });
+$('#storeImportBtn').addEventListener('click',()=>{ const status=$('#storeImportStatus'); try{ const rows=JSON.parse($('#storeImport').value); if(!Array.isArray(rows)||rows.length>100) throw new Error('Paste a JSON array containing up to 100 apps.'); let added=0; rows.forEach(x=>{ const id=String(x.id||'').trim(), name=String(x.name||'').trim(), storeFamily=String(x.packageFamily||'').trim(); if(!name||!id||!storeFamily||S.apps.some(a=>(a.source||'winget')==='msstore'&&a.winget.toLowerCase()===id.toLowerCase())) return; S.apps.push({id:'c-msstore-'+id.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name,vendor:String(x.publisher||name),winget:id,source:'msstore',storeFamily,reg:String(x.reg||name),procs:[],exe:'',latest:'Store listing',fleet:[0,0,0,0],cves:0,custom:true}); added++; }); save(); renderCatalog(); status.textContent=added+' Store app(s) imported.'; }catch(e){ status.textContent=e.message; } });
 $('#catBody').addEventListener('click', e=>{ const b=e.target.closest('[data-del]'); if(!b) return; const a=S.apps.find(x=>x.id===b.dataset.del); if(!a||!confirm('Remove '+a.name+' from the catalog?')) return; S.apps=S.apps.filter(x=>x.id!==a.id); delete S.auto[a.id]; S.policy.pubs=S.policy.pubs.filter(p=>p!==a.id); save(); renderNav(); renderCatalog(); toast(a.name+' removed from the catalog'); });
 $('#runbookBtn').addEventListener('click', ()=>showCode('Auto-publish runbook', 'Checks winget for every app with auto-publish on and publishes anything newer than what Intune has. Schedule it daily with an app registration secret.', runbookScript()));
 
@@ -1929,7 +1982,7 @@ $('#dPublishNow').addEventListener('click', async ()=>{
   const c=finalCfg(); rememberCfg(c); const app=current; const btn=$('#dPublishNow');
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Starting\u2026';
   try{
-    const r=await api('/publish','POST',{ app:{name:app.name, winget:app.winget, reg:app.reg, vendor:app.vendor}, options:Object.assign({}, c, {summary:cfgSummary(c)}) });
+    const r=await api('/publish','POST',{ app:{name:app.name, winget:app.winget, reg:app.reg, vendor:app.vendor, source:app.source||'winget', storeFamily:app.storeFamily||''}, options:Object.assign({}, c, {summary:cfgSummary(c)}) });
     watchJob(r.jobId, app, c);
     $('#pubDlg').close(); toast('Publishing '+app.name+'. Follow it on Deployments.'); location.hash='#deployments';
   }catch(e){ toast('Couldn\u2019t start publishing. '+e.message); }
@@ -1992,6 +2045,26 @@ $('#jobsBody').addEventListener('click', async e=>{ const b=e.target.closest('[d
   catch(err){ toast(err.message); } });
 function renderDeployments(){ renderJobs(); $('#depList').innerHTML = S.deployments.length ? S.deployments.map(depHTML).join('') + '<p class="small" style="margin-top:18px">NexpatchOnline tracks the schedule. Device-level install results are in Intune under Apps, Windows, then the app’s device install status.</p>' : '<div class="empty"><p>No updates published yet.</p><a class="btn primary" href="#catalog">Pick an app to publish</a></div>'; }
 $('#depList').addEventListener('click', e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; S.deployments=S.deployments.filter(d=>d.id!==b.dataset.rm); save(); renderDeployments(); toast('Deployment removed from NexpatchOnline'); });
+
+/* ---------- Documentation centre ---------- */
+const DOCS=[
+ {topic:'Getting started',title:'Connect your Microsoft Intune tenant',body:'<ol><li>Sign in with your Microsoft work account.</li><li>Open <b>Connect to Intune</b> and review requested Graph permissions.</li><li>Have an administrator grant consent when prompted.</li><li>Wait for tenant activation, then sync inventory.</li><li>Review discovered apps before publishing updates.</li></ol><p>Start with a test tenant and a pilot group.</p>'},
+ {topic:'Getting started',title:'Understand roles and access',body:'<p>Viewers can review catalog, inventory and reports. Admins can publish apps, sync inventory and manage App Control. Owners can also manage organization access. Apply least privilege.</p>'},
+ {topic:'Application catalog',title:'Read the application catalog',body:'<p>The catalog combines built-in sample apps, the shared platform catalog and organization-added apps. The count shows apps currently loaded in this browser. Inventory counts are illustrative until you connect and sync Intune.</p><p>Verify publisher, package ID and install context before enabling auto-publish.</p>'},
+ {topic:'Application catalog',title:'Add a WinGet application',body:'<ol><li>Run <code>winget search "app name"</code> on a trusted Windows workstation.</li><li>Confirm exact package ID and publisher.</li><li>Choose Add app and enter package ID, installed-app display name and process names.</li><li>Test on a pilot group before enabling automatic publishing.</li></ol>'},
+ {topic:'Microsoft Store',title:'Add a Microsoft Store application',body:'<ol><li>Find the Store product ID with <code>winget search --source msstore "app name"</code>.</li><li>Install on a test device and retrieve the package family name using <code>Get-AppxPackage</code>.</li><li>Import JSON with name, id, packageFamily and publisher.</li><li>Verify Windows support, architecture, install context and update behaviour.</li></ol><p>Store delivery and publisher update behaviour vary by app. Confirm each app in a test tenant before broad deployment.</p>'},
+ {topic:'Automatic updates',title:'Configure automatic publishing',body:'<ol><li>Open Catalog and updates.</li><li>Enable auto-publish only for validated apps.</li><li>Set deployment rings: Pilot, early adopters, then broad deployment.</li><li>Set suitable deferrals and monitor Deployments.</li><li>Review failures before retrying.</li></ol>'},
+ {topic:'Intune',title:'Prepare groups and permissions',body:'<p>Use dedicated Entra device groups for pilot and production rings. Confirm Intune roles, Graph permissions and licensing. Avoid assigning new policies to all devices until pilot tests succeed.</p>'},
+ {topic:'App Control',title:'Build a base policy safely',body:'<ol><li>Start in Audit mode and target a pilot group.</li><li>Choose the Microsoft trust baseline that suits your organization.</li><li>Enable Managed Installer only after configuring it in Intune.</li><li>Review events and allow only required publishers or hashes.</li><li>Run audit for at least a week before considering Enforce.</li></ol><p>Maintain a tested recovery plan.</p>'},
+ {topic:'App Control',title:'Configure allowed path rules',body:'<p>Path rules allow files in specified directories. Only use locations standard users cannot modify, such as <code>C:\\Program Files\\Vendor\\*</code>. Never allow Downloads, Desktop, Temp, AppData, user profiles or other user-writable locations.</p><p>Enter one absolute Windows path per line. NexpatchOnline validates and embeds these in the base policy.</p>'},
+ {topic:'App Control',title:'Use supplemental policies',body:'<p>Supplemental policies extend a base policy. Review every allow decision, deploy the base policy first and use the same intended device scope. Redeploy after changing allowed publishers or file hashes.</p>'},
+ {topic:'Reports',title:'Understand reports and inventory',body:'<p>Sync Intune inventory before relying on device counts or version distribution. Sample/demo data is illustrative. Use deployment job logs to investigate Intune assignment failures.</p>'},
+ {topic:'Troubleshooting',title:'Common publishing problems',body:'<ul><li><b>WinGet not found:</b> confirm App Installer is available to SYSTEM.</li><li><b>Package not found:</b> verify exact package ID and source.</li><li><b>Detection fails:</b> verify registry display name, PFN and install context.</li><li><b>Assignment fails:</b> verify group IDs, permissions and licensing.</li><li><b>Store app does not update:</b> check Store policy, network access and publisher listing.</li></ul>'},
+ {topic:'Administration',title:'Protect your organization',body:'<p>Use role-based access, review audit history, protect service credentials and rotate secrets. Never paste tenant secrets or access tokens into support messages.</p>'}
+];
+function renderDocumentation(){const q=$('#docsSearch').value.trim().toLowerCase();const filtered=DOCS.filter(d=>(d.topic+' '+d.title+' '+d.body.replace(/<[^>]*>/g,' ')).toLowerCase().includes(q));$('#docsCount').textContent=filtered.length+' guides';const topics=[...new Set(filtered.map(d=>d.topic))];$('#docsTopics').innerHTML=topics.map(t=>'<div style="margin:8px 0"><b>'+esc(t)+'</b>'+filtered.filter(d=>d.topic===t).map(d=>'<button class="linkbtn" type="button" data-doc="'+esc(d.title)+'" style="display:block;text-align:left;padding:6px 0">'+esc(d.title)+'</button>').join('')+'</div>').join('')||'<p class="empty">No guides match your search.</p>';if(filtered[0])showDoc(filtered[0].title);}
+function showDoc(title){const d=DOCS.find(x=>x.title===title);if(d)$('#docsArticle').innerHTML='<p class="eyebrow">'+esc(d.topic)+'</p><h2>'+esc(d.title)+'</h2>'+d.body;}
+$('#docsSearch').addEventListener('input',renderDocumentation);$('#docsTopics').addEventListener('click',e=>{const b=e.target.closest('[data-doc]');if(b)showDoc(b.dataset.doc);});
 
 /* ---------- App Control ---------- */
 function summaryItems(){ const p=S.policy; const out=[];
@@ -2067,7 +2140,7 @@ async function renderAcBaseDeploy(){
   $('#acbDeployBtn').disabled=!live;
   if(!live){ $('#acDeployState').innerHTML='<div class="note">Connect the backend and your organization to deploy from here. Until then, use the PowerShell tab.</div>'; return; }
   try{ const r=await api('/appcontrol/base'); $('#acDeployState').innerHTML = r.deployedAt ? '<div class="note info">Base policy deployed '+new Date(r.deployedAt).toLocaleString()+' in <b>'+esc(r.mode||'audit')+'</b> mode. Base policy ID '+esc(r.basePolicyId)+' (also saved on the Activity tab).</div>' : '';
-    if(r.base && !ACB_GROUPS.length && Array.isArray(r.base.groups)) ACB_GROUPS=r.base.groups.map(g=>({name:g,id:g})); renderAcbChips(); if(r.base) $('#acbAllDevices').checked=!!r.base.allDevices;
+    if(r.base && !ACB_GROUPS.length && Array.isArray(r.base.groups)) ACB_GROUPS=r.base.groups.map(g=>({name:g,id:g})); renderAcbChips(); if(r.base){ $('#acbAllDevices').checked=!!r.base.allDevices; if(Array.isArray(r.base.pathRules)){ S.policy.paths=r.base.pathRules.join('\n'); $('#pPaths').value=S.policy.paths; save(); } }
   }catch(e){ $('#acDeployState').innerHTML='<div class="note">'+esc(e.message)+'</div>'; }
 }
 let ACB_TIMER=null;
@@ -2083,7 +2156,7 @@ $('#acbChips').addEventListener('click', e=>{ const b=e.target.closest('[data-ac
 $('#acbDeployBtn').addEventListener('click', async ()=>{
   const p=S.policy; const btn=$('#acbDeployBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>Deploying\u2026'; $('#acbLog').innerHTML='';
   try{
-    const r=await api('/appcontrol/base','POST',{ base:p.base, mode:p.mode, managedInstaller:p.mi, isg:p.isg, enforceScripts:p.scripts, name:p.name, groups:ACB_GROUPS.map(g=>g.id), allDevices:$('#acbAllDevices').checked });
+    const r=await api('/appcontrol/base','POST',{ base:p.base, mode:p.mode, managedInstaller:p.mi, isg:p.isg, enforceScripts:p.scripts, name:p.name, pathRules:p.paths.split(/\r?\n/).map(x=>x.trim()).filter(Boolean), groups:ACB_GROUPS.map(g=>g.id), allDevices:$('#acbAllDevices').checked });
     $('#acbLog').innerHTML=(r.log||[]).map(l=>'<li><i class="t-ic" style="background:var(--green)"></i><div class="t-body"><span>'+esc(l)+'</span></div></li>').join('');
     if(AC.settings) AC.settings.basePolicyId=r.basePolicyId; S.settings.acBasePolicyId=r.basePolicyId; save();
     toast('Base policy deployed to Intune'); renderAcBaseDeploy();
@@ -2465,8 +2538,10 @@ async function renderPlatform(){
   $('#platCatBody').innerHTML = PLAT.apps.length ? PLAT.apps.map(a=>'<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span></td><td><code>'+esc(a.winget)+'</code></td><td>'+esc(a.category||'')+'</td><td><span class="pill '+(a.enabled?'p-cur':'p-neutral')+'">'+(a.enabled?'Shown':'Hidden')+'</span></td><td>'+(a.updatedAt?new Date(a.updatedAt).toLocaleDateString():'')+'<span class="sub">'+esc(a.updatedBy)+'</span></td><td><div class="row" style="flex-wrap:nowrap"><button class="btn small" type="button" data-pedit="'+esc(a.id)+'">Edit</button><button class="btn small ghost" type="button" data-pdel="'+esc(a.id)+'">Delete</button></div></td></tr>').join('')
     : '<tr><td colspan="6" class="empty">The shared catalog is empty. Import the built-in apps or add one.</td></tr>';
   try{ PLAT.tenants=(await api('/platform/tenants')).tenants; drawPlatTenants(); }catch(e){ $('#platTenBody').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; }
-  loadPlatJobs();
+  loadPlatJobs(); loadPlatLeads();
 }
+async function loadPlatLeads(){ try{ const r=await api('/platform/sales-leads'); $('#platLeadsBody').innerHTML=r.leads.length?r.leads.map(x=>'<tr><td><b>'+esc(x.name)+'</b><span class="sub">'+esc(x.email)+'</span></td><td>'+esc(x.company)+'</td><td>'+esc(x.devices||'')+'</td><td>'+esc(x.country||'')+'</td><td style="max-width:280px;white-space:normal">'+esc(x.message||'')+'</td><td>'+new Date(x.createdAt).toLocaleString()+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">No enquiries yet.</td></tr>'; }catch(e){ $('#platLeadsBody').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; } }
+$('#platLeadsRefresh').addEventListener('click',loadPlatLeads);
 const PLAN_PILL={active:['Paid','p-cur'],trial:['Trial','p-upd'],expired:['Trial ended','p-vuln']};
 function drawPlatTenants(){
   const t=PLAT.tenants||[];
@@ -2552,6 +2627,8 @@ $('#resetBtn').addEventListener('click',()=>{ if(!confirm('Replace your catalog,
 /* ---------- Theme ---------- */
 $('#themeBtn').addEventListener('click',()=>{ const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark?'light':'dark'; try{ localStorage.setItem('nexpatch-theme', r.dataset.theme); }catch(e){} });
 try{ const t=localStorage.getItem('nexpatch-theme'); if(t) document.documentElement.dataset.theme=t; }catch(e){}
+
+$('#salesForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,st=$('#salesStatus'),btn=f.querySelector('[type=submit]');st.textContent='Sending…';btn.disabled=true;try{if(!CFG.apiBaseUrl)throw new Error('Sales enquiries are not configured on this site yet.');const data=Object.fromEntries(new FormData(f).entries());data.consent=f.elements.consent.checked;const res=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/sales/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const out=await res.json().catch(()=>({}));if(!res.ok)throw new Error(out.error||'Could not send your enquiry.');f.reset();st.textContent='Thank you. Your enquiry has been received.';}catch(err){st.textContent=err.message;}finally{btn.disabled=false;}});
 
 initAuth().catch(()=>{}).finally(()=>{ route(); loadFromServer(); });
 })();

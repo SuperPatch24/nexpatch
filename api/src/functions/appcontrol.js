@@ -60,6 +60,8 @@ app.http('acIngest', { methods: ['POST'], authLevel: 'anonymous', route: 'appcon
       const given = sha(key), expected = Buffer.from(t.acKeyHash, "hex");
       if (expected.length !== given.length || !timingSafeEqual(expected, given)) return json(401, { error: 'Unknown organization or key.' });
       if (t.acSource !== 'collector') return json(409, { error: 'This organization uses Microsoft Defender for App Control events.' });
+      const declaredLength = Number(req.headers.get('content-length') || 0);
+      if (declaredLength > 1024 * 1024) return json(413, { error: 'Send at most 1 MB per call.' });
       const text = await req.text();
       if (text.length > 1024 * 1024) return json(413, { error: 'Send at most 1 MB per call.' });
       let body; try { body = JSON.parse(text); } catch { return json(400, { error: 'Body must be JSON.' }); }
@@ -175,15 +177,17 @@ app.http('acBaseDeploy', { methods: ['POST'], authLevel: 'anonymous', route: 'ap
     const groupIds = await resolveGroupIds(user.tenantId, groups);
     // Keep the same policy ID across updates, and bump the version each deploy.
     const version = `10.0.0.${Number(t.acBaseVersion || 0) + 1}`;
-    const { xml, policyId } = await buildBasePolicy({
+    let built;
+    try { built = await buildBasePolicy({
       base: cfg.base === 'DefaultWindows' ? 'DefaultWindows' : 'AllowMicrosoft',
       mode: cfg.mode === 'enforce' ? 'enforce' : 'audit',
       managedInstaller: cfg.managedInstaller !== false, isg: !!cfg.isg, enforceScripts: cfg.enforceScripts !== false,
-      name: cfg.name || 'NexpatchOnline base policy', policyId: t.acBasePolicyId || null, version
-    });
+      name: cfg.name || 'NexpatchOnline base policy', pathRules: Array.isArray(cfg.pathRules) ? cfg.pathRules : [], policyId: t.acBasePolicyId || null, version
+    }); } catch (err) { throw new HttpError(400, err.message); }
+    const { xml, policyId } = built;
     const log = [];
     await deployAcPolicy(user.tenantId, { name: cfg.name || 'NexpatchOnline base policy', xml, kind: 'base', groupIds, allDevices: !!cfg.allDevices, log: m => log.push(m) });
-    await saveTenant(user.tenantId, { acBasePolicyId: policyId, acBaseConfig: JSON.stringify({ base: cfg.base, mode: cfg.mode, managedInstaller: cfg.managedInstaller !== false, isg: !!cfg.isg, name: cfg.name, groups, allDevices: !!cfg.allDevices }),
+    await saveTenant(user.tenantId, { acBasePolicyId: policyId, acBaseConfig: JSON.stringify({ base: cfg.base, mode: cfg.mode, managedInstaller: cfg.managedInstaller !== false, isg: !!cfg.isg, name: cfg.name, groups, allDevices: !!cfg.allDevices, pathRules: Array.isArray(cfg.pathRules) ? cfg.pathRules : [] }),
       acBaseVersion: Number(t.acBaseVersion || 0) + 1, acBaseMode: cfg.mode, acBaseDeployedAt: new Date().toISOString() });
     await audit(user.tenantId, user.email || user.userId, 'deployed base policy', `${cfg.mode} mode`);
     return { basePolicyId: policyId, mode: cfg.mode, log };

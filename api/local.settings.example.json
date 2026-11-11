@@ -9,7 +9,11 @@
     "BLOB_STORAGE_CONNECTION": "<optional private blob storage connection string>",
     "PLATFORM_ADMINS": "<super-admin UPNs or object IDs>",
     "PLATFORM_CATALOG_MANAGERS": "<catalog-manager UPNs or object IDs>",
-    "PLATFORM_SUPPORT_ADMINS": "<support-admin UPNs or object IDs>"
+    "PLATFORM_SUPPORT_ADMINS": "<support-admin UPNs or object IDs>",
+    "BREVO_API_KEY": "<your-brevo-api-key>",
+    "BREVO_SENDER_EMAIL": "notifications@nexpatchonline.com",
+    "BREVO_SENDER_NAME": "NexpatchOnline",
+    "BREVO_ADMIN_EMAILS": "<admin-notification-address>"
   },
   "Host": {
     "CORS": "http://localhost:8787",

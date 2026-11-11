@@ -233,6 +233,35 @@ When using managed identity, grant the Function App **Storage Blob Data Contribu
 
 ### Admin Center sign-in
 
-The separate Admin Center is hosted at `/admin/`. Add `https://<your-site-hostname>/admin/` as an additional **Single-page application** redirect URI on the same Entra app registration. Configure the Function App allowlists with comma-separated administrator sign-in names (UPNs) or Entra object IDs: `PLATFORM_ADMINS` for Super Admin (full access), `PLATFORM_CATALOG_MANAGERS` for catalog-only access, and `PLATFORM_SUPPORT_ADMINS` for request triage and reporting. Optionally set `PLATFORM_TENANT_ID` to restrict all platform administrators to one Entra tenant. Only allowlisted platform roles can call platform APIs; site settings and tenant-wide billing/operations remain Super Admin only. The client portal remains at `/` and continues to use organization-scoped access.
+The separate Admin Center is hosted at `/admin/`. Add `https://<your-site-hostname>/admin/` as an additional **Single-page application** redirect URI on the same Entra app registration. Configure the Function App allowlists with comma-separated administrator sign-in names (UPNs) or Entra object IDs: `PLATFORM_ADMINS` for Super Admin (full access), `PLATFORM_CATALOG_MANAGERS` for catalog-only access, and `PLATFORM_SUPPORT_ADMINS` for request triage and reporting. Optionally set `PLATFORM_TENANT_ID` to restrict all platform administrators to one Entra tenant. Only allowlisted platform roles can call platform APIs; site settings and tenant-wide billing/operations remain Super Admin only. The client portal remains at `/` and continues to use organization-scoped access. The Admin Center now has its own internal documentation tab; customer-facing IT admin guidance remains in the signed-in client Documentation centre.
 
 The Admin Center includes request triage, shared catalog editing, live graphical summaries, Excel workbook export (Summary, Catalog, Requests and Organizations sheets), and a controlled website editor for the public hero headline/description, announcement banner and support email. It is not an arbitrary source-code editor. Deploy the updated API dependencies with `npm install` in `api/` before publishing the Functions app.
+
+## Brevo transactional email
+
+NexpatchOnline can send transactional email through Brevo from the Azure Functions backend. The Brevo API key must never be placed in `public/` files or committed to source control. Add these Function App application settings (or equivalent Key Vault references):
+
+- `BREVO_API_KEY`: the Brevo API key.
+- `BREVO_SENDER_EMAIL`: a verified sender, e.g. `notifications@nexpatchonline.com`.
+- `BREVO_SENDER_NAME`: `NexpatchOnline`.
+- `BREVO_ADMIN_EMAILS`: comma- or semicolon-separated addresses for new application request and enterprise enquiry notifications.
+
+In the Azure portal, open the Function App → **Settings → Environment variables → App settings**, add the values, and save. Azure Functions restarts after app-setting changes. For production, prefer Azure Key Vault references for the API key.
+
+The backend uses Brevo's `POST https://api.brevo.com/v3/smtp/email` endpoint with the `api-key` header. Notifications are best-effort: a temporary email provider outage does not undo a client request or enquiry. Current automatic messages include application request confirmations, request status changes, notifications to configured platform administrators, and enterprise enquiry alerts.
+
+A Super Admin can check configuration and send a test message through the authenticated endpoints:
+
+- `GET /api/platform/email/status` — reports whether email is configured and the sender address (never returns the API key).
+- `POST /api/platform/email/test` — JSON body `{ "to": "your-address@example.com" }`; sends a fixed test message to the specified address (or the signed-in Super Admin if `to` is omitted).
+
+To receive administrator notifications, set `BREVO_ADMIN_EMAILS`. Sending from Brevo does not create an inbox; configure a mailbox or forwarding service separately if you need to receive and reply to customer messages.
+
+
+## Platform reporting and Microsoft Store catalog
+
+The platform report endpoints are `GET /api/platform/reports` and `GET /api/platform/reports.xlsx` (Super Admin and Support Admin). They aggregate the shared `Catalog`, each tenant's `Inventory`, `PublishJobs`, `AppRequests`, and latest `InstallReports` rows. The `InstallReports` Azure Table is created automatically by the backend.
+
+Connected client administrators can upload their latest Intune device install-status snapshot using `POST /api/reports/install-results`. This route is organization-scoped and requires the client's Admin or Owner role. The customer portal's Reports import action uploads the JSON snapshot after the user imports it. The platform report shows these device-level failures separately from Nexpatch publish-job failures.
+
+The shared catalog can be seeded with 250 curated Microsoft Store discovery candidates using `POST /api/platform/catalog/store-candidates` from the Admin Center. These names are not verified Store listings or a popularity ranking. A Catalog Manager or Super Admin must confirm the exact publisher, Store Product ID and Microsoft Store URL before marking an entry verified. The native Intune Store publishing path uses Microsoft Graph beta `windowsStoreApp` and requires `DeviceManagementApps.ReadWrite.All`; test it in a pilot tenant before production. Native Store app publishing does not require a PFN. Store apps are excluded from Nexpatch WinGet auto-publish.

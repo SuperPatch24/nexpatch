@@ -5,6 +5,7 @@ import { DefaultAzureCredential } from '@azure/identity';
 import { withUser, HttpError, readJson } from '../lib/http.js';
 import { putRow, getRow, listRows, listAllTenants, audit } from '../lib/store.js';
 import { platformRole } from '../lib/platform.js';
+import { escapeHtml, notifyPlatformAdmins, sendBrevoEmail } from '../lib/email.js';
 
 const CONTAINER = 'nexpatch-request-installers';
 const MAX_BYTES = 50 * 1024 * 1024;
@@ -28,6 +29,9 @@ app.http('requestCreate', { methods:['POST'], authLevel:'anonymous', route:'requ
   const row={name,publisher:String(b.publisher||'').trim().slice(0,160),website:String(b.website||'').trim().slice(0,2048),downloadUrl,version:String(b.version||'').trim().slice(0,80),architecture:String(b.architecture||'unknown').slice(0,20),notes:String(b.notes||'').trim().slice(0,3000),status:'submitted',adminNotes:'',createdAt:now,updatedAt:now,requestedBy:user.email||user.userId,scanStatus:'not-uploaded'};
   await putRow('AppRequests',user.tenantId,id,row,'Replace');
   await audit(user.tenantId,user.email||user.userId,'submitted application request',name);
+  const safeName=escapeHtml(name);
+  if (user.email) await sendBrevoEmail({to:user.email,subject:`Application request received: ${name}`,htmlContent:`<p>Hi ${escapeHtml(user.name || '')},</p><p>We received your request for <strong>${safeName}</strong>.</p><p>You can track its progress in your NexpatchOnline dashboard.</p>`,textContent:`We received your request for ${name}. You can track its progress in your NexpatchOnline dashboard.`,tags:['application-request','client-confirmation']},_ctx);
+  await notifyPlatformAdmins({subject:`New application request: ${name}`,htmlContent:`<p>A client submitted a new application request.</p><p><strong>Application:</strong> ${safeName}</p><p><strong>Publisher:</strong> ${escapeHtml(row.publisher)}</p><p><strong>Requester:</strong> ${escapeHtml(user.email || user.userId)}</p><p>Review it in the NexpatchOnline Admin Center.</p>`,textContent:`New application request: ${name}. Requester: ${user.email || user.userId}.`},_ctx);
   return {request:shape({partitionKey:user.tenantId,rowKey:id,...row})};
 },'viewer') });
 
@@ -64,6 +68,7 @@ app.http('platformRequestUpdate', { methods:['PUT'], authLevel:'anonymous', rout
   const now=new Date().toISOString();
   await putRow('AppRequests',tid,id,{status,adminNotes,scanStatus,updatedAt:now,updatedBy:user.email||user.userId});
   await audit(tid,user.email||user.userId,'updated application request',`${row.name}: ${status}`);
+  if (row.requestedBy && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.requestedBy)) await sendBrevoEmail({to:row.requestedBy,subject:`Application request update: ${row.name}`,htmlContent:`<p>Your application request for <strong>${escapeHtml(row.name)}</strong> has been updated.</p><p><strong>New status:</strong> ${escapeHtml(status.replaceAll('-', ' '))}</p>${adminNotes ? `<p><strong>Team note:</strong> ${escapeHtml(adminNotes)}</p>` : ''}<p>Sign in to NexpatchOnline to view your request.</p>`,textContent:`Your request for ${row.name} is now ${status.replaceAll('-', ' ')}. ${adminNotes ? `Team note: ${adminNotes}` : ''}`,tags:['application-request','status-update']},_ctx);
   return {request:shape({...row,partitionKey:tid,rowKey:id,status,adminNotes,scanStatus,updatedAt:now})};
 },'any') });
 

@@ -88,6 +88,66 @@ async function uploadContent(tid, appId, content, log) {
   await graph(tid, `${B}/${appId}`, { method: 'PATCH', body: JSON.stringify({ '@odata.type': '#microsoft.graph.win32LobApp', committedContentVersion: cv.id }) });
 }
 
+
+export async function publishStoreApp(tid, app, o, log) {
+  const productId = String(app.storeProductId || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{8,16}$/.test(productId)) throw new Error('A verified Microsoft Store product ID is required.');
+  const appStoreUrl = String(app.appStoreUrl || `https://apps.microsoft.com/detail/${productId}`);
+  const u = new URL(appStoreUrl);
+  if (u.protocol !== 'https:' || !['apps.microsoft.com', 'www.microsoft.com', 'microsoft.com'].includes(u.hostname)) throw new Error('The app Store URL is not a trusted Microsoft Store URL.');
+  await log('Preparing native Microsoft Store app in Intune');
+  const all = await graphAll(tid, B);
+  let target = all.find(x => x['@odata.type'] === '#microsoft.graph.windowsStoreApp' && String(x.appStoreUrl || '').toLowerCase() === appStoreUrl.toLowerCase());
+  if (!target) {
+    target = await graph(tid, B, { method: 'POST', body: JSON.stringify({
+      '@odata.type': '#microsoft.graph.windowsStoreApp',
+      displayName: app.name,
+      description: `${app.name} from the Microsoft Store. Managed by NexpatchOnline.`,
+      publisher: app.vendor || 'Publisher not verified',
+      appStoreUrl,
+      informationUrl: o.infoUrl || appStoreUrl,
+      notes: o.notes || 'Microsoft Store app; update delivery is managed by Microsoft Store / Intune.',
+      isFeatured: !!o.featured
+    }) });
+    await log('Created Microsoft Store app in Intune; waiting for Store processing');
+  }
+  if (target.publishingState !== 'published') {
+    for (let i = 0; i < 60; i++) {
+      const current = await graph(tid, `${B}/${target.id}`);
+      if (current.publishingState === 'published') { target = current; break; }
+      await sleep(5000);
+    }
+    if (target.publishingState !== 'published') {
+      const current = await graph(tid, `${B}/${target.id}`);
+      if (current.publishingState !== 'published') throw new Error('Intune is still processing this Microsoft Store app or could not publish it. Check its status in Intune before retrying.');
+      target = current;
+    }
+  } else {
+    await log('This Microsoft Store app already exists in Intune; checking assignments');
+  }
+
+  const assignments = buildAssignments(o);
+  const current = ((await graph(tid, `${B}/${target.id}/assignments`)).value || []).map(a => `${a.target['@odata.type']}|${a.target.groupId || ''}|${a.intent}`);
+  let added = 0;
+  for (const a of assignments) {
+    const groupId = a.target === 'group' ? await resolveGroup(tid, a.group) : null;
+    const type = a.mode === 'exclude' ? '#microsoft.graph.exclusionGroupAssignmentTarget' : TARGET[a.target];
+    if (!type) throw new Error(`Unsupported assignment target: ${a.target}`);
+    if (current.includes(`${type}|${groupId || ''}|${a.intent}`)) { await log(`${a.label}: already assigned`); continue; }
+    const assignment = {
+      '@odata.type': '#microsoft.graph.mobileAppAssignment',
+      intent: a.intent,
+      source: 'direct',
+      target: { '@odata.type': type, ...(groupId ? { groupId } : {}), deviceAndAppManagementAssignmentFilterId: null, deviceAndAppManagementAssignmentFilterType: 'none' },
+      settings: null
+    };
+    await graph(tid, `${B}/${target.id}/assignments`, { method: 'POST', body: JSON.stringify(assignment) });
+    added++;
+    await log(`${a.intent} assignment added: ${a.label}`);
+  }
+  return { appId: target.id, version: 'Microsoft Store managed', assignmentsAdded: added };
+}
+
 export async function publishApp(tid, app, o, log) {
   const assignments = buildAssignments(o);
   const includes = assignments.filter(a => a.mode !== 'exclude');

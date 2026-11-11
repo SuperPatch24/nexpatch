@@ -10,7 +10,7 @@ export async function syncInventory(tenantId, trigger) {
     const apps = await graphAll(tenantId, '/beta/deviceManagement/detectedApps');
     const rows = apps
       .filter(a => a.displayName && (!a.platform || a.platform === 'windows' || a.platform === 'unknown'))
-      .map(a => ({ displayName: String(a.displayName), version: String(a.version || ''), deviceCount: Number(a.deviceCount) || 0, platform: a.platform || 'unknown' }));
+      .map(a => ({ displayName: String(a.displayName), version: String(a.version || ''), publisher: String(a.publisher || ''), deviceCount: Number(a.deviceCount) || 0, platform: a.platform || 'unknown' }));
 
     await replaceInventory(tenantId, rows, syncId);
     const syncedAt = new Date().toISOString();

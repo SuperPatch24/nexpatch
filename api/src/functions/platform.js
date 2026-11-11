@@ -4,12 +4,18 @@ import { getRow, putRow, deleteRow, listRows, listAllTenants, saveTenant, getTen
 import { planStatus, TRIAL_DAYS } from '../lib/plan.js';
 import { platformRole } from '../lib/platform.js';
 import { latestWingetVersion } from '../lib/winget.js';
+import { MSSTORE_CANDIDATES } from '../lib/msstore-candidates.js';
 
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
+const STORE_ID = /^[A-Z0-9]{8,16}$/i;
 const ID = /^[a-z0-9-]{2,80}$/;
 const GLOBAL = 'global';
-const shape = r => ({ id: r.rowKey, name: r.name, vendor: r.vendor || '', winget: r.winget, reg: r.reg || r.name, procs: r.procs || '', exe: r.exe || '',
-  category: r.category || '', enabled: r.enabled !== false, updatedBy: r.updatedBy || '', updatedAt: r.updatedAt || null });
+const shape = r => ({ id: r.rowKey, name: r.name, vendor: r.vendor || '', winget: r.winget || '', reg: r.reg || r.name, procs: r.procs || '', exe: r.exe || '',
+  category: r.category || '', source: r.source === 'msstore' ? 'msstore' : 'winget',
+  storeProductId: r.storeProductId || '', appStoreUrl: r.appStoreUrl || '', storeType: r.storeType || '',
+  verificationStatus: r.verificationStatus || (r.source === 'msstore' ? 'candidate' : 'verified'),
+  deployable: r.source === 'msstore' ? !!(r.storeProductId && r.appStoreUrl && r.verificationStatus === 'verified') : !!r.winget,
+  enabled: r.enabled !== false, updatedBy: r.updatedBy || '', updatedAt: r.updatedAt || null });
 function requirePlatform(user, roles = ['superadmin']) { const role = platformRole(user); if (!role || !roles.includes(role)) throw new HttpError(403, 'Your platform administrator role does not allow this action.'); }
 
 // GET /api/catalog – the shared app catalog every organization sees (enabled apps only).
@@ -26,16 +32,50 @@ app.http('platformCatalogSave', { methods: ['PUT'], authLevel: 'anonymous', rout
     const id = String(req.params.id || '').toLowerCase();
     if (!ID.test(id)) throw new HttpError(400, 'The app ID can only use lowercase letters, numbers and dashes.');
     const b = await readJson(req);
-    const name = String(b.name || '').trim().slice(0, 120), winget = String(b.winget || '').trim();
+    const name = String(b.name || '').trim().slice(0, 120), source = b.source === 'msstore' ? 'msstore' : 'winget';
+    const winget = String(b.winget || '').trim();
+    const storeProductId = String(b.storeProductId || '').trim().toUpperCase();
+    const vendor = String(b.vendor || '').trim().slice(0, 120);
+    let appStoreUrl = String(b.appStoreUrl || '').trim();
+    const verificationStatus = source === 'msstore' && b.storeVerified === true && STORE_ID.test(storeProductId) ? 'verified' : (source === 'msstore' ? 'candidate' : 'verified');
     if (!name) throw new HttpError(400, 'Enter the app name.');
-    if (!WINGET_ID.test(winget)) throw new HttpError(400, 'Enter a valid winget ID, for example Google.Chrome.');
+    if (source === 'winget' && !WINGET_ID.test(winget)) throw new HttpError(400, 'Enter a valid WinGet ID, for example Google.Chrome.');
+    if (source === 'msstore' && storeProductId && !STORE_ID.test(storeProductId)) throw new HttpError(400, 'Enter a valid Microsoft Store product ID.');
+    if (source === 'msstore' && storeProductId && !appStoreUrl) appStoreUrl = `https://apps.microsoft.com/detail/${storeProductId}`;
+    if (source === 'msstore' && appStoreUrl) {
+      let u; try { u = new URL(appStoreUrl); } catch { throw new HttpError(400, 'Enter a valid Microsoft Store URL.'); }
+      if (u.protocol !== 'https:' || !['apps.microsoft.com','www.microsoft.com','microsoft.com'].includes(u.hostname)) throw new HttpError(400, 'The Store URL must be an HTTPS Microsoft Store URL.');
+    }
+    if (source === 'msstore' && b.storeVerified === true && (!storeProductId || !appStoreUrl || !vendor)) throw new HttpError(400, 'A verified Store entry needs a product ID, Microsoft Store URL and verified publisher.');
+    if (source === 'msstore' && storeProductId && appStoreUrl && !appStoreUrl.toUpperCase().includes(storeProductId)) throw new HttpError(400, 'The Store URL must contain the same Product ID entered above.');
     await putRow('Catalog', GLOBAL, id, {
-      name, winget, vendor: String(b.vendor || '').slice(0, 120), reg: String(b.reg || name).slice(0, 200),
+      name, source, winget: source === 'winget' ? winget : '', storeProductId, appStoreUrl,
+      storeType: String(b.storeType || '').slice(0, 40), verificationStatus,
+      vendor, reg: String(b.reg || name).slice(0, 200),
       procs: String(b.procs || '').slice(0, 300), exe: String(b.exe || '').slice(0, 400), category: String(b.category || '').slice(0, 60),
       enabled: b.enabled !== false, updatedBy: user.email || user.userId, updatedAt: new Date().toISOString()
     }, 'Replace');
     return shape(await getRow('Catalog', GLOBAL, id));
   }, 'any') });
+
+app.http('platformStoreCandidateSeed', { methods: ['POST'], authLevel: 'anonymous', route: 'platform/catalog/store-candidates', handler: withUser(async (_req, _ctx, user) => {
+  requirePlatform(user, ['superadmin','catalog']);
+  const existing = await listRows('Catalog', GLOBAL, 5000);
+  const ids = new Set(existing.map(x => x.rowKey));
+  let added = 0;
+  for (const candidate of MSSTORE_CANDIDATES) {
+    const id = 'msstore-' + candidate.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70);
+    if (ids.has(id)) continue;
+    await putRow('Catalog', GLOBAL, id, {
+      name: candidate.name, source: 'msstore', winget: '', storeProductId: '', appStoreUrl: '',
+      verificationStatus: 'candidate', storeType: '', vendor: '', reg: candidate.name,
+      procs: '', exe: '', category: candidate.category, enabled: true,
+      updatedBy: user.email || user.userId, updatedAt: new Date().toISOString()
+    }, 'Replace');
+    ids.add(id); added++;
+  }
+  return { added, candidates: MSSTORE_CANDIDATES.length, total: existing.length + added, note: 'Candidate names only. Verify Store availability, publisher and product ID before enabling deployment.' };
+}, 'any') });
 
 app.http('platformCatalogDelete', { methods: ['DELETE'], authLevel: 'anonymous', route: 'platform/catalog/{id}',
   handler: withUser(async (req, _c, user) => { requirePlatform(user, ['superadmin','catalog']); await deleteRow('Catalog', GLOBAL, String(req.params.id || '')); return { removed: true }; }, 'any') });

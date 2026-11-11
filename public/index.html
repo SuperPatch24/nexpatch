@@ -574,7 +574,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <section class="view" id="view-catalog" aria-labelledby="catTitle">
       <h1 id="catTitle">App catalog</h1>
       <p class="lede" id="catalogCount" style="margin-top:-8px">0 applications in the catalog</p>
-      <p class="lede">Third-party apps NexpatchOnline can package for Intune. Turn on auto-publish for apps you want the scheduled runbook to keep current, or publish one now.</p>
+      <p class="lede">One catalog for WinGet packages and verified Microsoft Store apps. WinGet updates can use Nexpatch auto-publish; Store apps use native Intune deployment and Microsoft Store / Intune update management.</p>
       <div class="toolbar">
         <input class="search" id="catSearch" type="search" placeholder="Search apps or publishers" aria-label="Search apps">
         <div class="seg" role="group" aria-label="Filter">
@@ -592,14 +592,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           <tbody id="catBody"></tbody>
         </table>
       </div>
-      <details class="panel" style="margin-top:18px"><summary style="cursor:pointer;font-weight:700">Import Microsoft Store apps in bulk</summary>
-        <p class="small">Find Store product IDs with WinGet on a trusted Windows workstation. Include the app’s Package Family Name (PFN), obtained from a test device after installing the app.</p>
-        <pre class="code" style="white-space:pre-wrap">winget search --source msstore "app name"</pre>
-        <p class="small">Paste a JSON array containing <code>name</code>, <code>id</code>, <code>packageFamily</code>, optional <code>publisher</code> and optional <code>reg</code> (installed display name).</p>
-        <textarea id="storeImport" rows="5" placeholder='[{"name":"Example app","id":"9ABC12345678","packageFamily":"Example.App_abc123","publisher":"Example publisher"}]'></textarea>
-        <button class="btn small primary" type="button" id="storeImportBtn" style="margin-top:8px">Import Store apps</button><span class="small" id="storeImportStatus" style="margin-left:10px"></span>
-      </details>
-      <p class="small" style="margin-top:12px">Versions shown are sample data until you import inventory. Store app IDs and PFNs must be verified before use. Store entries are catalog-only until native Intune Store publishing is implemented and validated; they cannot be published from NexpatchOnline yet.</p>
+<p class="small" style="margin-top:12px">Microsoft Store entries appear in this same catalog. Only entries verified by a NexpatchOnline catalog administrator can be deployed. Store app update behaviour is managed by Microsoft Store / Intune, not Nexpatch auto-publish.</p>
     </section>
 
     <!-- DISCOVERY -->
@@ -1058,12 +1051,12 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 <dialog id="addDlg" aria-labelledby="addTitle">
   <div class="dlg-head"><h2 id="addTitle">Add an app</h2><button class="btn ghost" type="button" id="aCancel">Close</button></div>
   <div class="dlg-body">
-    <p class="small" style="margin-top:0">WinGet: <b>winget search "app name"</b>. Store: <b>winget search --source msstore "app name"</b>. Store apps also need a verified Package Family Name for detection.</p>
+    <p class="small" style="margin-top:0">WinGet: <b>winget search "app name"</b>. Store: <b>winget search --source msstore "app name"</b>. For native Intune Store deployment, use the verified Store Product ID. A PFN is not required. Client-added Store entries remain non-deployable until a NexpatchOnline catalog administrator verifies and publishes them in the shared catalog.</p>
     <div class="grid2" style="margin-top:0;gap:0 16px">
       <label class="field"><span>App name</span><input type="text" id="aName" placeholder="Bitwarden"></label>
       <label class="field"><span>Package ID</span><input type="text" id="aWinget" placeholder="WinGet ID or Store product ID"></label>
       <label class="field"><span>Package source</span><select id="aSource"><option value="winget">WinGet community catalog</option><option value="msstore">Microsoft Store</option></select></label>
-      <label class="field"><span>Store Package Family Name (Store only)</span><input type="text" id="aStoreFamily" placeholder="PackageFamilyName_abcdefgh"></label>
+      <label class="field"><span>Store Product ID (Store only)</span><input type="text" id="aStoreFamily" placeholder="9WZDNCRFHVJL"></label>\n      <label class="field"><span>Microsoft Store URL (optional)</span><input type="url" id="aStoreUrl" placeholder="https://apps.microsoft.com/detail/..."></label>
       <label class="field"><span>Publisher</span><input type="text" id="aVendor" placeholder="Shown in Company Portal"></label>
       <label class="field"><span>Name in Installed apps</span><input type="text" id="aReg" placeholder="Used to detect the app"></label>
       <label class="field"><span>Processes to close</span><input type="text" id="aProcs" placeholder="bitwarden, other"></label>
@@ -1588,7 +1581,7 @@ function inventoryScript(){
   'Connect-MgGraph -TenantId ' + psq(S.settings.tenant||'<tenant-id>') + ' -Scopes DeviceManagementManagedDevices.Read.All -NoWelcome\n' +
   '$All = @()\n$Uri = \'https://graph.microsoft.com/beta/deviceManagement/detectedApps?$top=999\'\n' +
   'do {\n    $Page = Invoke-MgGraphRequest -Method GET -Uri $Uri\n    $All += $Page.value\n    $Uri = $Page.\'@odata.nextLink\'\n} while ($Uri)\n\n' +
-  '$All | ForEach-Object { [pscustomobject]@{ displayName = $_.displayName; version = $_.version; deviceCount = $_.deviceCount } } |\n    ConvertTo-Json -Compress | Set-Clipboard\nWrite-Host "Copied $($All.Count) app versions to the clipboard. Paste them into NexpatchOnline."\n';
+  '$All | ForEach-Object { [pscustomobject]@{ displayName = $_.displayName; publisher = $_.publisher; version = $_.version; deviceCount = $_.deviceCount } } |\n    ConvertTo-Json -Compress | Set-Clipboard\nWrite-Host "Copied $($All.Count) app versions to the clipboard. Paste them into NexpatchOnline."\n';
 }
 function kqlText(){
   return '// Defender advanced hunting: what App Control audited or blocked in the last 7 days\nDeviceEvents\n| where Timestamp > ago(7d)\n| where ActionType in ("AppControlCodeIntegrityPolicyAudited", "AppControlCodeIntegrityPolicyBlocked")\n| summarize Devices = dcount(DeviceId) by ActionType, FileName, FolderPath, Signer = tostring(parse_json(AdditionalFields).Signer)\n| order by Devices desc\n// Export the results as JSON and paste them into NexpatchOnline.';
@@ -1738,8 +1731,13 @@ async function syncNow(){
 }
 async function mergeSharedCatalog(){
   try{ const r=await api('/catalog'); let added=0;
-    r.apps.forEach(g=>{ if(S.apps.some(a=>a.winget.toLowerCase()===g.winget.toLowerCase())) return;
-      const app={id:'g-'+g.id,name:g.name,vendor:g.vendor||g.name,winget:g.winget,reg:g.reg||g.name,procs:g.procs?g.procs.split(',').map(x=>x.trim()).filter(Boolean):[],exe:g.exe||'',latest:'',fleet:[0,0,0,0],cves:0,shared:true};
+    r.apps.forEach(g=>{
+      let app=S.apps.find(a=>a.sharedId===g.id || (g.source==='msstore' ? (a.source==='msstore' && a.storeProductId && a.storeProductId===g.storeProductId) : (a.winget && a.winget.toLowerCase()===String(g.winget||'').toLowerCase())));
+      const fields={sharedId:g.id,name:g.name,vendor:g.vendor||g.name,winget:g.winget||'',source:g.source||'winget',
+        storeProductId:g.storeProductId||'',appStoreUrl:g.appStoreUrl||'',storeType:g.storeType||'',verificationStatus:g.verificationStatus||'candidate',deployable:!!g.deployable,
+        reg:g.reg||g.name,procs:g.procs?g.procs.split(',').map(x=>x.trim()).filter(Boolean):[],exe:g.exe||'',shared:true};
+      if(app){Object.assign(app,fields);return;}
+      app=Object.assign({id:'g-'+g.id,latest:'',fleet:[0,0,0,0],cves:0},fields);
       S.apps.push(app); fleetFromInventory(app); added++; });
     if(added) save();
   }catch(e){}
@@ -1843,12 +1841,16 @@ function renderCatalog(){
   if(filter==='vuln') rows=rows.filter(a=>status(a).k==='vuln');
   if(filter==='auto') rows=rows.filter(a=>S.auto[a.id]);
   $('#catBody').innerHTML = rows.length ? rows.map(a=>{ const st=status(a); const t=sum(a.fleet); const behind=t-a.fleet[0];
-    return '<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span><span class="sub">'+(a.source==='msstore'?'Microsoft Store':'WinGet')+'</span></td>'+
-    '<td>'+(a.latest?esc(a.latest):'<span class="small">Checked at publish</span>')+'<span class="sub">'+esc(a.winget)+'</span></td>'+
+    const storeReady=a.source==='msstore' && a.deployable===true && a.verificationStatus==='verified';
+    const sourceLabel=a.source==='msstore'?'Microsoft Store':'WinGet';
+    const versionLabel=a.source==='msstore'?(storeReady?'Intune / Store managed':'Awaiting Store ID verification'):(a.latest||'Checked at publish');
+    const packageLabel=a.source==='msstore'?(a.storeProductId||'No product ID yet'):(a.winget||'');
+    return '<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span><span class="sub">'+sourceLabel+(a.source==='msstore'?' · '+(storeReady?'Verified':'Candidate'):'')+'</span></td>'+
+    '<td>'+esc(versionLabel)+'<span class="sub">'+esc(packageLabel)+'</span></td>'+
     '<td>'+bar(a,true)+'<span class="sub">'+t+' installs, '+behind+' behind'+(a.fleet[3]?', '+a.fleet[3]+' vulnerable':'')+'</span></td>'+
-    '<td><span class="pill '+st.cls+'">'+st.t+'</span>'+(a.cves?'<span class="sub">'+a.cves+' CVE'+(a.cves>1?'s':'')+' fixed in latest</span>':'')+'</td>'+
-    '<td><label class="switch"><input type="checkbox" data-auto="'+a.id+'" '+(S.auto[a.id]?'checked':'')+' '+(a.source==='msstore'?'disabled title="Store updates are managed outside Nexpatch auto-publish"':'')+' aria-label="Auto-publish '+esc(a.name)+'"><span></span></label></td>'+
-    '<td><div class="row" style="flex-wrap:nowrap">'+(a.source==='msstore'?'<span class="small" title="Native Intune Store publishing is not enabled yet">Store catalog only</span>':'<button class="btn small'+(st.k==='vuln'?' primary':'')+'" type="button" data-pub="'+a.id+'">Publish</button>')+(a.custom?'<button class="btn small ghost" type="button" data-del="'+a.id+'" aria-label="Remove '+esc(a.name)+'">Remove</button>':'')+'</div></td></tr>'; }).join('')
+    '<td><span class="pill '+(a.source==='msstore'&&!storeReady?'p-neutral':st.cls)+'">'+(a.source==='msstore'&&!storeReady?'Needs verification':st.t)+'</span>'+(a.cves?'<span class="sub">'+a.cves+' CVE'+(a.cves>1?'s':'')+' fixed in latest</span>':'')+'</td>'+
+    '<td><label class="switch"><input type="checkbox" data-auto="'+a.id+'" '+(S.auto[a.id]?'checked':'')+' '+(a.source==='msstore'?'disabled title="Microsoft Store and Intune manage Store app updates"':'')+' aria-label="Auto-publish '+esc(a.name)+'"><span></span></label></td>'+
+    '<td><div class="row" style="flex-wrap:nowrap">'+(a.source==='msstore'?(storeReady?'<button class="btn small primary" type="button" data-pub="'+a.id+'">Deploy</button>':'<span class="small">Not deployable yet</span>'):'<button class="btn small'+(st.k==='vuln'?' primary':'')+'" type="button" data-pub="'+a.id+'">Publish</button>')+(a.custom?'<button class="btn small ghost" type="button" data-del="'+a.id+'" aria-label="Remove '+esc(a.name)+'">Remove</button>':'')+'</div></td></tr>'; }).join('')
   : '<tr><td colspan="6" class="empty">No apps match. Clear the search or pick another filter.</td></tr>';
 }
 $('#catSearch').addEventListener('input', renderCatalog);
@@ -1856,15 +1858,16 @@ $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>{ filter=b.dataset
 $('#catBody').addEventListener('change', e=>{ const id=e.target.dataset.auto; if(!id) return; S.auto[id]=e.target.checked; save(); renderNav(); toast(e.target.checked?'Auto-publish on':'Auto-publish off'); });
 $('#catBody').addEventListener('click', e=>{ const b=e.target.closest('[data-pub]'); if(b) openPublish(b.dataset.pub); });
 const addDlg=$('#addDlg');
-function openAddDialog(pre){ pre=pre||{}; $$('#addDlg input').forEach(i=>{ if(i.type==='checkbox') i.checked=false; else i.value=''; }); $('#aName').value=pre.name||''; $('#aWinget').value=pre.winget||''; $('#aSource').value=pre.source||'winget'; $('#aStoreFamily').value=pre.storeFamily||''; $('#aVendor').value=pre.vendor||''; $('#aReg').value=pre.reg||''; $('#aProcs').value=pre.procs||''; $('#aExe').value=pre.exe||''; $('#aLatest').value=pre.latest||''; $('#aErr').textContent=''; addDlg.showModal(); $('#aName').focus(); }
+function openAddDialog(pre){ pre=pre||{}; $$('#addDlg input').forEach(i=>{ if(i.type==='checkbox') i.checked=false; else i.value=''; }); $('#aName').value=pre.name||''; $('#aWinget').value=pre.winget||''; $('#aSource').value=pre.source||'winget'; $('#aStoreFamily').value=pre.storeProductId||pre.storeFamily||''; $('#aStoreUrl').value=pre.appStoreUrl||''; $('#aVendor').value=pre.vendor||''; $('#aReg').value=pre.reg||''; $('#aProcs').value=pre.procs||''; $('#aExe').value=pre.exe||''; $('#aLatest').value=pre.latest||''; $('#aErr').textContent=''; addDlg.showModal(); $('#aName').focus(); }
 $('#addAppBtn').addEventListener('click',()=>openAddDialog());
 $('#aCancel').addEventListener('click',()=>addDlg.close());
-$('#aSave').addEventListener('click',()=>{ const v=id=>$('#'+id).value.trim(); const name=v('aName'), winget=v('aWinget'), source=v('aSource'), storeFamily=v('aStoreFamily');
-  if(!name||!winget||(source==='msstore'&&!storeFamily)){ $('#aErr').textContent=source==='msstore'?'Add a name, Store product ID and Package Family Name.':'Add a name and a WinGet ID. Find it with: winget search "'+(name||'app name')+'"'; return; }
-  if(S.apps.some(a=>(a.source||'winget')===source && a.winget.toLowerCase()===winget.toLowerCase())){ $('#aErr').textContent='An app with that winget ID is already in the catalog.'; return; }
-  S.apps.push({id:'c-'+source+'-'+winget.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name:name,vendor:v('aVendor')||name,winget:winget,source:source,storeFamily:storeFamily,reg:v('aReg')||name,procs:v('aProcs').split(',').map(s=>s.trim().replace(/\.exe$/i,'')).filter(Boolean),exe:v('aExe'),latest:v('aLatest')||(source==='msstore'?'Store listing':'From winget'),fleet:[0,0,0,0],cves:0,custom:true,unsigned:$('#aUnsigned').checked});
+$('#aSave').addEventListener('click',()=>{ const v=id=>$('#'+id).value.trim(); const name=v('aName'), winget=v('aWinget'), source=v('aSource'), storeProductId=v('aStoreFamily');
+  if(!name||(source==='winget'&&!winget)||(source==='msstore'&&!/^[A-Z0-9]{8,16}$/i.test(storeProductId))){ $('#aErr').textContent=source==='msstore'?'Add a valid Microsoft Store Product ID.':'Add a name and a WinGet ID. Find it with: winget search "'+(name||'app name')+'"'; return; }
+  const duplicate=S.apps.some(a=>source==='msstore'?(a.source==='msstore'&&String(a.storeProductId||'').toLowerCase()===storeProductId.toLowerCase()):(a.source||'winget')==='winget'&&String(a.winget||'').toLowerCase()===winget.toLowerCase());
+  if(duplicate){ $('#aErr').textContent='An app with that package ID is already in the catalog.'; return; }
+  const packageKey=source==='msstore'?storeProductId:winget;
+  S.apps.push({id:'c-'+source+'-'+packageKey.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name,vendor:v('aVendor'),winget:source==='winget'?winget:'',source,storeProductId,appStoreUrl:v('aStoreUrl')||(source==='msstore'?'https://apps.microsoft.com/detail/'+storeProductId:''),verificationStatus:'candidate',deployable:false,storeFamily:'',reg:v('aReg')||name,procs:v('aProcs').split(',').map(s=>s.trim().replace(/\.exe$/i,'')).filter(Boolean),exe:v('aExe'),latest:v('aLatest')||(source==='msstore'?'Store listing':'From winget'),fleet:[0,0,0,0],cves:0,custom:true,unsigned:$('#aUnsigned').checked});
   fleetFromInventory(S.apps[S.apps.length-1]); save(); addDlg.close(); renderNav(); renderCatalog(); if(location.hash==='#discovery') renderDiscovery(); toast(name+' added to the catalog'); });
-$('#storeImportBtn').addEventListener('click',()=>{ const status=$('#storeImportStatus'); try{ const rows=JSON.parse($('#storeImport').value); if(!Array.isArray(rows)||rows.length>100) throw new Error('Paste a JSON array containing up to 100 apps.'); let added=0; rows.forEach(x=>{ const id=String(x.id||'').trim(), name=String(x.name||'').trim(), storeFamily=String(x.packageFamily||'').trim(); if(!name||!id||!storeFamily||S.apps.some(a=>(a.source||'winget')==='msstore'&&a.winget.toLowerCase()===id.toLowerCase())) return; S.apps.push({id:'c-msstore-'+id.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name,vendor:String(x.publisher||name),winget:id,source:'msstore',storeFamily,reg:String(x.reg||name),procs:[],exe:'',latest:'Store listing',fleet:[0,0,0,0],cves:0,custom:true}); added++; }); save(); renderCatalog(); status.textContent=added+' Store app(s) imported.'; }catch(e){ status.textContent=e.message; } });
 $('#catBody').addEventListener('click', e=>{ const b=e.target.closest('[data-del]'); if(!b) return; const a=S.apps.find(x=>x.id===b.dataset.del); if(!a||!confirm('Remove '+a.name+' from the catalog?')) return; S.apps=S.apps.filter(x=>x.id!==a.id); delete S.auto[a.id]; S.policy.pubs=S.policy.pubs.filter(p=>p!==a.id); save(); renderNav(); renderCatalog(); toast(a.name+' removed from the catalog'); });
 $('#runbookBtn').addEventListener('click', ()=>showCode('Auto-publish runbook', 'Checks winget for every app with auto-publish on and publishes anything newer than what Intune has. Schedule it daily with an app registration secret.', runbookScript()));
 
@@ -2004,7 +2007,7 @@ $('#dPublishNow').addEventListener('click', async ()=>{
   const c=finalCfg(); rememberCfg(c); const app=current; const btn=$('#dPublishNow');
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Starting\u2026';
   try{
-    const r=await api('/publish','POST',{ app:{name:app.name, winget:app.winget, reg:app.reg, vendor:app.vendor, source:app.source||'winget', storeFamily:app.storeFamily||''}, options:Object.assign({}, c, {summary:cfgSummary(c)}) });
+    const r=await api('/publish','POST',{ app:{name:app.name, winget:app.winget, reg:app.reg, vendor:app.vendor, source:app.source||'winget', catalogId:app.sharedId||'', storeProductId:app.storeProductId||'', appStoreUrl:app.appStoreUrl||''}, options:Object.assign({}, c, {summary:cfgSummary(c)}) });
     watchJob(r.jobId, app, c);
     $('#pubDlg').close(); toast('Publishing '+app.name+'. Follow it on Deployments.'); location.hash='#deployments';
   }catch(e){ toast('Couldn\u2019t start publishing. '+e.message); }
@@ -2013,13 +2016,24 @@ $('#dPublishNow').addEventListener('click', async ()=>{
 function openPublish(id){
   if(currentRole()==='viewer'){ toast('Viewers can’t publish apps. Ask an owner for the Admin role.'); return; }
   current=S.apps.find(a=>a.id===id);
-  $('#pubTitle').textContent='Publish '+current.name;
+  if(!current) return;
+  const isStore=current.source==='msstore';
+  if(isStore && current.deployable!==true){ toast('This Store entry needs administrator verification before deployment.'); return; }
+  $('#pubTitle').textContent=(isStore?'Deploy ':'Publish ')+current.name;
   const saved=(S.pubPrefs||{})[current.id];
-  setCfg(Object.assign(defaultCfg(current), migrateCfg(JSON.parse(JSON.stringify(saved||{}))), {rings:JSON.parse(JSON.stringify(S.settings.rings))}));
+  const config=Object.assign(defaultCfg(current), migrateCfg(JSON.parse(JSON.stringify(saved||{}))), {rings:JSON.parse(JSON.stringify(S.settings.rings))});
+  if(isStore){config.method='groups';config.updateOnly=false;}
+  setCfg(config);
   $('#dCodeWrap').hidden=true; $('#dProgress').hidden=true;
   const cloud=canCloudPublish();
-  $('#dPublishNow').hidden=!cloud; $('#dPublishNow').disabled=false; $('#dMark').hidden=cloud;
-  $('#dFootNote').textContent = cloud ? 'Publishing runs in the cloud and usually takes a minute or two.' : 'Without the backend, generate the script and run it in PowerShell.';
+  ['#sNotify','#sConflict','#sDeps','#sSuper','#sScripts','#sApplic'].forEach(sel=>{ const el=$(sel); if(el) el.hidden=isStore; });
+  $('#dUpdateOnly').closest('.check').hidden=isStore;
+  $('input[name=dasgm][value=rings]').closest('label').hidden=isStore;
+  $('#dRingsBox').hidden=isStore;
+  $('#dAsgSum').textContent=isStore?'Direct group assignments only':'Groups, All devices or All users';
+  $('#dGen').hidden=isStore;
+  $('#dPublishNow').hidden=!cloud; $('#dPublishNow').disabled=false; $('#dMark').hidden=cloud||isStore;
+  $('#dFootNote').textContent = isStore ? 'Native Microsoft Store deployment uses the Microsoft Graph beta Store app API. Updates are managed by Microsoft Store / Intune.' : (cloud ? 'Publishing runs in the cloud and usually takes a minute or two.' : 'Without the backend, generate the script and run it in PowerShell.');
   $('#pubDlg').showModal();
 }
 $('#pubDlg').addEventListener('input', e=>{ if(!e.target.closest('#dCodeWrap')) updateDlg(); });
@@ -2074,7 +2088,7 @@ const DOCS=[
  {topic:'Getting started',title:'Understand roles and access',body:'<p>Viewers can review catalog, inventory and reports. Admins can publish apps, sync inventory and manage App Control. Owners can also manage organization access. Apply least privilege.</p>'},
  {topic:'Application catalog',title:'Read the application catalog',body:'<p>The catalog combines built-in sample apps, the shared platform catalog and organization-added apps. The count shows apps currently loaded in this browser. Inventory counts are illustrative until you connect and sync Intune.</p><p>Verify publisher, package ID and install context before enabling auto-publish.</p>'},
  {topic:'Application catalog',title:'Add a WinGet application',body:'<ol><li>Run <code>winget search "app name"</code> on a trusted Windows workstation.</li><li>Confirm exact package ID and publisher.</li><li>Choose Add app and enter package ID, installed-app display name and process names.</li><li>Test on a pilot group before enabling automatic publishing.</li></ol>'},
- {topic:'Microsoft Store',title:'Add a Microsoft Store application',body:'<ol><li>Find the Store product ID with <code>winget search --source msstore "app name"</code>.</li><li>Install on a test device and retrieve the package family name using <code>Get-AppxPackage</code>.</li><li>Import JSON with name, id, packageFamily and publisher.</li><li>Verify Windows support, architecture, install context and update behaviour.</li></ol><p>Store delivery and publisher update behaviour vary by app. Confirm each app in a test tenant before broad deployment.</p>'},
+  {topic:'Microsoft Store',title:'Deploy Microsoft Store apps from the App Catalog',body:'<ol><li>Find the exact app in Microsoft Store or run <code>winget search --source msstore "app name"</code> on a trusted Windows workstation.</li><li>Confirm the exact publisher and Store Product ID. A Package Family Name is not required for the native Intune Microsoft Store app type.</li><li>Ask a NexpatchOnline catalog administrator to verify the Product ID and publisher. Only verified entries show a Deploy action.</li><li>Choose a pilot group in the deployment dialog, deploy, and monitor the job in Deployments.</li></ol><p>Intune uses the Microsoft Store app type through Microsoft Graph beta. Microsoft says Store apps are updated through Store / Intune management; UWP update behavior depends on Store auto-update policy, while Store Win32 apps need an active Intune assignment for updates. Win32 Store apps are currently in preview.</p>'},
  {topic:'Automatic updates',title:'Configure automatic publishing',body:'<ol><li>Open Catalog and updates.</li><li>Enable auto-publish only for validated apps.</li><li>Set deployment rings: Pilot, early adopters, then broad deployment.</li><li>Set suitable deferrals and monitor Deployments.</li><li>Review failures before retrying.</li></ol>'},
  {topic:'Intune',title:'Prepare groups and permissions',body:'<p>Use dedicated Entra device groups for pilot and production rings. Confirm Intune roles, Graph permissions and licensing. Avoid assigning new policies to all devices until pilot tests succeed.</p>'},
  {topic:'App Control',title:'Build a base policy safely',body:'<ol><li>Start in Audit mode and target a pilot group.</li><li>Choose the Microsoft trust baseline that suits your organization.</li><li>Enable Managed Installer only after configuring it in Intune.</li><li>Review events and allow only required publishers or hashes.</li><li>Run audit for at least a week before considering Enforce.</li></ol><p>Maintain a tested recovery plan.</p>'},
@@ -2082,6 +2096,8 @@ const DOCS=[
  {topic:'App Control',title:'Use supplemental policies',body:'<p>Supplemental policies extend a base policy. Review every allow decision, deploy the base policy first and use the same intended device scope. Redeploy after changing allowed publishers or file hashes.</p>'},
  {topic:'Reports',title:'Understand reports and inventory',body:'<p>Sync Intune inventory before relying on device counts or version distribution. Sample/demo data is illustrative. Use deployment job logs to investigate Intune assignment failures.</p>'},
  {topic:'Troubleshooting',title:'Common publishing problems',body:'<ul><li><b>WinGet not found:</b> confirm App Installer is available to SYSTEM.</li><li><b>Package not found:</b> verify exact package ID and source.</li><li><b>Detection fails:</b> verify registry display name, PFN and install context.</li><li><b>Assignment fails:</b> verify group IDs, permissions and licensing.</li><li><b>Store app does not update:</b> check Store policy, network access and publisher listing.</li></ul>'},
+ {topic:'Reports',title:'Import Intune install failures for platform reporting',body:'<ol><li>Open Reports and select Get results script.</li><li>Run the PowerShell script with an Intune administrator-approved account and the required Graph read permission.</li><li>Paste the JSON output into Import install results.</li><li>If your organization is connected, NexpatchOnline stores the report for platform-level aggregation. The Nexpatch website administrators can then see your organization’s device install failures.</li></ol><p>Imported reports are snapshots and should be refreshed when you need current status.</p>'},
+ {topic:'Application catalog',title:'Request apps missing from the catalog',body:'<p>Use Request an application when an app is not listed. Provide the publisher, vendor website, download URL or installer and the required version / architecture. Track the request until it is reviewed, packaged, tested and published. Do not upload credentials or sensitive business data with an installer.</p>'},
  {topic:'Administration',title:'Protect your organization',body:'<p>Use role-based access, review audit history, protect service credentials and rotate secrets. Never paste tenant secrets or access tokens into support messages.</p>'}
 ];
 function renderDocumentation(){const q=$('#docsSearch').value.trim().toLowerCase();const filtered=DOCS.filter(d=>(d.topic+' '+d.title+' '+d.body.replace(/<[^>]*>/g,' ')).toLowerCase().includes(q));$('#docsCount').textContent=filtered.length+' guides';const topics=[...new Set(filtered.map(d=>d.topic))];$('#docsTopics').innerHTML=topics.map(t=>'<div style="margin:8px 0"><b>'+esc(t)+'</b>'+filtered.filter(d=>d.topic===t).map(d=>'<button class="linkbtn" type="button" data-doc="'+esc(d.title)+'" style="display:block;text-align:left;padding:6px 0">'+esc(d.title)+'</button>').join('')+'</div>').join('')||'<p class="empty">No guides match your search.</p>';if(filtered[0])showDoc(filtered[0].title);}
@@ -2336,9 +2352,9 @@ function renderReports(){
 function resultsScript(){
   return '# NexpatchOnline – export install results for NexpatchOnline apps from Intune\n# Needs: Install-Module Microsoft.Graph.Authentication -Scope CurrentUser\n\n' +
   'Connect-MgGraph -TenantId ' + psq(S.settings.tenant||'<tenant-id>') + ' -Scopes DeviceManagementApps.Read.All -NoWelcome\n' +
-  '$Uri = \'https://graph.microsoft.com/beta/deviceAppManagement/mobileApps?$filter=isof(\'\'microsoft.graph.win32LobApp\'\')\'\n$Apps = @()\n' +
+  '$Uri = \'https://graph.microsoft.com/beta/deviceAppManagement/mobileApps\'\n$Apps = @()\n' +
   'do { $Page = Invoke-MgGraphRequest -Method GET -Uri $Uri; $Apps += $Page.value; $Uri = $Page.\'@odata.nextLink\' } while ($Uri)\n' +
-  '$Apps = $Apps | Where-Object { $_.description -like \'*packaged by NexpatchOnline*\' }\n\n' +
+  '$Apps = $Apps | Where-Object { $_.description -like \'*NexpatchOnline*\' -or $_.notes -like \'*NexpatchOnline*\' }\n\n' +
   '$Report = foreach ($App in $Apps) {\n' +
   '    $Out = Join-Path $env:TEMP ($App.id + \'.json\')\n' +
   '    $Body = @{ filter = "(ApplicationId eq \'" + $App.id + "\')"; top = 5000 } | ConvertTo-Json\n' +
@@ -2375,9 +2391,10 @@ function summaryText(){
 $('#repSummaryBtn').addEventListener('click', async ()=>{ const ok=await copyText(summaryText()); toast(ok?'Summary copied. Paste it into your email.':'Copy failed. Try again.'); });
 $('#repSnapBtn').addEventListener('click',()=>{ snapshot(); save(); renderReports(); toast('Snapshot recorded for today'); });
 $('#repResScriptBtn').addEventListener('click',()=>showCode('Install results script','Reads device install status for every app NexpatchOnline published and copies a summary to your clipboard. Paste it under Import install results.',resultsScript()));
-$('#repResImportBtn').addEventListener('click',()=>{ try{ let d=JSON.parse($('#repResImport').value); if(!Array.isArray(d)) d=[d];
+$('#repResImportBtn').addEventListener('click',async()=>{ try{ let d=JSON.parse($('#repResImport').value); if(!Array.isArray(d)) d=[d];
   const r=d.filter(x=>x&&x.app).map(x=>({app:String(x.app),version:String(x.version||''),installed:+x.installed||0,pending:+x.pending||0,failed:+x.failed||0,other:+x.other||0,errors:Array.isArray(x.errors)?x.errors:[]}));
-  if(!r.length) throw 0; S.results=r; S.resultsImported=true; save(); $('#repResImport').value=''; renderReports(); toast('Imported results for '+r.length+' apps'); }catch(e){ toast('Paste the JSON the results script copied'); } });
+  if(!r.length) throw 0; let uploaded=false; if(liveMode()){ try{ const saved=await api('/reports/install-results','POST',{reports:r}); uploaded=saved.saved>0; }catch(e){ toast('Imported locally, but platform reporting upload failed: '+e.message); } }
+  S.results=r; S.resultsImported=true; save(); $('#repResImport').value=''; renderReports(); toast('Imported results for '+r.length+' apps'+(uploaded?' and shared with Nexpatch platform reporting': '')); }catch(e){ toast('Paste the JSON the results script copied'); } });
 $('#repExposure').addEventListener('click', e=>{ const b=e.target.closest('[data-pub]'); if(b) openPublish(b.dataset.pub); });
 document.addEventListener('click', async e=>{ const b=e.target.closest('[data-rep]'); if(!b) return; const r=REP[b.dataset.rep]; if(!r||!r.rows.length){ toast('This table is empty'); return; }
   const tsv=[r.head].concat(r.rows).map(row=>row.map(c=>String(c==null?'':c).replace(/[\t\r\n]+/g,' ')).join('\t')).join('\r\n');
@@ -2641,7 +2658,7 @@ function applyInventory(d){
     const major=v=>String(v).split(/[^\d]+/).filter(Boolean)[0];
     const f=[0,0,0,0]; rows.forEach(r=>{ const n=+r.deviceCount||0; if(cmpVer(r.version,maxV)>=0) f[0]+=n; else if(major(r.version)===major(maxV)) f[1]+=n; else f[2]+=n; });
     app.fleet=f; app.cves=0; });
-  S.inventory=d.filter(r=>r&&r.displayName).map(r=>({displayName:String(r.displayName),version:String(r.version||''),deviceCount:+r.deviceCount||0})); S.imported=true; snapshot(); save(); renderNav(); return matched; }
+  S.inventory=d.filter(r=>r&&r.displayName).map(r=>({displayName:String(r.displayName),publisher:String(r.publisher||''),version:String(r.version||''),deviceCount:+r.deviceCount||0})); S.imported=true; snapshot(); save(); renderNav(); return matched; }
 $('#invImportBtn').addEventListener('click',()=>{ let d; try{ d=JSON.parse($('#invImport').value); if(!Array.isArray(d)) d=[d]; }catch(e){ toast('Paste the JSON the inventory script copied'); return; }
   const matched=applyInventory(d); $('#invImport').value=''; toast('Matched '+matched+' catalog apps from your inventory'); });
 $('#resetBtn').addEventListener('click',()=>{ if(!confirm('Replace your catalog, deployments, policy and settings with the sample data?')) return; S=fresh(); save(); render('connect'); renderNav(); toast('Reset to sample data'); });

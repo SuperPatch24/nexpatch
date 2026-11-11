@@ -1,7 +1,7 @@
 import { app, output } from '@azure/functions';
 import { withUser, HttpError, readJson } from '../lib/http.js';
-import { getTenant, saveJob, getJob, listJobs, audit } from '../lib/store.js';
-import { publishApp } from '../lib/publisher.js';
+import { getTenant, getRow, saveJob, getJob, listJobs, audit } from '../lib/store.js';
+import { publishApp, publishStoreApp } from '../lib/publisher.js';
 import { randomUUID } from 'node:crypto';
 import { planStatus } from '../lib/plan.js';
 
@@ -17,14 +17,25 @@ app.http('publishStart', {
     if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to keep publishing apps.');
     const { app: a, options } = await readJson(req);
     const source = a?.source === 'msstore' ? 'msstore' : 'winget';
-    if (source === 'msstore') throw new HttpError(409, 'This Microsoft Store entry is catalog-only for now. Native Intune Store app publishing and update handling must be enabled before deployment.');
-    if (!a || !a.name || !WINGET_ID.test(a.winget || '') || !a.reg) throw new HttpError(400, 'The app needs a name, a winget ID and its name in Installed apps.');
+    if (!a || !a.name) throw new HttpError(400, 'The app name is required.');
+    if (source === 'msstore') {
+      const entry = await getRow('Catalog', 'global', String(a.catalogId || ''));
+      if (!entry || entry.source !== 'msstore' || entry.enabled === false || entry.verificationStatus !== 'verified' || !entry.storeProductId || !entry.appStoreUrl) {
+        throw new HttpError(409, 'This Microsoft Store catalog entry has not been verified by a NexpatchOnline catalog administrator yet.');
+      }
+      a.storeProductId = entry.storeProductId;
+      a.appStoreUrl = entry.appStoreUrl;
+      a.vendor = entry.vendor || a.vendor || '';
+    } else if (!WINGET_ID.test(a.winget || '') || !a.reg) {
+      throw new HttpError(400, 'The app needs a valid WinGet ID and its name in Installed apps.');
+    }
     if (!options || typeof options !== 'object') throw new HttpError(400, 'Deployment options are missing.');
     const jobId = randomUUID();
+    const operationType = source === 'winget' && options.updateOnly ? 'update' : 'deployment';
     await saveJob(user.tenantId, jobId, {
-      status: 'queued', appName: a.name, wingetId: a.winget, summary: String(options.summary || '').slice(0, 200),
+      status: 'queued', appName: a.name, wingetId: a.winget || '', source, operationType, summary: String(options.summary || '').slice(0, 200),
       createdBy: user.email || user.userId, createdAt: new Date().toISOString(), log: JSON.stringify([]),
-      request: JSON.stringify({ app: { name: a.name, winget: a.winget, reg: a.reg, vendor: a.vendor || '', source, storeFamily: a.storeFamily || '' }, options })
+      request: JSON.stringify({ app: { name: a.name, winget: a.winget || '', reg: a.reg || a.name, vendor: a.vendor || '', source, storeProductId: a.storeProductId || '', appStoreUrl: a.appStoreUrl || '', catalogId: a.catalogId || '' }, options })
     });
     context.extraOutputs.set(queue, { tenantId: user.tenantId, jobId });
     await audit(user.tenantId, user.email || user.userId, 'started publishing', a.name);
@@ -62,7 +73,7 @@ app.storageQueue('publishWorker', {
     await saveJob(tenantId, jobId, { status: 'running', startedAt: new Date().toISOString() });
     try {
       const { app: a, options } = JSON.parse(job.request);
-      const result = await publishApp(tenantId, a, options, text => { log(text); });
+      const result = a.source === 'msstore' ? await publishStoreApp(tenantId, a, options, text => { log(text); }) : await publishApp(tenantId, a, options, text => { log(text); });
       await log('Done');
       await saveJob(tenantId, jobId, { status: 'succeeded', appId: result.appId, version: result.version, finishedAt: new Date().toISOString() });
       await audit(tenantId, job.createdBy, 'published', `${a.name} ${result.version}`);

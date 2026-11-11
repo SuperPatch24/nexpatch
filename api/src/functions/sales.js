@@ -2,6 +2,7 @@ import { app } from '@azure/functions';
 import { randomUUID } from 'node:crypto';
 import { TableClient } from '@azure/data-tables';
 import { DefaultAzureCredential } from '@azure/identity';
+import { escapeHtml, notifyPlatformAdmins } from '../lib/email.js';
 
 let table;
 function leadsTable() {
@@ -36,6 +37,7 @@ app.http('salesContact', { methods: ['POST'], authLevel: 'anonymous', route: 'sa
     await client.createEntity({ partitionKey: 'sales', rowKey: id, name, email, company, country, devices, message,
       source: 'public-website', createdAt: new Date().toISOString(), status: 'new' });
     recent.set(ip, now);
+    await notifyPlatformAdmins({ subject: `New NexpatchOnline enterprise enquiry: ${company}`, htmlContent: `<p>A new enterprise enquiry was submitted.</p><p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Company:</strong> ${escapeHtml(company)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p><strong>Country:</strong> ${escapeHtml(country)}</p><p><strong>Devices:</strong> ${escapeHtml(devices)}</p><p><strong>Message:</strong><br>${escapeHtml(message).replaceAll('\n','<br>')}</p>`, textContent: `New enterprise enquiry from ${name} at ${company}. Email: ${email}. Country: ${country}. Devices: ${devices}. Message: ${message}`, tags: ['enterprise-enquiry'] }, context);
     return { status: 200, jsonBody: { ok: true, id } };
   } catch (err) {
     context.error('Sales enquiry failed', err);

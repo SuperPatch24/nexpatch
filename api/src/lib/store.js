@@ -3,7 +3,7 @@ import { TableClient, odata } from '@azure/data-tables';
 import { DefaultAzureCredential } from '@azure/identity';
 import { createHash } from 'node:crypto';
 
-const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices', 'Catalog', 'SalesLeads', 'AppRequests', 'SiteContent'];
+const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices', 'Catalog', 'SalesLeads', 'AppRequests', 'SiteContent', 'InstallReports'];
 const clients = {};
 let credential;
 let ready;
@@ -73,7 +73,7 @@ export async function replaceInventory(tenantId, rows, syncId) {
     const rk = rowKey(r.displayName, r.version);
     if (seen.has(rk)) continue;
     seen.add(rk);
-    upserts.push(['upsert', { partitionKey: tenantId, rowKey: rk, displayName: r.displayName, version: r.version, deviceCount: r.deviceCount, platform: r.platform, syncId }, 'Replace']);
+    upserts.push(['upsert', { partitionKey: tenantId, rowKey: rk, displayName: r.displayName, publisher: r.publisher || '', version: r.version, deviceCount: r.deviceCount, platform: r.platform, syncId }, 'Replace']);
   }
   await inBatches(client, upserts);
 
@@ -88,9 +88,9 @@ export async function replaceInventory(tenantId, rows, syncId) {
 export async function getInventory(tenantId) {
   await ensureTables();
   const out = [];
-  const query = { filter: odata`PartitionKey eq ${tenantId}`, select: ['displayName', 'version', 'deviceCount'] };
+  const query = { filter: odata`PartitionKey eq ${tenantId}`, select: ['displayName', 'publisher', 'version', 'deviceCount'] };
   for await (const e of table('Inventory').listEntities({ queryOptions: query })) {
-    out.push({ displayName: e.displayName, version: e.version, deviceCount: e.deviceCount });
+    out.push({ displayName: e.displayName, publisher: e.publisher || '', version: e.version, deviceCount: e.deviceCount });
   }
   return out;
 }

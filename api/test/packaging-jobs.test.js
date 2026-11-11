@@ -152,3 +152,17 @@ test('reconcile classification: stale validating and queued-without-manifest are
   assert.equal(classifyJob({ status: 'queued', updatedAt: now }, { manifestExists: true, now }).action, 'ok');
   assert.equal(classifyJob({ status: 'queued', updatedAt: now }, { manifestExists: undefined, now }).action, 'ok');
 });
+
+test('manifest preserves structured catalog dependency and supersedence selections', async () => {
+  const manifest = buildManifest({
+    uploadBlobName: 'tenant/draft/file.msi', uploadFileName: 'file.msi', installerType: 'msi',
+    dependencies: [{ id: 'dep-1', name: 'Runtime' }], dependencyType: 'auto',
+    supersedence: [{ id: 'old-1', name: 'Legacy App' }], uninstallSuperseded: true,
+    detectionType: 'script', detectionScript: 'Write-Output "Installed"; exit 0'
+  }, { tenantId: 'tenant', jobId: 'job', sha256: 'abc', fileSize: 10 });
+  assert.deepEqual(JSON.parse(manifest.dependencies), [{ id: 'dep-1', name: 'Runtime' }]);
+  assert.deepEqual(JSON.parse(manifest.supersedence), [{ id: 'old-1', name: 'Legacy App' }]);
+  assert.equal(manifest.dependencyType, 'auto');
+  assert.equal(manifest.uninstallSuperseded, true);
+  assert.match(manifest.detectionScript, /Installed/);
+});

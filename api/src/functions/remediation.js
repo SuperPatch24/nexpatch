@@ -22,4 +22,7 @@ app.http('platformRemediationSave', { methods:['PUT'], authLevel:'anonymous', ro
 },'any') });
 
 // Customer portal: expose only approved script metadata; never expose script source or drafts.
-app.http('customerRemediationList', { methods:['GET'], authLevel:'anonymous', route:'remediation-scripts', handler:withUser(async()=>({ scripts:(await listRows(TABLE,'global',1000)).filter(r=>r.approvalStatus==='approved').map(r=>({id:r.rowKey,name:r.name||'',description:r.description||'',category:r.category||'General',version:r.version||'1.0.0'})) }),'viewer') });
+app.http('customerRemediationList', { methods:['GET'], authLevel:'anonymous', route:'remediation-scripts', handler:withUser(async(_req,ctx)=>{
+  try { return { availability:'available', scripts:(await listRows(TABLE,'global',1000)).filter(r=>r.approvalStatus==='approved').map(r=>({id:r.rowKey,name:r.name||'',description:r.description||'',category:r.category||'General',platform:r.platform||'Windows',version:r.version||'1.0.0',updatedAt:r.updatedAt||null})) }; }
+  catch(error) { ctx.error('Customer remediation library could not be loaded.',error); return { availability:'unavailable', scripts:[], message:'The remediation library is temporarily unavailable. Your organization data has not been changed. Try again shortly or contact your NexpatchOnline administrator if this continues.' }; }
+},'viewer') });

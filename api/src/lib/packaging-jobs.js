@@ -32,7 +32,7 @@ export function deterministicJobId(tenantId, draftId, blobName) {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
 
-const s = v => String(v || '');
+const s = v => (v && typeof v === 'object') ? JSON.stringify(v) : String(v || '');
 
 export function buildManifest(draft, { tenantId, jobId, sha256, fileSize }) {
   return {
@@ -40,9 +40,9 @@ export function buildManifest(draft, { tenantId, jobId, sha256, fileSize }) {
     blobName: draft.uploadBlobName, fileName: draft.uploadFileName, sha256, fileSize,
     installerType: draft.installerType,
     installCommand: s(draft.installCommand), uninstallCommand: s(draft.uninstallCommand),
-    detectionType: s(draft.detectionType), detectionPath: s(draft.detectionPath), detectionValue: s(draft.detectionValue),
+    detectionType: s(draft.detectionType), detectionPath: s(draft.detectionPath), detectionValue: s(draft.detectionValue), detectionScript: s(draft.detectionScript),
     installContext: s(draft.installContext), restartBehavior: s(draft.restartBehavior), returnCodes: s(draft.returnCodes),
-    dependencies: s(draft.dependencies), supersedence: s(draft.supersedence),
+    dependencies: s(draft.dependencies), dependencyType: s(draft.dependencyType), supersedence: s(draft.supersedence), uninstallSuperseded: !!draft.uninstallSuperseded,
     deploymentSchedule: s(draft.deploymentSchedule), deploymentRings: s(draft.deploymentRings),
     notificationSettings: s(draft.notificationSettings), reportingNotes: s(draft.reportingNotes),
     name: s(draft.name), version: s(draft.version)
@@ -54,9 +54,9 @@ export function buildJob(draft, { tenantId, draftId, jobId, sha256, fileSize, ac
     jobId, draftId, tenantId, blobName: draft.uploadBlobName, fileName: draft.uploadFileName, fileSize, sha256,
     installerType: draft.installerType,
     installCommand: s(draft.installCommand), uninstallCommand: s(draft.uninstallCommand),
-    detectionRule: s(draft.detectionRule), detectionType: s(draft.detectionType), detectionPath: s(draft.detectionPath), detectionValue: s(draft.detectionValue),
+    detectionRule: s(draft.detectionRule), detectionType: s(draft.detectionType), detectionPath: s(draft.detectionPath), detectionValue: s(draft.detectionValue), detectionScript: s(draft.detectionScript),
     installContext: s(draft.installContext), restartBehavior: s(draft.restartBehavior), returnCodes: s(draft.returnCodes),
-    dependencies: s(draft.dependencies), supersedence: s(draft.supersedence),
+    dependencies: s(draft.dependencies), dependencyType: s(draft.dependencyType), supersedence: s(draft.supersedence), uninstallSuperseded: !!draft.uninstallSuperseded,
     deploymentSchedule: s(draft.deploymentSchedule), deploymentRings: s(draft.deploymentRings),
     notificationSettings: s(draft.notificationSettings), reportingNotes: s(draft.reportingNotes),
     name: s(draft.name), publisher: s(draft.publisher), version: s(draft.version), architecture: s(draft.architecture || 'unknown'),

@@ -2,6 +2,8 @@ import { app } from '@azure/functions';
 import { withUser, HttpError, readJson } from '../lib/http.js';
 import { listMemberRows, getMemberRow, saveMemberRow, deleteMemberRow, inviteKey, audit, listAudit } from '../lib/store.js';
 import { ROLES } from '../lib/access.js';
+import { emailIsConfigured, sendBrevoEmail } from '../lib/email.js';
+import { escapeHtml } from '../lib/email.js';
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const shape = m => ({
@@ -35,7 +37,18 @@ app.http('usersInvite', {
       kind: 'invite', role, email, name: '', addedBy: user.email || user.userId, addedAt: new Date().toISOString()
     });
     await audit(user.tenantId, user.email || user.userId, 'invited', `${email} as ${role}`);
-    return shape(row);
+    // Invitations are email notifications; access is granted on first sign-in
+    // when the Microsoft account email matches this pending invitation.
+    const appUrl = String(process.env.PUBLIC_APP_URL || process.env.WEBSITE_URL || 'https://nexpatchonline.com').replace(/\/$/, '');
+    const invitationUrl = `${appUrl}/`;
+    const emailResult = await sendBrevoEmail({
+      to: [{ email }],
+      subject: `You have been invited to NexpatchOnline`,
+      htmlContent: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#17212b"><h2>You’re invited to NexpatchOnline</h2><p>${escapeHtml(user.name || user.email || 'An organization administrator')} invited you to join their NexpatchOnline workspace as <b>${escapeHtml(role)}</b>.</p><p>Sign in with this exact Microsoft work account: <b>${escapeHtml(email)}</b>.</p><p><a href="${invitationUrl}" style="display:inline-block;padding:12px 18px;background:#126b52;color:white;text-decoration:none;border-radius:6px">Open NexpatchOnline</a></p><p>Your access will be activated automatically after you sign in with the invited account.</p></div>`,
+      textContent: `You have been invited to NexpatchOnline as ${role}. Sign in at ${invitationUrl} using ${email}. Access activates when you sign in with this exact Microsoft account.`,
+      tags: ['nexpatchonline', 'user-invitation']
+    });
+    return { ...shape(row), emailSent: !!emailResult.sent, emailReason: emailResult.sent ? '' : (emailResult.reason || 'email-not-configured') };
   }, 'owner')
 });
 

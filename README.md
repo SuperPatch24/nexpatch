@@ -70,3 +70,21 @@ docs/
 - Platform administrators use the separate `/admin/` page for request triage, shared catalog editing, Store candidate verification, graphical metrics, Excel exports, website settings, email settings and internal admin documentation. Add `/admin/` as an Entra SPA redirect URI and configure `PLATFORM_ADMINS` (Super Admin), `PLATFORM_CATALOG_MANAGERS` (catalog-only) and/or `PLATFORM_SUPPORT_ADMINS` (request triage and reports).
 - Admin reports include total catalog entries, apps available to deploy, WinGet / Store counts, Store verification backlog, failed update jobs, failed deployment jobs, Intune device install failures imported by client admins, and detected apps missing from the shared catalog.
 - Excel export contains Summary, Catalog, Client requests, Organizations, Publishing jobs, Install results, Catalog gaps and a Visual summary worksheet.
+
+## Branding and operator guides
+
+The current brand mark is `public/nexpatch-logo.svg`. Expanded documentation is in `docs/` and mirrored under `public/docs/` for static hosting. The dashboard concept image in `docs/assets/` is illustrative artwork, not a screenshot of production data or a claim that every depicted feature is implemented.
+
+## Current feature boundaries
+
+- User invitations are persisted and email notifications are sent through Brevo when configured. Access activates on first sign-in with the invited Microsoft account.
+- The Platform Admin Remediation Scripts area stores draft PowerShell definitions and metadata only. It does not execute scripts or assign them to Intune devices.
+- The Intune permissions checklist is a review aid, not a live consent/permission detector. Verify the exact Graph permissions configured for the deployed app registration before requesting tenant consent.
+- Driver update visibility and iOS/iPadOS update management are roadmap recommendations, not implemented deployment capabilities in this release.
+
+## Apple inventory and packaging wizard (November 2026)
+
+- Customer console now includes **Apple apps & devices**. It reads iOS/iPadOS managed-device inventory, detected app/version records and iOS/iPadOS app catalog resources from the connected Intune tenant. It offers an Excel executive/device/app workbook and browser Print / Save PDF.
+- Apple inventory is currently read-only. It does not assign apps, force app updates, manage Apps and Books licenses, or determine that an app is outdated without a trusted latest-version source.
+- **Application packaging wizard** captures Windows app intake metadata and saves tenant-scoped packaging drafts. It is not yet an installer upload, malware scan, signature verification, Win32 Content Prep Tool conversion, install test or Intune publishing pipeline.
+- See `docs/IOS-IPADOS-APP-MANAGEMENT-GUIDE.md` and `docs/APPLICATION-PACKAGING-WIZARD-GUIDE.md` for current boundaries and the next infrastructure requirements.

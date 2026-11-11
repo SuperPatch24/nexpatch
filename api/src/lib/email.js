@@ -4,11 +4,11 @@ export function emailIsConfigured() {
   return Boolean(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL && EMAIL_RE.test(process.env.BREVO_SENDER_EMAIL));
 }
 
-export function adminEmailRecipients() {
-  return String(process.env.BREVO_ADMIN_EMAILS || '')
-    .split(/[;,]/)
-    .map(value => value.trim().toLowerCase())
-    .filter(value => EMAIL_RE.test(value));
+export async function adminEmailRecipients() {
+  let configured = [];
+  try { const { getRow } = await import('./store.js'); const row = await getRow('EmailConfig', 'global', 'recipients'); if (Array.isArray(row?.recipients)) configured = row.recipients; } catch { /* Storage may not be configured in local/test environments. */ }
+  const source = configured.length ? configured.join(';') : String(process.env.BREVO_ADMIN_EMAILS || '');
+  return source.split(/[;,]/).map(value => value.trim().toLowerCase()).filter(value => EMAIL_RE.test(value));
 }
 
 export function escapeHtml(value = '') {
@@ -60,7 +60,7 @@ export async function sendBrevoEmail({ to, subject, htmlContent, textContent, ta
 }
 
 export async function notifyPlatformAdmins(message, logger = console) {
-  const recipients = adminEmailRecipients();
+  const recipients = await adminEmailRecipients();
   if (!recipients.length) return { sent: false, reason: 'no-admin-recipients' };
   return sendBrevoEmail({ ...message, to: recipients }, logger);
 }

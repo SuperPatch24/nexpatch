@@ -17,11 +17,11 @@ test('email configuration requires a key and a valid verified sender address', (
   }
 });
 
-test('admin recipients are parsed and invalid addresses are discarded', () => {
+test('admin recipients are parsed and invalid addresses are discarded', async () => {
   const old = process.env.BREVO_ADMIN_EMAILS;
   try {
     process.env.BREVO_ADMIN_EMAILS = 'admin@example.com; bad-address, ops@example.com';
-    assert.deepEqual(adminEmailRecipients(), ['admin@example.com', 'ops@example.com']);
+    assert.deepEqual(await adminEmailRecipients(), ['admin@example.com', 'ops@example.com']);
   } finally { if (old === undefined) delete process.env.BREVO_ADMIN_EMAILS; else process.env.BREVO_ADMIN_EMAILS = old; }
 });
 

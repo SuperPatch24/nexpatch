@@ -84,6 +84,7 @@ h3{font-size:1rem;margin:0 0 6px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 
 .pill{display:inline-block;font-size:.8rem;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.eyebrow{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--teal);font-weight:700}.steps{padding-left:22px}.steps li{padding:7px 0;border-bottom:1px solid var(--line)}.steps li:last-child{border:0}
 .p-vuln{background:var(--red-soft);color:var(--red)} .p-upd{background:var(--amber-soft);color:var(--amber)} .p-cur{background:var(--green-soft);color:var(--green)} .p-neutral{background:var(--sunk);color:var(--muted)}
 
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
@@ -312,7 +313,7 @@ body.is-public::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-
 .role-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
 .role-card b{display:block;margin-bottom:4px}
 .role-card span{font-size:.9rem;color:var(--muted)}
-body[data-role=viewer] :is(#acSourceSave,#acCheckBtn,#acKeyBtn,#acSuppBtn,[data-acd],#dPublishNow,[data-pub],#addAppBtn,#runbookBtn,#discAddAll,[data-dadd],#saveSettings,#consentBtn,#syncBox,#invImportBtn,#resetBtn,#invitePanel,#dMark,#dGen){display:none!important}
+body[data-role=viewer] :is(#appleSyncBtn,#packWizard button[type=submit],#acSourceSave,#acCheckBtn,#acKeyBtn,#acSuppBtn,[data-acd],#dPublishNow,[data-pub],#addAppBtn,#runbookBtn,#discAddAll,[data-dadd],#saveSettings,#consentBtn,#syncBox,#invImportBtn,#resetBtn,#invitePanel,#dMark,#dGen){display:none!important}
 body[data-role=admin] :is(#invitePanel,#acKeyBtn){display:none!important}
 body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 @media (max-width:760px){ .roles3{grid-template-columns:1fr} }
@@ -342,6 +343,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 .actabs a[aria-current="page"]{color:var(--teal);border-color:var(--teal)}
 @media (max-width:860px){ .nav-h{display:none} }
 @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+@media print{body{background:#fff!important;color:#111!important}.nav,.plan-banner,.btn,.toolbar{display:none!important}.shell{display:block}main{max-width:none;padding:0}.view{display:none!important}#view-apple{display:block!important}.panel,.table-wrap{break-inside:avoid;border-color:#bbb!important;box-shadow:none!important}table{min-width:0}th,td{padding:6px;font-size:10pt}}
 </style>
 </head>
 <body>
@@ -352,8 +354,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <header class="pub-header">
       <div class="inner">
         <div class="brand">
-          <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="4" width="24" height="4" rx="2" fill="var(--green)"/><rect x="1" y="11" width="17" height="4" rx="2" fill="var(--amber)"/><rect x="1" y="18" width="9" height="4" rx="2" fill="var(--red)"/></svg>
-          <span>NexpatchOnline</span>
+          <img src="/nexpatch-logo.svg" alt="NexpatchOnline" style="width:220px;height:auto;max-width:100%">
         </div>
         <button class="linkbtn opt" type="button" data-scroll="pub-features">Features</button>
         <button class="linkbtn opt" type="button" data-scroll="pub-how">How it works</button>
@@ -474,7 +475,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <div class="login">
       <div class="login-brand">
         <div class="brand">
-          <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="4" width="24" height="4" rx="2" fill="#66BE8C"/><rect x="1" y="11" width="17" height="4" rx="2" fill="#E2AA45"/><rect x="1" y="18" width="9" height="4" rx="2" fill="#E8776B"/></svg>
+          <img src="/nexpatch-logo.svg" alt="NexpatchOnline" style="width:220px;height:auto;max-width:100%">
           <span>NexpatchOnline</span>
         </div>
         <div>
@@ -508,8 +509,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 <div class="shell" id="app" hidden>
   <nav class="nav" aria-label="Main">
     <div class="brand">
-      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="4" width="24" height="4" rx="2" fill="var(--green)"/><rect x="1" y="11" width="17" height="4" rx="2" fill="var(--amber)"/><rect x="1" y="18" width="9" height="4" rx="2" fill="var(--red)"/></svg>
-      <span>NexpatchOnline</span>
+      <img src="/nexpatch-logo.svg" alt="NexpatchOnline" style="width:220px;height:auto;max-width:100%">
     </div>
     <a href="#overview" data-view="overview">Overview</a>
     <div class="nav-h">Apps</div>
@@ -517,6 +517,8 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <a href="#discovery" data-view="discovery">Discovery</a>
     <a href="#deployments" data-view="deployments">Deployments</a>
     <a href="#reports" data-view="reports">App reports</a>
+    <a href="#apple" data-view="apple">Apple apps & devices</a>
+    <a href="#packaging" data-view="packaging">Application packaging</a>
     <div class="nav-h">App Control</div>
     <a href="#app-control" data-view="app-control" data-actab-link="activity">Activity</a>
     <a href="#ac-base" data-view="app-control" data-actab-link="base">Base policy</a>
@@ -668,6 +670,40 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       </div>
     </section>
 
+    <!-- APPLE MANAGEMENT -->
+    <section class="view" id="view-apple" aria-labelledby="appleTitle">
+      <h1 id="appleTitle">Apple apps & devices</h1>
+      <p class="lede">A clear view of managed iPhones, iPads and detected application versions from your connected Intune tenant.</p>
+      <div class="row" style="margin-bottom:18px"><button class="btn primary" id="appleSyncBtn" type="button">Sync Apple inventory</button><button class="btn" id="appleExcelBtn" type="button">Export Excel report</button><button class="btn" id="applePrintBtn" type="button">Print / Save PDF</button><span class="small" id="appleSyncState">Not synced yet</span></div>
+      <div class="stats" id="appleStats"><div class="stat"><b>—</b><span>iOS/iPadOS devices</span></div><div class="stat"><b>—</b><span>Compliant devices</span></div><div class="stat"><b>—</b><span>Detected app records</span></div><div class="stat"><b>—</b><span>Noncompliant devices</span></div></div>
+      <div class="grid2" style="align-items:start">
+        <div class="panel"><div class="panel-head"><div><h2>Managed iPhones & iPads</h2><p class="small">Device and OS inventory reported by Intune.</p></div></div><div class="table-wrap"><table class="compact"><thead><tr><th>Device</th><th>Model</th><th>OS</th><th>Compliance</th><th>Last check-in</th></tr></thead><tbody id="appleDevicesBody"><tr><td colspan="5" class="empty">Sync your Intune inventory to get started.</td></tr></tbody></table></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Detected Apple apps</h2><p class="small">Observed application versions and device counts.</p></div></div><div class="table-wrap"><table class="compact"><thead><tr><th>Application</th><th>Publisher</th><th>Version</th><th>Devices</th></tr></thead><tbody id="appleAppsBody"><tr><td colspan="4" class="empty">No Apple app inventory yet.</td></tr></tbody></table></div></div>
+      </div>
+      <p class="small" style="margin-top:14px">Version observations are not automatically classified as outdated. A reliable latest-version source and compatibility check are required before Nexpatch can recommend an app update. App assignment and update execution remain controlled by Intune and your organization's administrators.</p>
+    </section>
+
+    <!-- APPLICATION PACKAGING WIZARD -->
+    <section class="view" id="view-packaging" aria-labelledby="packTitle">
+      <h1 id="packTitle">Application packaging wizard</h1>
+      <p class="lede">Prepare a Windows application for a secure Win32 packaging workflow. This first wizard saves an intake draft and packaging instructions; it does not upload, execute, scan or convert installers.</p>
+      <div class="grid2" style="align-items:start">
+        <form class="panel" id="packWizard">
+          <div class="panel-head"><div><span class="eyebrow">Step 1 of 3 · Application intake</span><h2>Application details</h2></div><span class="pill p-neutral">Draft workflow</span></div>
+          <label class="field"><span>Application name *</span><input id="pkName" required maxlength="160" placeholder="Example Business App"></label>
+          <div class="grid2"><label class="field"><span>Publisher</span><input id="pkPublisher" maxlength="160"></label><label class="field"><span>Version</span><input id="pkVersion" maxlength="80" placeholder="1.0.0"></label></div>
+          <div class="grid2"><label class="field"><span>Installer type *</span><select id="pkType"><option value="msi">MSI</option><option value="exe">EXE</option><option value="msix">MSIX</option><option value="appx">APPX</option><option value="intunewin">Existing .intunewin</option></select></label><label class="field"><span>Architecture</span><select id="pkArch"><option value="unknown">Not sure</option><option value="x64">x64</option><option value="x86">x86</option><option value="arm64">ARM64</option><option value="all">Universal</option></select></label></div>
+          <label class="field"><span>Official HTTPS installer URL</span><input id="pkUrl" type="url" placeholder="https://vendor.example/download"></label>
+          <label class="field"><span>Silent install command</span><input id="pkInstall" placeholder="e.g. msiexec /i app.msi /qn /norestart"></label>
+          <label class="field"><span>Uninstall command</span><input id="pkUninstall" placeholder="e.g. msiexec /x {PRODUCT-CODE} /qn"></label>
+          <label class="field"><span>Detection rule / notes</span><textarea id="pkDetect" rows="2" placeholder="MSI product code, file path + version, registry key..."></textarea></label>
+          <label class="field"><span>Additional requirements</span><textarea id="pkNotes" rows="3" placeholder="Dependencies, reboot behavior, license requirements, install context..."></textarea></label>
+          <button class="btn primary" type="submit">Save packaging draft</button><span id="pkStatus" class="small" role="status"></span>
+        </form>
+        <div class="panel"><h2>Secure packaging pipeline</h2><ol class="steps"><li>Private installer intake and file-size validation</li><li>SHA-256 and Authenticode signature inspection</li><li>Malware scanning and publisher verification</li><li>Silent install / uninstall and detection review</li><li>Official Microsoft Win32 Content Prep Tool on an isolated Windows worker</li><li>Install / uninstall testing, approval and publication</li></ol><p class="small">The isolated Windows worker, malware scanner, upload storage and actual .intunewin conversion are not connected in this release. Do not treat a saved draft as a tested or deployable package.</p><h3 style="margin-top:22px">Saved packaging drafts</h3><div class="table-wrap"><table class="compact"><thead><tr><th>Application</th><th>Type</th><th>Status</th><th>Created</th></tr></thead><tbody id="pkDraftsBody"><tr><td colspan="4" class="empty">No drafts saved yet.</td></tr></tbody></table></div></div>
+      </div>
+    </section>
+
     <!-- APP CONTROL -->
     <section class="view" id="view-app-control" aria-labelledby="acTitle">
       <h1 id="acTitle">App Control</h1>
@@ -693,7 +729,8 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       <div class="panel" id="acReportsPanel" hidden>
         <div class="panel-head"><div><h2>App Control reports</h2><p class="small" style="margin:0" id="acRepSub"></p></div><button class="btn small" type="button" data-rep="acTop">Copy for Excel</button></div>
         <div class="stats" id="acRepStats"></div>
-        <div class="grid2" style="margin-top:0">
+        <div class="panel" style="margin-top:16px"><h2>Administrator permission review checklist</h2><p class="small">Preparation checklist only. Confirm the exact Microsoft Graph permissions shown in your tenant's consent screen and the current release permission matrix before granting consent. Optional integrations must remain off until separately approved.</p><div class="grid2"><div><h3>Core Intune services</h3><label><input type="checkbox"> Read managed devices and inventory</label><label><input type="checkbox"> Read discovered applications and versions</label><label><input type="checkbox"> Read app catalog and assignments</label><label><input type="checkbox"> Create/update Intune apps (deployment feature)</label><label><input type="checkbox"> Manage app assignments (only if enabled)</label></div><div><h3>Optional security and automation</h3><label><input type="checkbox"> App Control policy read / write (optional)</label><label><input type="checkbox"> Defender data access (optional, separately scoped)</label><label><input type="checkbox"> PowerShell remediation assignment (not enabled yet)</label><label><input type="checkbox"> Group lookup for deployment targeting</label><label><input type="checkbox"> Pilot group and rollback approved</label></div></div><p class="small">These are feature categories, not permission names or proof of consent. The app's actual configured Application permissions and the Microsoft consent dialog are authoritative. Do not grant Defender or script execution permissions unless you enable those integrations.</p></div>
+      <div class="grid2" style="margin-top:0">
           <div><h3>Most blocked or audited apps</h3><div class="table-wrap"><table class="compact" id="acRepTop"></table></div></div>
           <div><h3>Top publishers</h3><div class="table-wrap"><table class="compact" id="acRepPub"></table></div></div>
         </div>
@@ -820,7 +857,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           <label class="field" style="flex:0 1 170px;margin:0"><span>Role</span><select id="inviteRole"><option value="viewer">Viewer</option><option value="admin" selected>Admin</option><option value="owner">Owner</option></select></label>
           <button class="btn primary" type="button" id="inviteBtn">Invite</button>
         </div>
-        <p class="small" style="margin:10px 0 0">They get access the first time they sign in to NexpatchOnline with that account. NexpatchOnline doesn’t send an email, so let them know.</p>
+        <p class="small" style="margin:10px 0 0">We will email an invitation through NexpatchOnline. Access activates when they sign in with this exact Microsoft account.</p>
       </div>
       <div class="panel">
         <div class="panel-head"><h2>People with access</h2><span class="small" id="peopleCount"></span></div>
@@ -859,7 +896,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 
     <!-- DOCUMENTATION -->
     <section class="view" id="view-documentation" aria-labelledby="docsTitle">
-      <h1 id="docsTitle">Documentation centre</h1><p class="lede">Practical, step-by-step guides for setting up and operating NexpatchOnline.</p>
+      <h1 id="docsTitle">Documentation centre</h1><p class="lede">Practical, step-by-step guides for setting up and operating NexpatchOnline. Expanded manuals are included in the release package: END-USER-GUIDE.md, COMPANY-IT-ADMIN-GUIDE.md and INTUNE-PERMISSIONS-CHECKLIST.md.</p>
       <div class="toolbar"><input class="search" id="docsSearch" type="search" placeholder="Search guides and topics" aria-label="Search documentation"><span class="small" id="docsCount"></span></div>
       <div class="grid2" style="align-items:start"><div class="panel"><h2>Browse topics</h2><div id="docsTopics" class="todo"></div></div>
         <article class="panel" id="docsArticle" aria-live="polite"><p class="eyebrow">Getting started</p><h2>Welcome to NexpatchOnline</h2><p>Select a topic to read the guide.</p></article></div>
@@ -1624,7 +1661,7 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','catalog','discovery','deployments','reports','app-control','users','connect','documentation','requests'];
+const VIEWS=['overview','catalog','discovery','deployments','reports','apple','packaging','app-control','users','connect','documentation','requests'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
@@ -1639,7 +1676,7 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='apple') loadApple(); if(v==='packaging') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Owner'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
@@ -2087,13 +2124,15 @@ const DOCS=[
  {topic:'Getting started',title:'Connect your Microsoft Intune tenant',body:'<ol><li>Sign in with your Microsoft work account.</li><li>Open <b>Connect to Intune</b> and review requested Graph permissions.</li><li>Have an administrator grant consent when prompted.</li><li>Wait for tenant activation, then sync inventory.</li><li>Review discovered apps before publishing updates.</li></ol><p>Start with a test tenant and a pilot group.</p>'},
  {topic:'Getting started',title:'Understand roles and access',body:'<p>Viewers can review catalog, inventory and reports. Admins can publish apps, sync inventory and manage App Control. Owners can also manage organization access. Apply least privilege.</p>'},
  {topic:'Application catalog',title:'Read the application catalog',body:'<p>The catalog combines built-in sample apps, the shared platform catalog and organization-added apps. The count shows apps currently loaded in this browser. Inventory counts are illustrative until you connect and sync Intune.</p><p>Verify publisher, package ID and install context before enabling auto-publish.</p>'},
- {topic:'Application catalog',title:'Add a WinGet application',body:'<ol><li>Run <code>winget search "app name"</code> on a trusted Windows workstation.</li><li>Confirm exact package ID and publisher.</li><li>Choose Add app and enter package ID, installed-app display name and process names.</li><li>Test on a pilot group before enabling automatic publishing.</li></ol>'},
+ {topic:'Application catalog',title:'WinGet catalog ownership',body:'<p>WinGet source identifiers, manifest review and shared catalog publishing are managed by NexpatchOnline Platform Administrators. Company IT administrators can deploy approved shared catalog entries but cannot curate or change the platform WinGet source. Use Request an application to suggest a missing package.</p>'},
   {topic:'Microsoft Store',title:'Deploy Microsoft Store apps from the App Catalog',body:'<ol><li>Find the exact app in Microsoft Store or run <code>winget search --source msstore "app name"</code> on a trusted Windows workstation.</li><li>Confirm the exact publisher and Store Product ID. A Package Family Name is not required for the native Intune Microsoft Store app type.</li><li>Ask a NexpatchOnline catalog administrator to verify the Product ID and publisher. Only verified entries show a Deploy action.</li><li>Choose a pilot group in the deployment dialog, deploy, and monitor the job in Deployments.</li></ol><p>Intune uses the Microsoft Store app type through Microsoft Graph beta. Microsoft says Store apps are updated through Store / Intune management; UWP update behavior depends on Store auto-update policy, while Store Win32 apps need an active Intune assignment for updates. Win32 Store apps are currently in preview.</p>'},
  {topic:'Automatic updates',title:'Configure automatic publishing',body:'<ol><li>Open Catalog and updates.</li><li>Enable auto-publish only for validated apps.</li><li>Set deployment rings: Pilot, early adopters, then broad deployment.</li><li>Set suitable deferrals and monitor Deployments.</li><li>Review failures before retrying.</li></ol>'},
  {topic:'Intune',title:'Prepare groups and permissions',body:'<p>Use dedicated Entra device groups for pilot and production rings. Confirm Intune roles, Graph permissions and licensing. Avoid assigning new policies to all devices until pilot tests succeed.</p>'},
  {topic:'App Control',title:'Build a base policy safely',body:'<ol><li>Start in Audit mode and target a pilot group.</li><li>Choose the Microsoft trust baseline that suits your organization.</li><li>Enable Managed Installer only after configuring it in Intune.</li><li>Review events and allow only required publishers or hashes.</li><li>Run audit for at least a week before considering Enforce.</li></ol><p>Maintain a tested recovery plan.</p>'},
  {topic:'App Control',title:'Configure allowed path rules',body:'<p>Path rules allow files in specified directories. Only use locations standard users cannot modify, such as <code>C:\\Program Files\\Vendor\\*</code>. Never allow Downloads, Desktop, Temp, AppData, user profiles or other user-writable locations.</p><p>Enter one absolute Windows path per line. NexpatchOnline validates and embeds these in the base policy.</p>'},
  {topic:'App Control',title:'Use supplemental policies',body:'<p>Supplemental policies extend a base policy. Review every allow decision, deploy the base policy first and use the same intended device scope. Redeploy after changing allowed publishers or file hashes.</p>'},
+ {topic:'Apple management',title:'Manage iOS and iPadOS app inventory',body:'<p>Open Apple apps & devices and sync the connected Intune tenant. The page reports managed iPhones/iPads, OS versions, compliance, detected app versions and Intune app-catalog entries. Excel exports include an executive summary, device inventory and detected app records. Print / Save PDF creates a printable snapshot. Version observations are not automatically called outdated, and app deployment/update actions remain in Intune in this release.</p>'},
+ {topic:'Application packaging',title:'Use the application packaging wizard',body:'<p>The wizard saves a Windows installer intake draft with publisher, version, installer type, architecture, HTTPS URL, install/uninstall commands and detection notes. Saving a draft does not upload, scan, execute, convert or publish an installer. The production pipeline still needs private blob intake, signature/hash checks, malware scanning, an isolated Windows worker running Microsoft Win32 Content Prep Tool, install/uninstall testing and approval.</p>'},
  {topic:'Reports',title:'Understand reports and inventory',body:'<p>Sync Intune inventory before relying on device counts or version distribution. Sample/demo data is illustrative. Use deployment job logs to investigate Intune assignment failures.</p>'},
  {topic:'Troubleshooting',title:'Common publishing problems',body:'<ul><li><b>WinGet not found:</b> confirm App Installer is available to SYSTEM.</li><li><b>Package not found:</b> verify exact package ID and source.</li><li><b>Detection fails:</b> verify registry display name, PFN and install context.</li><li><b>Assignment fails:</b> verify group IDs, permissions and licensing.</li><li><b>Store app does not update:</b> check Store policy, network access and publisher listing.</li></ul>'},
  {topic:'Reports',title:'Import Intune install failures for platform reporting',body:'<ol><li>Open Reports and select Get results script.</li><li>Run the PowerShell script with an Intune administrator-approved account and the required Graph read permission.</li><li>Paste the JSON output into Import install results.</li><li>If your organization is connected, NexpatchOnline stores the report for platform-level aggregation. The Nexpatch website administrators can then see your organization’s device install failures.</li></ol><p>Imported reports are snapshots and should be refreshed when you need current status.</p>'},
@@ -2400,6 +2439,24 @@ document.addEventListener('click', async e=>{ const b=e.target.closest('[data-re
   const tsv=[r.head].concat(r.rows).map(row=>row.map(c=>String(c==null?'':c).replace(/[\t\r\n]+/g,' ')).join('\t')).join('\r\n');
   const ok=await copyText(tsv); toast(ok?'Copied '+r.rows.length+' rows. Paste into Excel.':'Copy failed. Try again.'); });
 
+/* ---------- Apple fleet and packaging wizard ---------- */
+async function loadApple(){
+  if(!liveMode()){ $('#appleSyncState').textContent='Connect an active Intune tenant to load live Apple inventory.'; return; }
+  try{ const d=await api('/apple/overview'); renderApple(d); }catch(e){ $('#appleSyncState').textContent=e.message; }
+}
+function renderApple(d){
+  const devices=d.devices||[], apps=d.apps||[]; const compliant=devices.filter(x=>String(x.complianceState).toLowerCase()==='compliant').length, non=devices.filter(x=>String(x.complianceState).toLowerCase()==='noncompliant').length;
+  $('#appleStats').innerHTML=[[devices.length,'iOS/iPadOS devices'],[compliant,'Compliant devices'],[apps.length,'Detected app records'],[non,'Noncompliant devices']].map(x=>'<div class="stat"><b>'+Number(x[0]).toLocaleString()+'</b><span>'+x[1]+'</span></div>').join('');
+  $('#appleDevicesBody').innerHTML=devices.length?devices.map(x=>'<tr><td><b>'+esc(x.name||'Unnamed device')+'</b><span class="sub">'+esc(x.userPrincipalName||'')+'</span></td><td>'+esc(x.model||'—')+'</td><td>'+esc(x.osVersion||'—')+'</td><td><span class="pill '+(String(x.complianceState).toLowerCase()==='compliant'?'p-cur':String(x.complianceState).toLowerCase()==='noncompliant'?'p-vuln':'p-neutral')+'">'+esc(x.complianceState||'Unknown')+'</span></td><td>'+ (x.lastSyncDateTime?fmtDate(new Date(x.lastSyncDateTime)):'—')+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">No iOS/iPadOS devices returned by Intune.</td></tr>';
+  $('#appleAppsBody').innerHTML=apps.length?apps.map(x=>'<tr><td><b>'+esc(x.name||'Unknown app')+'</b></td><td>'+esc(x.publisher||'—')+'</td><td>'+esc(x.version||'—')+'</td><td>'+Number(x.deviceCount||0).toLocaleString()+'</td></tr>').join(''):'<tr><td colspan="4" class="empty">No iOS/iPadOS detected apps returned.</td></tr>';
+  $('#appleSyncState').textContent=d.syncedAt?'Last synced '+fmtDate(new Date(d.syncedAt)):'No Apple sync recorded';
+}
+$('#appleSyncBtn').addEventListener('click',async()=>{const b=$('#appleSyncBtn');b.disabled=true;b.textContent='Syncing…';try{const r=await api('/apple/sync','POST',{});await loadApple();toast('Synced '+r.devices+' Apple devices and '+r.apps+' detected app records.');}catch(e){toast(e.message);}finally{b.disabled=false;b.textContent='Sync Apple inventory';}});
+$('#appleExcelBtn').addEventListener('click',async()=>{try{const d=await api('/apple/reports.xlsx');const raw=atob(d.base64),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:d.contentType})),a=document.createElement('a');a.href=url;a.download=d.filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Apple fleet Excel report exported.');}catch(e){toast(e.message);}});
+$('#applePrintBtn').addEventListener('click',()=>window.print());
+async function loadPackageDrafts(){ if(!liveMode()){ $('#pkStatus').textContent='Connect an active Intune tenant to save drafts.';return; } try{const d=await api('/apple/overview');const rows=d.packageDrafts||[];$('#pkDraftsBody').innerHTML=rows.length?rows.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).map(x=>'<tr><td><b>'+esc(x.name)+'</b><span class="sub">'+esc(x.publisher||'')+'</span></td><td>'+esc(x.installerType.toUpperCase())+'</td><td><span class="pill p-neutral">Draft</span></td><td>'+ (x.createdAt?fmtDate(new Date(x.createdAt)):'—')+'</td></tr>').join(''):'<tr><td colspan="4" class="empty">No drafts saved yet.</td></tr>';}catch(e){$('#pkStatus').textContent=e.message;} }
+$('#packWizard').addEventListener('submit',async e=>{e.preventDefault();try{const b={name:$('#pkName').value,publisher:$('#pkPublisher').value,version:$('#pkVersion').value,installerType:$('#pkType').value,architecture:$('#pkArch').value,sourceUrl:$('#pkUrl').value,installCommand:$('#pkInstall').value,uninstallCommand:$('#pkUninstall').value,detectionRule:$('#pkDetect').value,notes:$('#pkNotes').value};const r=await api('/packaging/drafts','POST',b);$('#pkStatus').textContent='Saved draft '+r.id+'. No installer has been packaged.';e.target.reset();await loadPackageDrafts();toast('Packaging draft saved.');}catch(err){$('#pkStatus').textContent=err.message;}});
+
 /* ---------- Discovery ---------- */
 const KNOWN=[
  {p:'mozilla thunderbird',n:'Mozilla Thunderbird',w:'Mozilla.Thunderbird',v:'Mozilla Foundation',r:'Mozilla Thunderbird',c:'thunderbird',e:'C:/Program Files/Mozilla Thunderbird/thunderbird.exe'},
@@ -2546,9 +2603,9 @@ async function renderUsers(){
 $('#inviteBtn').addEventListener('click', async ()=>{
   const email=$('#inviteEmail').value.trim().toLowerCase(), role=$('#inviteRole').value;
   if(!/^[^@ ]+@[^@ ]+[.][^@ ]+$/.test(email)){ toast('Enter their work email, like name@company.com'); $('#inviteEmail').focus(); return; }
-  if(liveMode()){ try{ await api('/users','POST',{email,role}); }catch(e){ toast(e.message); return; } }
+  if(liveMode()){ try{ const invited=await api('/users','POST',{email,role}); if(!invited.emailSent){toast('Invitation saved, but email was not sent. Check Brevo configuration and sender authorization.');} else {toast('Invitation email sent to '+email);} }catch(e){ toast(e.message); return; } }
   else { const d=sampleUsers(); if(d.people.some(p=>p.email===email)){ toast('This person already has access or an invitation.'); return; } d.people.push({id:'i_'+Date.now(),kind:'invite',role,name:'',email,lastSeenAt:null}); d.events.unshift({at:new Date().toISOString(),actor:SESSION.email,action:'invited',detail:email+' as '+role}); save(); }
-  $('#inviteEmail').value=''; toast('Invited '+email+' as '+ROLE_NAME[role]); renderUsers();
+  $('#inviteEmail').value=''; if(!liveMode()) toast('Invited '+email+' as '+ROLE_NAME[role]); renderUsers();
 });
 $('#inviteEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#inviteBtn').click(); });
 $('#peopleBody').addEventListener('change', async e=>{

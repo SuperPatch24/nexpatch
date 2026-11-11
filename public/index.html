@@ -2301,7 +2301,7 @@ async function renderACLive(){
   await loadACEvents();
   clearInterval(AC.timer); AC.timer=setInterval(()=>{ if(location.hash==='#app-control' && liveMode()) loadACEvents(); else clearInterval(AC.timer); }, 60000);
 }
-async function loadACEvents(){ try{ AC.events=(await api('/appcontrol/events')).events; }catch(e){ $('#acLiveBody').innerHTML='<tr><td colspan="7" class="empty">'+esc(e.message)+'</td></tr>'; return; } drawACEvents(); }
+async function loadACEvents(){ try{ AC.events=(await api('/appcontrol/events')).events; }catch(e){ $('#acLiveBody').innerHTML='<tr><td colspan="7" class="empty">'+esc(e.message)+'</td></tr>'; const sub=$('#acRepSub'); if(sub) sub.textContent='Could not load App Control events: '+e.message; return; } drawACEvents(); }
 function drawACEvents(){ if(AC_TAB==='supplemental') renderACSupp(); if(AC_TAB==='reports') renderACReports();
   const q=$('#acSearch').value.trim().toLowerCase(), f=AC.filter;
   let list=AC.events.filter(e=> f==='all' || (f==='needs'&&!e.decision) || (f==='blocked'&&e.action==='blocked') || (f==='audited'&&e.action==='audited') || (f==='allowed'&&String(e.decision).startsWith('allow')));
@@ -2378,8 +2378,7 @@ function trendSVG(){
 function renderReports(){
   const f=fleetStats(), now=Date.now();
   const active=S.deployments.filter(d=>now<finishAt(d).getTime()).length;
-  const blocked=S.events.filter(e=>e.action==='Blocked').length;
-  $('#repStats').innerHTML=[[f.total?f.pct+'%':'—',f.total?'of installs on the latest version':'no inventory yet'],[f.vuln.toLocaleString(),'installs with a known vulnerability'],[active,'rollouts in progress'],[blocked,'apps blocked by App Control']].map(s=>'<div class="stat"><b>'+s[0]+'</b><span>'+s[1]+'</span></div>').join('');
+  $('#repStats').innerHTML=[[f.total?f.pct+'%':'—',f.total?'of installs on the latest version':'no inventory yet'],[f.vuln.toLocaleString(),'installs with a known vulnerability'],[active,'rollouts in progress']].map(s=>'<div class="stat"><b>'+s[0]+'</b><span>'+s[1]+'</span></div>').join('');
   $('#repSource').textContent = S.imported ? 'Using your Intune inventory.' : isSampleData() ? 'Using sample data.' : 'No inventory yet. Sync it on the Connect page.';
   $('#repTrend').innerHTML = (!f.total && !(S.history||[]).length) ? '<p class="empty">The trend starts with your first inventory sync.</p>' : trendSVG();
 
@@ -2399,12 +2398,6 @@ function renderReports(){
   REP.deployments={head:['App','Version','Deployment','Published','Assignments done','Finishes'],rows:S.deployments.map(d=>{ const sch=depSchedule(d); const done=sch.filter(x=>now>=(x.deadline??x.start)).length; return [d.name,d.version,d.summary||MODE_LABEL[d.mode]||'',d.at.slice(0,10),done+' of '+sch.length,finishAt(d).toISOString().slice(0,10)]; })};
   $('#repDeployments').innerHTML=thead(REP.deployments.head)+'<tbody>'+(S.deployments.length?REP.deployments.rows.map((r,i)=>{ const fin=now>=finishAt(S.deployments[i]).getTime(); return '<tr><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td><td>'+r[2]+'</td><td>'+fmtDate(new Date(S.deployments[i].at))+'</td><td>'+r[4]+'</td><td>'+(fin?'<span class="pill p-cur">Done</span>':fmtDate(finishAt(S.deployments[i])))+'</td></tr>'; }).join(''):emptyRow(6,'Nothing published yet.'))+'</tbody>';
 
-  const p=S.policy; const sel=p.pubOn?S.apps.filter(a=>p.pubs.includes(a.id)&&a.exe):[];
-  const pubN=sel.filter(a=>!a.unsigned).length+p.custom.filter(c=>c.level!=='Hash').length, hashN=sel.filter(a=>a.unsigned).length+p.custom.filter(c=>c.level==='Hash').length, foldN=p.paths.split('\n').filter(s=>s.trim()).length;
-  $('#repACStats').innerHTML=esc(p.name)+' is in '+(p.mode==='audit'?'audit':'enforce')+' mode with '+pubN+' publisher rules, '+hashN+' file hash rules and '+foldN+' folder rules'+(p.mi?', and trusts apps Intune installs':'')+'.';
-  const evs=[...S.events].sort((p2,q)=>q.devices-p2.devices);
-  REP.appcontrol={head:['File','Path','Status','Signed by','Devices','Decision'],rows:evs.map(e=>[e.file,e.path,e.action||'Audited',e.publisher||'Not signed',e.devices,decision(e)])};
-  $('#repAppControl').innerHTML=thead(REP.appcontrol.head)+'<tbody>'+(evs.length?evs.map(e=>{ const d=decision(e); return '<tr><td><b>'+esc(e.file)+'</b></td><td style="overflow-wrap:anywhere;max-width:280px" class="small">'+esc(e.path)+'</td><td><span class="pill '+(e.action==='Blocked'?'p-vuln':'p-upd')+'">'+(e.action||'Audited')+'</span></td><td>'+esc(e.publisher||'Not signed')+'</td><td>'+e.devices+'</td><td><span class="pill '+(d==='Allowed'?'p-cur':d==='Kept blocked'?'p-neutral':'p-upd')+'">'+d+'</span></td></tr>'; }).join(''):emptyRow(6,'No App Control events yet.'))+'</tbody>';
 }
 function resultsScript(){
   return '# NexpatchOnline – export install results for NexpatchOnline apps from Intune\n# Needs: Install-Module Microsoft.Graph.Authentication -Scope CurrentUser\n\n' +

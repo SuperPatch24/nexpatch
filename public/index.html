@@ -4,14 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NexpatchOnline – Intune patching and App Control</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="theme-color" content="#3B4FD8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#EDF0F3; --surface:#FFFFFF; --sunk:#F5F7F9; --ink:#18232E; --muted:#56636F; --line:#D3DAE1;
-  --teal:#0E6B70; --teal-soft:#DCEDEE; --amber:#A86E08; --amber-soft:#F6EBD3; --red:#B13A30; --red-soft:#F5DEDB;
-  --green:#2D7A4C; --green-soft:#DCEFE3; --code-bg:#1D2A35; --code-ink:#DCE6EE; --code-dim:#8FA6B8;
+  --bg:#F3F5FA; --surface:#FFFFFF; --sunk:#F7F8FC; --ink:#161B2E; --muted:#555E78; --line:#D5DAE8;
+  --teal:#3B4FD8; --teal-soft:#E4E8FC; --amber:#A86E08; --amber-soft:#F6EBD3; --red:#B13A30; --red-soft:#F5DEDB;
+  --green:#2D7A4C; --green-soft:#DCEFE3; --code-bg:#1A1F35; --code-ink:#DCE2F5; --code-dim:#8F9AC0;
   --font:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
   color-scheme: light;
   box-sizing:border-box;
@@ -19,16 +21,16 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#121A21; --surface:#1A242D; --sunk:#151E26; --ink:#E4EBF1; --muted:#97A5B2; --line:#2C3944;
-    --teal:#5BB7BC; --teal-soft:#1E3A3D; --amber:#E2AA45; --amber-soft:#3A2F1A; --red:#E8776B; --red-soft:#40231F;
-    --green:#66BE8C; --green-soft:#1D3527; --code-bg:#0E151B; --code-ink:#DCE6EE; --code-dim:#7D93A5;
+    --bg:#0E1220; --surface:#161C30; --sunk:#121729; --ink:#E6EAF7; --muted:#9AA3C0; --line:#28304A;
+    --teal:#8EA2FF; --teal-soft:#1F2850; --amber:#E2AA45; --amber-soft:#3A2F1A; --red:#E8776B; --red-soft:#40231F;
+    --green:#66BE8C; --green-soft:#1D3527; --code-bg:#0B0F1C; --code-ink:#DCE2F5; --code-dim:#7C88B0;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#121A21; --surface:#1A242D; --sunk:#151E26; --ink:#E4EBF1; --muted:#97A5B2; --line:#2C3944;
-  --teal:#5BB7BC; --teal-soft:#1E3A3D; --amber:#E2AA45; --amber-soft:#3A2F1A; --red:#E8776B; --red-soft:#40231F;
-  --green:#66BE8C; --green-soft:#1D3527; --code-bg:#0E151B; --code-ink:#DCE6EE; --code-dim:#7D93A5;
+  --bg:#0E1220; --surface:#161C30; --sunk:#121729; --ink:#E6EAF7; --muted:#9AA3C0; --line:#28304A;
+  --teal:#8EA2FF; --teal-soft:#1F2850; --amber:#E2AA45; --amber-soft:#3A2F1A; --red:#E8776B; --red-soft:#40231F;
+  --green:#66BE8C; --green-soft:#1D3527; --code-bg:#0B0F1C; --code-ink:#DCE2F5; --code-dim:#7C88B0;
   color-scheme: dark;
 }
 *,*::before,*::after{box-sizing:inherit}
@@ -234,16 +236,16 @@ body.is-public::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-
 .ticks li::after{content:"";position:absolute;left:7px;top:8px;width:8px;height:5px;border-left:2px solid var(--green);border-bottom:2px solid var(--green);transform:rotate(-45deg)}
 .ticks b{display:block}
 .ticks span{color:var(--muted);font-size:.94rem}
-.cta-band{background:#0E3B3E;color:#E6F2F2;border-radius:20px;padding:clamp(28px,5vw,56px);display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;margin-top:84px}
+.cta-band{background:#1B2570;color:#E8ECFF;border-radius:20px;padding:clamp(28px,5vw,56px);display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;margin-top:84px}
 .cta-band h2{font-size:clamp(1.5rem,3vw,2.1rem);margin:0 0 6px;color:#fff}
 .cta-band p{margin:0;color:#B9D3D4}
 .cta-band .btn{border-color:#ffffff55;background:transparent;color:#fff}
-.cta-band .btn.primary{background:#fff;color:#0E3B3E;border-color:#fff}
+.cta-band .btn.primary{background:#fff;color:#1B2570;border-color:#fff}
 .pub-foot{padding:36px 0 48px;color:var(--muted);font-size:.88rem}
 .pub-foot .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 /* login */
 .login{min-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:1fr 1fr}
-.login-brand{background:#0E3B3E;color:#E6F2F2;padding:clamp(28px,5vw,64px);display:flex;flex-direction:column;justify-content:space-between;gap:40px}
+.login-brand{background:#1B2570;color:#E8ECFF;padding:clamp(28px,5vw,64px);display:flex;flex-direction:column;justify-content:space-between;gap:40px}
 .login-brand .brand{padding:0;color:#fff}
 .login-brand h2{color:#fff;font-size:clamp(1.6rem,3vw,2.4rem);line-height:1.15;max-width:17ch;margin:0 0 24px}
 .login-brand .ticks span{color:#B9D3D4}
@@ -344,6 +346,18 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 @media (max-width:860px){ .nav-h{display:none} }
 @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
 @media print{body{background:#fff!important;color:#111!important}.nav,.plan-banner,.btn,.toolbar{display:none!important}.shell{display:block}main{max-width:none;padding:0}.view{display:none!important}#view-apple{display:block!important}.panel,.table-wrap{break-inside:avoid;border-color:#bbb!important;box-shadow:none!important}table{min-width:0}th,td{padding:6px;font-size:10pt}}
+
+/* ---------- Packaging wizard stepper ---------- */
+.pk-steps{display:flex;gap:6px;list-style:none;margin:0 0 18px;padding:0;counter-reset:pk;flex-wrap:wrap}
+.pk-steps li{counter-increment:pk;flex:1 1 120px;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:.9rem;background:var(--sunk)}
+.pk-steps li::before{content:counter(pk);display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--line);color:var(--ink);font-weight:700;font-size:.8rem}
+.pk-steps li.on{border-color:var(--teal);color:var(--ink);background:var(--teal-soft)}
+.pk-steps li.on::before,.pk-steps li.done::before{background:var(--teal);color:var(--surface)}
+.pk-steps li.done::before{content:"\2713"}
+.pk-step[hidden],.pk-nav [hidden]{display:none!important}
+.pk-nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.pk-review{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:12px 0}
+.pk-review dt{color:var(--muted)}.pk-review dd{margin:0;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -601,27 +615,29 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           <div class="grid2" style="align-items:start">
             <form class="panel" id="packWizard">
               <div class="panel-head"><div><span class="eyebrow">Application intake · secure upload</span><h2>Application details</h2></div><span class="pill p-neutral">Quarantine workflow</span></div>
-              <label class="field"><span>Application name *</span><input id="pkName" required maxlength="160" placeholder="Example Business App"></label>
+              <ol class="pk-steps" id="pkSteps" aria-label="Packaging steps"><li>Application</li><li>Install &amp; detect</li><li>Dependencies</li><li>Review &amp; upload</li></ol>
+              <div class="pk-step" data-step="1"><label class="field"><span>Application name *</span><input id="pkName" required maxlength="160" placeholder="Example Business App"></label>
               <div class="grid2"><label class="field"><span>Publisher</span><input id="pkPublisher" maxlength="160"></label><label class="field"><span>Version *</span><input id="pkVersion" required maxlength="80" placeholder="1.0.0"></label></div>
               <div class="grid2"><label class="field"><span>Installer type *</span><select id="pkType"><option value="msi">MSI</option><option value="exe">EXE</option></select></label><label class="field"><span>Architecture</span><select id="pkArch"><option value="unknown">Not sure</option><option value="x64">x64</option><option value="x86">x86</option><option value="arm64">ARM64</option><option value="all">Universal</option></select></label></div>
               <label class="field"><span>Official HTTPS installer URL (optional)</span><input id="pkUrl" type="url" placeholder="https://vendor.example/download"></label>
               <label class="field"><span>Installer file (MSI or EXE, max 2 GB) *</span><input id="pkFile" type="file" accept=".msi,.exe,application/octet-stream" required><span class="small">Uploaded directly to private quarantine storage using a short-lived write link.</span></label>
-              <h3>Install and uninstall</h3>
-              <label class="field"><span>Silent install command / arguments</span><input id="pkInstall" placeholder="Example: /quiet /norestart"></label>
+              </div><div class="pk-step" data-step="2" hidden><h3>Install and uninstall</h3>
+              <label class="field"><span>Silent install command / arguments</span><input id="pkInstall" list="pkSilent" placeholder="Example: /quiet /norestart"><datalist id="pkSilent"><option value="/qn /norestart">MSI</option><option value="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART">Inno Setup</option><option value="/S">NSIS</option><option value="/s /v&quot;/qn /norestart&quot;">InstallShield</option></datalist></label>
               <label class="field"><span>Silent uninstall command / arguments</span><input id="pkUninstall" placeholder="Example: /uninstall /quiet"></label>
               <h3>Detection configuration</h3>
               <p class="small">Choose how Intune should recognize this app after installation. The recommendation updates when you change installer type.</p>
               <label class="field"><span>Detection method</span><select id="pkDetectType"><option value="auto">Automatic recommendation</option><option value="msi">MSI product code</option><option value="file">File or folder exists</option><option value="file-version">File version</option><option value="registry">Registry key/value</option><option value="script">Custom PowerShell detection (advanced)</option></select></label>
               <div id="pkDetectFields" class="panel" style="padding:14px;background:var(--surface2)"></div>
               <div id="pkDetectPreview" class="note" aria-live="polite">Select a detection method to see how Nexpatch will validate it.</div>
-              <h3>Dependencies</h3>
+              </div><div class="pk-step" data-step="3" hidden><h3>Dependencies</h3>
               <label class="field"><span>Select prerequisite apps from your catalog</span><select id="pkDependencies" multiple size="6" aria-describedby="pkDepHelp"></select><span class="small" id="pkDepHelp">Use Ctrl (Windows) or Command (Mac) to select more than one. Only catalog apps can be selected.</span></label>
               <label class="field"><span>Dependency install order</span><select id="pkDependencyType"><option value="auto">Automatically install selected dependencies first</option><option value="detect">Install only when dependency is not detected</option></select></label>
               <h3>Supersedence</h3>
               <label class="field"><span>Select catalog apps this package replaces</span><select id="pkSupersedence" multiple size="6" aria-describedby="pkSuperHelp"></select><span class="small" id="pkSuperHelp">Select one or more older catalog apps or versions. No app names are entered manually.</span></label>
               <label class="check"><input type="checkbox" id="pkUninstallSuperseded"><span><b>Uninstall superseded app</b><small>Ask Intune to remove the selected older app during replacement, where supported.</small></span></label>
               <div class="grid2"><label class="field"><span>Install context</span><select id="pkContext"><option value="system">System</option><option value="user">User</option></select></label><label class="field"><span>Restart behavior</span><select id="pkRestart"><option value="suppress">Suppress restart</option><option value="allow">Allow restart</option><option value="app-restart">Determine from installer</option><option value="force">Force restart (review required)</option></select></label></div>
-              <button class="btn primary" type="submit">Upload securely & queue packaging</button><span id="pkStatus" class="small" role="status"></span>
+              </div><div class="pk-step" data-step="4" hidden><h3>Review</h3><p class="small">Check the details below. The installer is uploaded to private quarantine, scanned and converted by the Windows worker. Nothing is published to Intune until you approve it.</p><dl class="pk-review" id="pkReview"></dl></div>
+              <div class="pk-nav"><button class="btn" type="button" id="pkBack" hidden>Back</button><button class="btn primary" type="button" id="pkNext">Next</button><button class="btn primary" type="submit" hidden>Upload securely & queue packaging</button><span id="pkStatus" class="small" role="status"></span></div>
             </form>
             <div class="panel"><h2>Secure packaging pipeline</h2><ol class="steps"><li>Private, short-lived upload to quarantine storage</li><li>Server-side SHA-256 verification and Authenticode signature check</li><li>Microsoft Defender Antivirus scan on the dedicated Windows worker</li><li>Official Microsoft Win32 Content Prep Tool conversion</li><li>Isolated install / uninstall test VM (separate test stage)</li><li>Company approval before publication or deployment</li></ol><p class="small">Conversion requires the separately deployed Windows worker, Defender Antivirus, private Azure Blob Storage and Queue Storage. A converted package is not tested or approved until those stages are recorded.</p><h3 style="margin-top:22px">Packaging jobs</h3><div class="table-wrap"><table class="compact"><thead><tr><th>Application</th><th>Stage</th><th>Security</th><th>Test</th><th>Artifact</th></tr></thead><tbody id="pkJobsBody"><tr><td colspan="5" class="empty">No packaging jobs yet.</td></tr></tbody></table></div><h3 style="margin-top:22px">Saved packaging drafts</h3><div class="table-wrap"><table class="compact"><thead><tr><th>Application</th><th>Type</th><th>Status</th><th>Created</th></tr></thead><tbody id="pkDraftsBody"><tr><td colspan="4" class="empty">No drafts saved yet.</td></tr></tbody></table></div></div>
           </div>
@@ -2483,6 +2499,18 @@ $('#pkDetectType').addEventListener('change',renderPackageDetection);$('#pkType'
 $('#openPackagingWizard')?.addEventListener('click',()=>{const d=$('#catalogPackaging');d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});fillPackageCatalogPickers();renderPackageDetection();});
 $('#catalogPackaging')?.addEventListener('toggle',()=>{if($('#catalogPackaging').open){fillPackageCatalogPickers();renderPackageDetection();}});
 renderPackageDetection();
+/* ---------- Packaging wizard stepper ---------- */
+(function(){const f=document.getElementById('packWizard');if(!f)return;
+ const steps=[...f.querySelectorAll('.pk-step')],dots=[...f.querySelectorAll('#pkSteps li')],back=f.querySelector('#pkBack'),next=f.querySelector('#pkNext'),submit=f.querySelector('button[type=submit]');let cur=1;
+ const val=id=>{const e=document.getElementById(id);return e?(e.type==='file'?(e.files[0]?e.files[0].name+' ('+Math.round(e.files[0].size/1048576*10)/10+' MB)':''):e.value):''};
+ const opt=id=>{const e=document.getElementById(id);return e&&e.selectedOptions?[...e.selectedOptions].map(o=>o.textContent).join(', '):''};
+ function review(){const rows=[['Application',val('pkName')+' '+val('pkVersion')],['Publisher',val('pkPublisher')],['Installer',val('pkType').toUpperCase()+' · '+val('pkArch')+' · '+val('pkFile')],['Install command',val('pkInstall')],['Uninstall command',val('pkUninstall')],['Detection',val('pkDetectType')],['Dependencies',opt('pkDependencies')],['Replaces',opt('pkSupersedence')],['Context / restart',val('pkContext')+' / '+val('pkRestart')]];
+  const dl=document.getElementById('pkReview');dl.textContent='';rows.forEach(([k,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v||'—';dl.append(dt,dd)})}
+ function show(n){cur=n;steps.forEach((s,i)=>s.hidden=i+1!==n);dots.forEach((d,i)=>{d.classList.toggle('on',i+1===n);d.classList.toggle('done',i+1<n)});back.hidden=n===1;next.hidden=n===steps.length;submit.hidden=n!==steps.length;if(n===steps.length)review()}
+ const ok=()=>[...steps[cur-1].querySelectorAll('input,select,textarea')].every(el=>el.reportValidity());
+ next.addEventListener('click',()=>{if(ok())show(cur+1)});back.addEventListener('click',()=>show(cur-1));
+ f.addEventListener('reset',()=>setTimeout(()=>show(1)));show(1);
+})();
 $('#packWizard').addEventListener('submit',async e=>{e.preventDefault();const btn=e.target.querySelector('button[type=submit]'),file=$('#pkFile').files[0];if(!file){$('#pkStatus').textContent='Choose an MSI or EXE file.';return;}btn.disabled=true;try{const selectedIds=id=>Array.from($('#'+id).selectedOptions).map(o=>o.value);const byId=id=>S.apps.find(a=>a.id===id);const depIds=selectedIds('pkDependencies'),superIds=selectedIds('pkSupersedence');const b={name:$('#pkName').value,publisher:$('#pkPublisher').value,version:$('#pkVersion').value,installerType:$('#pkType').value,architecture:$('#pkArch').value,sourceUrl:$('#pkUrl').value,installCommand:$('#pkInstall').value,uninstallCommand:$('#pkUninstall').value,detectionType:$('#pkDetectType').value,detectionPath:$('#pkDetectPath')?.value||'',detectionValue:$('#pkDetectValue')?.value||'',detectionScript:$('#pkDetectScript')?.value||'',detectionRule:'',installContext:$('#pkContext').value,restartBehavior:$('#pkRestart').value,dependencies:depIds.map(id=>({id,name:byId(id)?.name||''})),dependencyType:$('#pkDependencyType').value,supersedence:superIds.map(id=>({id,name:byId(id)?.name||''})),uninstallSuperseded:$('#pkUninstallSuperseded').checked};const draft=await api('/packaging/drafts','POST',b);$('#pkStatus').textContent='Preparing private upload…';const session=await api('/packaging/drafts/'+encodeURIComponent(draft.id)+'/upload-session','POST',{fileName:file.name,fileSize:file.size});const up=await fetch(session.uploadUrl,{method:'PUT',headers:session.headers,body:file});if(!up.ok)throw new Error('Private installer upload failed ('+up.status+').');$('#pkStatus').textContent='Verifying upload and queueing Windows worker…';const queued=await api('/packaging/drafts/'+encodeURIComponent(draft.id)+'/finalize-upload','POST',{});$('#pkStatus').textContent='Queued job '+queued.jobId+'. SHA-256: '+queued.sha256; e.target.reset();await loadPackageDrafts();toast('Installer securely uploaded and queued.');}catch(err){$('#pkStatus').textContent=err.message;}finally{btn.disabled=false;}});
 
 /* ---------- Discovery ---------- */

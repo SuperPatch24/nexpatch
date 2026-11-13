@@ -265,3 +265,10 @@ The platform report endpoints are `GET /api/platform/reports` and `GET /api/plat
 Connected client administrators can upload their latest Intune device install-status snapshot using `POST /api/reports/install-results`. This route is organization-scoped and requires the client's Admin or Owner role. The customer portal's Reports import action uploads the JSON snapshot after the user imports it. The platform report shows these device-level failures separately from Nexpatch publish-job failures.
 
 Apps are added to the shared catalog from the Admin Center: `POST /api/platform/catalog/lookup` searches WinGet and the Microsoft Store and verifies each match, and `POST /api/platform/catalog/add-verified` re-verifies and adds one. Set a read-only `GITHUB_TOKEN` app setting to enable WinGet name search. New storage tables used by these features (`AdminDocs`, `Notices`, `RemediationScripts`) are created automatically on first use.
+
+
+## Company profile settings
+
+- `DATA_STORE_LOCATION` (optional app setting): the region name shown to customers as their data store location (for example `Canada Central`). If unset, the Function App's own Azure region is shown when Azure provides it.
+- Company logos are stored in a private `nexpatch-org-assets` container in the same storage account used for packaging (`BLOB_STORAGE_CONNECTION` or `BLOB_STORAGE_URL`).
+- The sync schedule shown to customers comes from `api/src/lib/org.js` and is the same value the nightly timer uses (daily at 07:00 UTC).

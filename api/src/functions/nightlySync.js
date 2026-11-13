@@ -2,10 +2,11 @@ import { app } from '@azure/functions';
 import { listActiveTenants } from '../lib/store.js';
 import { syncInventory } from '../lib/inventory.js';
 import { planStatus } from '../lib/plan.js';
+import { SYNC_SCHEDULE } from '../lib/org.js';
 
 // Every day at 07:00 UTC (early morning in North America), refresh every connected organization.
 app.timer('nightlySync', {
-  schedule: '0 0 7 * * *',
+  schedule: SYNC_SCHEDULE.cron,
   handler: async (_timer, context) => {
     const tenants = await listActiveTenants();
     context.log(`Nightly sync for ${tenants.length} tenant(s)`);

@@ -1,4 +1,5 @@
 import { app, output } from '@azure/functions';
+import { jobDisplayName } from '../lib/naming.js';
 import { withUser, HttpError, readJson } from '../lib/http.js';
 import { getTenant, getRow, saveJob, getJob, listJobs, audit } from '../lib/store.js';
 import { publishApp, publishStoreApp } from '../lib/publisher.js';
@@ -44,11 +45,24 @@ app.http('publishStart', {
 });
 
 // GET /api/publish – recent publishing jobs. GET /api/publish/{id} – one job with its log.
-const shape = (j, withLog) => ({ id: j.rowKey, status: j.status, appName: j.appName, version: j.version || null, summary: j.summary || '', appId: j.appId || null,
+const shape = (j, withLog) => ({ id: j.rowKey, status: j.status, appName: j.appName, operationType: j.operationType || 'deployment', displayName: jobDisplayName(j), version: j.version || null, summary: j.summary || '', appId: j.appId || null,
   createdBy: j.createdBy, createdAt: j.createdAt, finishedAt: j.finishedAt || null, error: j.error || '', step: j.step || '', ...(withLog ? { log: JSON.parse(j.log || '[]') } : {}) });
 app.http('publishList', {
   methods: ['GET'], authLevel: 'anonymous', route: 'publish',
   handler: withUser(async (_req, _ctx, user) => ({ jobs: (await listJobs(user.tenantId, 30)).map(j => shape(j, false)) }), 'viewer')
+});
+// Last successful publish per app, for the catalog's "Last updated" column.
+app.http('publishSummary', {
+  methods: ['GET'], authLevel: 'anonymous', route: 'publish-summary',
+  handler: withUser(async (_req, _ctx, user) => {
+    const apps = {};
+    for (const j of await listJobs(user.tenantId, 2000)) {
+      if (j.status !== 'succeeded' || !j.appName) continue;
+      const at = j.finishedAt || j.createdAt;
+      if (!apps[j.appName] || String(at) > String(apps[j.appName].at)) apps[j.appName] = { at, version: j.version || '', operationType: j.operationType || 'deployment' };
+    }
+    return { apps };
+  }, 'viewer')
 });
 app.http('publishGet', {
   methods: ['GET'], authLevel: 'anonymous', route: 'publish/{id}',

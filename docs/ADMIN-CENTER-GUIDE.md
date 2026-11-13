@@ -12,21 +12,17 @@ The Admin Center is hosted at `/admin/` and uses the platform administrator allo
 
 Super Admins manage the entire platform. Catalog Managers manage shared catalog entries. Support Admins review client requests and platform reports. Keep these allowlists limited to named operator accounts.
 
-## Microsoft Store catalog candidates
+## Adding apps to the catalog
 
-The **Add 250 Store candidates** action imports a curated discovery queue into the existing shared App Catalog. It is not a verified popularity ranking, and it does not assert that every candidate is currently available in every Store region.
+Open **Catalog** and use **Find and add an app**. Type the app name; NexpatchOnline searches WinGet and the Microsoft Store and verifies every match (the ID exists, the manifest matches, the publisher is present, the installer or Store page is reachable). Only verified matches can be added, and the server verifies again when you add. You can also add, edit or remove entries by hand, and **Remove unverified Store apps** clears any old unverified Store entries.
 
-For each candidate:
+WinGet name search needs a read-only `GITHUB_TOKEN` app setting (GitHub only allows code search when signed in). Store search works without it. Nothing is added from memory or guessed: every ID comes from a manifest fetched at that moment.
 
-1. Search the Microsoft Store and/or run `winget search --source msstore "app name"` on a trusted Windows workstation.
-2. Verify the exact app title, publisher and Store Product ID.
-3. Enter the Product ID and Microsoft Store URL in the catalog editor.
-4. Tick the verification checkbox only after checking the source.
-5. Save and confirm the entry is shown as Verified / deployable.
+## Notifications, documentation and email
 
-A native Intune Microsoft Store app does not require a Package Family Name. Do not invent PFNs. A Store candidate without a verified Product ID remains visible in the same customer App Catalog but cannot be deployed.
-
-Store deployment uses the Microsoft Graph beta `windowsStoreApp` resource. Microsoft documents this API as beta, so validate in a test tenant before production use. Store app updates are handled by Microsoft Store / Intune rather than Nexpatch WinGet auto-publish. Microsoft notes that Store Win32 apps are currently in preview; UWP update behavior depends on Store auto-update policy.
+- **Customer notifications:** client admins get a Notifications page for outage, degraded-service and maintenance notices (email, portal banner, downloadable Windows toast script).
+- **Guides:** on the Admin documentation tab, use **Add or edit a guide** to write guides for platform admins or for customers. Customer guides appear in the portal's Documentation page.
+- **Communications Center:** templates, audiences, CC/BCC, reply-to, scheduling, preview and email branding.
 
 ## Platform reports
 

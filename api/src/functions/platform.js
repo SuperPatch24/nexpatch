@@ -4,7 +4,7 @@ import { getRow, putRow, deleteRow, listRows, listAllTenants, saveTenant, getTen
 import { planStatus, TRIAL_DAYS } from '../lib/plan.js';
 import { platformRole } from '../lib/platform.js';
 import { latestWingetVersion } from '../lib/winget.js';
-import { MSSTORE_CANDIDATES } from '../lib/msstore-candidates.js';
+import { findApps, verifyStore, verifyWinget } from '../lib/appfinder.js';
 
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
 const STORE_ID = /^[A-Z0-9]{8,16}$/i;
@@ -58,27 +58,44 @@ app.http('platformCatalogSave', { methods: ['PUT'], authLevel: 'anonymous', rout
     return shape(await getRow('Catalog', GLOBAL, id));
   }, 'any') });
 
-app.http('platformStoreCandidateSeed', { methods: ['POST'], authLevel: 'anonymous', route: 'platform/catalog/store-candidates', handler: withUser(async (_req, _ctx, user) => {
+// Find an app by name on WinGet and the Microsoft Store; every match is verified against live manifests (see lib/appfinder.js).
+app.http('platformCatalogLookup', { methods: ['POST'], authLevel: 'anonymous', route: 'platform/catalog/lookup', handler: withUser(async (req, _c, user) => {
   requirePlatform(user, ['superadmin','catalog']);
-  const existing = await listRows('Catalog', GLOBAL, 5000);
-  const ids = new Set(existing.map(x => x.rowKey));
-  let added = 0;
-  for (const candidate of MSSTORE_CANDIDATES) {
-    const id = 'msstore-' + candidate.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70);
-    if (ids.has(id)) continue;
-    await putRow('Catalog', GLOBAL, id, {
-      name: candidate.name, source: 'msstore', winget: '', storeProductId: '', appStoreUrl: '',
-      verificationStatus: 'candidate', storeType: '', vendor: '', reg: candidate.name,
-      procs: '', exe: '', category: candidate.category, enabled: true,
-      updatedBy: user.email || user.userId, updatedAt: new Date().toISOString()
-    }, 'Replace');
-    ids.add(id); added++;
-  }
-  return { added, candidates: MSSTORE_CANDIDATES.length, total: existing.length + added, note: 'Candidate names only. Verify Store availability, publisher and product ID before enabling deployment.' };
+  const { query } = await readJson(req);
+  try { return await findApps(query); } catch (err) { throw new HttpError(400, err.message); }
+}, 'any') });
+
+// Adds ONE app. The server re-verifies it itself; the client's claim that it was verified is never trusted.
+app.http('platformCatalogAddVerified', { methods: ['POST'], authLevel: 'anonymous', route: 'platform/catalog/add-verified', handler: withUser(async (req, _c, user) => {
+  requirePlatform(user, ['superadmin','catalog']);
+  const b = await readJson(req);
+  const source = b.source === 'msstore' ? 'msstore' : 'winget';
+  const pid = String(b.id || '').trim();
+  const v = source === 'msstore' ? await verifyStore(pid) : await verifyWinget(pid);
+  if (v.status !== 'verified') throw new HttpError(422, 'Verification failed, so nothing was added: ' + v.checks.filter(c => !c.ok).map(c => c.name + (c.detail ? ' (' + c.detail + ')' : '')).join('; '));
+  const slug = (source === 'msstore' ? 'msstore-' + pid : pid).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
+  if (await getRow('Catalog', GLOBAL, slug)) throw new HttpError(409, 'This app is already in the catalog.');
+  const category = String(b.category || v.category || '').slice(0, 60);
+  await putRow('Catalog', GLOBAL, slug, {
+    name: v.name.slice(0, 120), source, winget: source === 'winget' ? pid : '', storeProductId: source === 'msstore' ? pid.toUpperCase() : '',
+    appStoreUrl: source === 'msstore' ? v.url : '', storeType: source === 'msstore' ? 'msstore' : '', verificationStatus: 'verified',
+    vendor: v.publisher.slice(0, 120), reg: v.name.slice(0, 200), procs: '', exe: '', category, enabled: true,
+    updatedBy: user.email || user.userId, updatedAt: new Date().toISOString() }, 'Replace');
+  await audit(GLOBAL, user.email || user.userId, 'catalog.added-verified', `${v.name} (${source}:${pid})`);
+  return { added: shape(await getRow('Catalog', GLOBAL, slug)), checks: v.checks };
+}, 'any') });
+
+// Removes every unverified Store candidate (e.g. left over from the old 250-app list).
+app.http('platformCatalogRemoveCandidates', { methods: ['POST'], authLevel: 'anonymous', route: 'platform/catalog/remove-candidates', handler: withUser(async (_req, _c, user) => {
+  requirePlatform(user, ['superadmin','catalog']);
+  const rows = (await listRows('Catalog', GLOBAL, 5000)).filter(r => r.source === 'msstore' && (r.verificationStatus || 'candidate') !== 'verified');
+  for (const r of rows) await deleteRow('Catalog', GLOBAL, r.rowKey);
+  await audit(GLOBAL, user.email || user.userId, 'catalog.removed-candidates', `${rows.length} unverified Store candidates`);
+  return { removed: rows.length };
 }, 'any') });
 
 app.http('platformCatalogDelete', { methods: ['DELETE'], authLevel: 'anonymous', route: 'platform/catalog/{id}',
-  handler: withUser(async (req, _c, user) => { requirePlatform(user, ['superadmin','catalog']); await deleteRow('Catalog', GLOBAL, String(req.params.id || '')); return { removed: true }; }, 'any') });
+  handler: withUser(async (req, _c, user) => { requirePlatform(user, ['superadmin','catalog']); const id = String(req.params.id || ''); await deleteRow('Catalog', GLOBAL, id); await audit(GLOBAL, user.email || user.userId, 'catalog.removed', id); return { removed: true }; }, 'any') });
 
 app.http('platformCatalogCheck', { methods: ['POST'], authLevel: 'anonymous', route: 'platform/catalog-check',
   handler: withUser(async (req, _c, user) => {

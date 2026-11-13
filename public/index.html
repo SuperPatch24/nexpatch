@@ -1868,9 +1868,9 @@ async function mergeSharedCatalog(){
       let app=S.apps.find(a=>a.sharedId===g.id || (g.source==='msstore' ? (a.source==='msstore' && a.storeProductId && a.storeProductId===g.storeProductId) : (a.winget && a.winget.toLowerCase()===String(g.winget||'').toLowerCase())));
       const fields={sharedId:g.id,name:g.name,vendor:g.vendor||g.name,winget:g.winget||'',source:g.source||'winget',
         storeProductId:g.storeProductId||'',appStoreUrl:g.appStoreUrl||'',storeType:g.storeType||'',verificationStatus:g.verificationStatus||'candidate',deployable:!!g.deployable,
-        reg:g.reg||g.name,procs:g.procs?g.procs.split(',').map(x=>x.trim()).filter(Boolean):[],exe:g.exe||'',shared:true};
-      if(app){Object.assign(app,fields);return;}
-      app=Object.assign({id:'g-'+g.id,latest:'',fleet:[0,0,0,0],cves:0},fields);
+        reg:g.reg||g.name,procs:g.procs?g.procs.split(',').map(x=>x.trim()).filter(Boolean):[],exe:g.exe||'',shared:true,latestChangedAt:g.latestChangedAt||null};
+      if(app){Object.assign(app,fields);if(g.latestVersion)app.latest=g.latestVersion;return;}
+      app=Object.assign({id:'g-'+g.id,latest:g.latestVersion||'',fleet:[0,0,0,0],cves:0},fields);
       S.apps.push(app); fleetFromInventory(app); added++; });
     if(added) save();
   }catch(e){}
@@ -1985,7 +1985,7 @@ function renderCatalog(){
     const versionLabel=a.source==='msstore'?(storeReady?'Intune / Store managed':'Awaiting Store ID verification'):(a.latest||'Checked at publish');
     const packageLabel=a.source==='msstore'?(a.storeProductId||'No product ID yet'):(a.winget||'');
     return '<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span><span class="sub">'+sourceLabel+(a.source==='msstore'?' · '+(storeReady?'Verified':'Candidate'):'')+'</span></td>'+
-    '<td>'+esc(versionLabel)+'<span class="sub">'+esc(packageLabel)+'</span></td>'+lastUpdatedCell(a)+
+    '<td>'+esc(versionLabel)+'<span class="sub">'+esc(packageLabel)+'</span>'+(a.latestChangedAt&&Date.now()-Date.parse(a.latestChangedAt)<14*864e5?'<span class="sub">New version found '+esc(new Date(a.latestChangedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'}))+'</span>':'')+'</td>'+lastUpdatedCell(a)+
     '<td>'+bar(a,true)+'<span class="sub">'+t+' installs, '+behind+' behind'+(a.fleet[3]?', '+a.fleet[3]+' vulnerable':'')+'</span></td>'+
     '<td><span class="pill '+(a.source==='msstore'&&!storeReady?'p-neutral':st.cls)+'">'+(a.source==='msstore'&&!storeReady?'Needs verification':st.t)+'</span>'+(a.cves?'<span class="sub">'+a.cves+' CVE'+(a.cves>1?'s':'')+' fixed in latest</span>':'')+'</td>'+
     '<td><label class="switch"><input type="checkbox" data-auto="'+a.id+'" '+(S.auto[a.id]?'checked':'')+' '+(a.source==='msstore'?'disabled title="Microsoft Store and Intune manage Store app updates"':'')+' aria-label="Auto-publish '+esc(a.name)+'"><span></span></label></td>'+

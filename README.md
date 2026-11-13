@@ -59,7 +59,7 @@ docs/
 - Public pricing and Enterprise enquiry form are included as a proposal. Prices are not connected to billing or entitlement enforcement.
 - Enterprise enquiries are stored in the `SalesLeads` Azure Table and visible to platform administrators. Configure storage permissions and anti-spam controls before public launch.
 - Signed-in client IT administrators have a searchable Documentation centre; see `docs/CLIENT-IT-ADMIN-GUIDE.md`. Website operators have a separate Admin Center documentation tab and `docs/ADMIN-CENTER-GUIDE.md`.
-- The Admin Center can seed 250 curated Microsoft Store discovery candidates into the existing shared App Catalog. These are search candidates, not a verified popularity ranking or confirmed Store availability list. Each candidate stays non-deployable until a catalog administrator verifies the publisher, Store Product ID and Microsoft Store URL.
+- The Admin Center can find an app by name on WinGet and the Microsoft Store, verify it against live manifests, and add it to the shared catalog; platform admins can also add and remove entries and write documentation for admins or customers. Client admins can send outage and maintenance notifications.
 - Verified Store entries deploy through Intune's native `windowsStoreApp` Graph beta resource. A PFN is not required for this native Store app type. Store entries are excluded from Nexpatch WinGet auto-publish; updates are managed by Microsoft Store / Intune. Test the beta publishing path in a pilot tenant before production.
 - Base-policy path rules are now sent to the backend and embedded in WDAC XML. Only administrator-protected directories should be allowed.
 

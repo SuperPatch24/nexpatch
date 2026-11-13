@@ -154,3 +154,52 @@ export async function findApps(query, opts = {}) {
   out.sort((a, b) => (b.status === 'verified') - (a.status === 'verified') || b.score - a.score);
   return { results: out, notes };
 }
+
+// ---------------------------------------------------------------- Vendor browsing and latest-version lookups
+export async function wingetLatestVersion(id, { fetchFn = fetch, token = process.env.GITHUB_TOKEN } = {}) {
+  if (!WINGET_ID.test(String(id || ''))) throw new Error('That isn’t a valid WinGet package ID.');
+  const r = await fetchFn(`${GH_API}/repos/microsoft/winget-pkgs/contents/${pkgPath(id)}`, { headers: ghHeaders(token), signal: AbortSignal.timeout(12000) });
+  if (r.status === 404) throw new Error(`WinGet has no package called ${id}.`);
+  if (r.status === 403 || r.status === 429) throw new Error('GitHub’s rate limit was reached. Add a GITHUB_TOKEN app setting.');
+  if (!r.ok) throw new Error(`WinGet lookup failed (HTTP ${r.status}).`);
+  const dirs = (await r.json()).filter(i => i.type === 'dir' && /^[0-9]/.test(i.name)).map(i => i.name);
+  if (!dirs.length) throw new Error(`No versions found for ${id} on WinGet.`);
+  return dirs.sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).pop();
+}
+
+async function ghTree(sha, { fetchFn, token }) {
+  const r = await fetchFn(`${GH_API}/repos/microsoft/winget-pkgs/git/trees/${sha}`, { headers: ghHeaders(token), signal: AbortSignal.timeout(15000) });
+  if (r.status === 403 || r.status === 429) throw new Error('GitHub’s rate limit was reached. Add a GITHUB_TOKEN app setting and try again.');
+  if (!r.ok) throw new Error(`GitHub returned HTTP ${r.status}.`);
+  const j = await r.json();
+  return { entries: j.tree || [], truncated: !!j.truncated };
+}
+
+// Lists every package a vendor (publisher) has in the WinGet repository, e.g. "Microsoft" or "Oracle".
+// Names come straight from the repository's folder tree; nothing is verified until you add a package.
+export async function listVendorPackages(vendor, { fetchFn = fetch, token = process.env.GITHUB_TOKEN } = {}) {
+  const v = String(vendor || '').trim().replace(/\s+/g, '');
+  if (!/^[A-Za-z0-9][A-Za-z0-9._+-]{1,60}$/.test(v)) throw new Error('Enter a vendor name, for example Microsoft or Oracle.');
+  const opts = { fetchFn, token };
+  const root = await ghTree('master', opts);
+  const manifests = root.entries.find(e => e.path === 'manifests' && e.type === 'tree');
+  if (!manifests) throw new Error('Couldn’t read the WinGet repository layout.');
+  const letter = (await ghTree(manifests.sha, opts)).entries.find(e => e.path === v[0].toLowerCase() && e.type === 'tree');
+  if (!letter) return { vendor: '', packages: [], suggestions: [], truncated: false };
+  const publishers = (await ghTree(letter.sha, opts)).entries.filter(e => e.type === 'tree');
+  const exact = publishers.find(e => e.path.toLowerCase() === v.toLowerCase());
+  if (!exact) return { vendor: '', packages: [], truncated: false, suggestions: publishers.filter(e => e.path.toLowerCase().startsWith(v.toLowerCase())).map(e => e.path).slice(0, 15) };
+  const pk = await ghTree(exact.sha, opts);
+  const packages = pk.entries.filter(e => e.type === 'tree' && WINGET_ID.test(`${exact.path}.${e.path}`)).map(e => ({ id: `${exact.path}.${e.path}`, name: e.path })).sort((a, b) => a.id.localeCompare(b.id));
+  return { vendor: exact.path, packages, suggestions: [], truncated: pk.truncated };
+}
+
+export async function storeLatestVersion(productId, { fetchFn = fetch } = {}) {
+  const id = String(productId || '').toUpperCase();
+  if (!STORE_ID.test(id)) throw new Error('That isn’t a valid Microsoft Store product ID.');
+  const r = await fetchFn(`${STORE_API}/packageManifests/${id}`, { headers: { ...UA, Accept: 'application/json' }, signal: AbortSignal.timeout(12000) });
+  if (!r.ok) throw new Error(`The Microsoft Store lookup failed (HTTP ${r.status}).`);
+  const v = (((await r.json())?.Data?.Versions) || [])[0]?.PackageVersion;
+  if (!v) throw new Error('The Store listing has no version.');
+  return String(v);
+}

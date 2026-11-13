@@ -358,6 +358,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 .pk-nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
 .pk-review{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:12px 0}
 .pk-review dt{color:var(--muted)}.pk-review dd{margin:0;overflow-wrap:anywhere}
+.nt-prev{border-radius:10px;padding:14px 16px;border:1px solid var(--line);border-left-width:6px}.nt-prev b{display:block;margin-bottom:4px}.nt-prev p{margin:0;white-space:pre-wrap}.nt-hist td{vertical-align:top}
 </style>
 </head>
 <body>
@@ -538,6 +539,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <a href="#ac-reports" data-view="app-control" data-actab-link="reports">App Control reports</a>
     <div class="nav-h">Organization</div>
     <a href="#users" data-view="users">Users and access</a>
+    <a href="#notifications" data-view="notifications">Notifications</a>
     <a href="#connect" data-view="connect" data-contab-link="setup">Connect to Intune</a>
     <div class="nav-h">Resources</div>
     <a href="#documentation" data-view="documentation">Documentation and guides</a>
@@ -552,6 +554,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 
   <main>
     <div class="plan-banner" id="planBanner" hidden></div>
+    <div id="noticeBanner" aria-live="polite"></div>
     <!-- OVERVIEW -->
     <section class="view" id="view-overview" aria-labelledby="ovHello">
       <div class="ov-head">
@@ -947,6 +950,47 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 
     <!-- REMEDIATION SCRIPTS -->
     <section class="view" id="view-remediation" aria-labelledby="remTitle"><h1 id="remTitle">Remediation scripts</h1><p class="lede">Customer-facing library of approved remediation guidance. Scripts are read-only here; no script is executed or assigned automatically.</p><div class="panel"><div class="panel-head"><h2>Available scripts</h2><button class="btn small" id="remPortalRefresh" type="button">Refresh</button></div><div id="remPortalList" class="todo"><li class="small">Loading approved scripts…</li></div><p class="small">Only scripts that pass platform review and customer authorization should appear here. Execution, assignment and per-device result reporting are not enabled in this release.</p></div></section>
+
+    <section class="view" id="view-notifications" aria-labelledby="ntTitle">
+      <h1 id="ntTitle">Notifications</h1>
+      <p class="lede">Tell your people about a service outage, slowdown or planned maintenance. Send an email, show a banner in this portal, or download a Windows notification script that you deploy to devices yourself.</p>
+      <div id="ntNote"></div>
+      <div id="ntBody">
+      <div class="grid2" style="align-items:start">
+        <form class="panel" id="ntForm">
+          <div class="panel-head"><h2>New notification</h2></div>
+          <label class="field"><span>Template</span><select id="ntTemplate"></select></label>
+          <label class="field"><span>Service affected</span><input id="ntService" maxlength="60" placeholder="For example: VPN, email, Wi-Fi"></label>
+          <label class="field"><span>Severity</span><select id="ntSeverity"></select></label>
+          <label class="field"><span>Title *</span><input id="ntTitleIn" required maxlength="100"></label>
+          <label class="field"><span>Message *</span><textarea id="ntMessage" rows="6" required maxlength="2000"></textarea></label>
+          <div class="grid2" style="margin-top:0"><label class="field"><span>Button text (optional)</span><input id="ntCtaText" maxlength="40" placeholder="Status page"></label><label class="field"><span>Button link (https)</span><input id="ntCtaUrl" type="url" placeholder="https://"></label></div>
+          <fieldset style="border:0;padding:0;margin:0 0 14px"><legend class="small" style="font-weight:700">Deliver by</legend>
+            <label style="display:block"><input type="checkbox" id="ntChEmail" checked> Email</label>
+            <label style="display:block"><input type="checkbox" id="ntChBanner" checked> Banner in this portal</label></fieldset>
+          <div id="ntEmailOpts">
+            <label class="field"><span>Send email to</span><select id="ntAudType"><option value="admins">Organization admins</option><option value="members">Everyone with portal access</option><option value="group">An Entra group</option><option value="emails">Specific email addresses</option></select></label>
+            <div id="ntGroupWrap" hidden><label class="field"><span>Find a group</span><input id="ntGroupSearch" placeholder="Type at least 2 letters"></label><select id="ntGroupSel" aria-label="Matching groups"></select></div>
+            <label class="field" id="ntEmailsWrap" hidden><span>Email addresses (comma or line separated)</span><textarea id="ntEmails" rows="3"></textarea></label>
+          </div>
+          <label class="field"><span>Keep the banner and script active for (hours)</span><input id="ntHours" type="number" min="1" max="168" value="24"></label>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn primary" type="submit">Send notification</button><span class="small" id="ntStatus" role="status"></span></div>
+        </form>
+        <div>
+          <div class="panel"><div class="panel-head"><h2>Preview</h2></div><div id="ntPreview" class="nt-prev"></div></div>
+          <form class="panel" id="ntSettings" style="margin-top:20px"><div class="panel-head"><h2>Make it yours</h2></div>
+            <label class="field"><span>Organization name (shown in emails and on toasts)</span><input id="ntOrg" maxlength="80"></label>
+            <label class="field"><span>Help desk email (replies go here)</span><input id="ntSupport" type="email" maxlength="254"></label>
+            <label class="field"><span>Brand color (hex)</span><input id="ntColor" maxlength="7" placeholder="#3B4FD8"></label>
+            <label class="field"><span>Email footer</span><textarea id="ntFooter" rows="2" maxlength="400"></textarea></label>
+            <button class="btn" type="submit">Save</button> <span class="small" id="ntSettingsStatus"></span></form>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Sent notifications</h2><button class="btn small" id="ntRefresh" type="button">Refresh</button></div>
+        <div style="overflow:auto"><table class="tbl" style="width:100%"><thead><tr><th>Sent</th><th>Notification</th><th>Delivery</th><th>Status</th><th></th></tr></thead><tbody id="ntHistory"></tbody></table></div>
+        <p class="small">The Windows script shows one toast on each device that runs it. In Intune, add it under Devices &gt; Scripts and remediations &gt; Platform scripts, run it with the signed-in user’s credentials, and assign it to a group. NexpatchOnline never deploys it for you.</p></div>
+      </div>
+    </section>
 
     <!-- CONNECT -->
     <section class="view" id="view-connect" aria-labelledby="conTitle">
@@ -1687,7 +1731,7 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation'];
+const VIEWS=['overview','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation','notifications'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
@@ -1703,7 +1747,7 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Owner'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
@@ -2498,6 +2542,45 @@ $('#pkDetectType').addEventListener('change',renderPackageDetection);$('#pkType'
 $('#openPackagingWizard')?.addEventListener('click',()=>{const d=$('#catalogPackaging');d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});fillPackageCatalogPickers();renderPackageDetection();});
 $('#catalogPackaging')?.addEventListener('toggle',()=>{if($('#catalogPackaging').open){fillPackageCatalogPickers();renderPackageDetection();}});
 renderPackageDetection();
+/* ---------- Notifications (outage / maintenance notices) ---------- */
+let NT={templates:[],severities:[],settings:{},applied:null,notices:[],last:0};
+const ntColor=s=>(NT.severities.find(x=>x.id===s)||{color:'#3B4FD8'}).color;
+const ntFill=(t,svc)=>String(t||'').replace(/\{\{\s*service\s*\}\}/g,svc||'the service');
+function ntPreview(){const c=ntColor($('#ntSeverity').value);const e=$('#ntPreview');e.style.borderLeftColor=c;e.style.background=c+'14';e.innerHTML='<b>'+esc($('#ntTitleIn').value||'Your title appears here')+'</b><p>'+esc($('#ntMessage').value||'Your message appears here.')+'</p>';}
+function ntApplyTemplate(force){const t=NT.templates.find(x=>x.id===$('#ntTemplate').value);if(!t)return;const msg=$('#ntMessage').value.trim();const untouched=!msg||(NT.applied&&$('#ntTitleIn').value===NT.applied.title&&$('#ntMessage').value===NT.applied.message);if(!force&&!untouched&&!confirm('Replace the current title and message with this template?'))return;const svc=$('#ntService').value.trim();$('#ntTitleIn').value=ntFill(t.title,svc);$('#ntMessage').value=ntFill(t.message,svc);$('#ntSeverity').value=t.severity;NT.applied={title:$('#ntTitleIn').value,message:$('#ntMessage').value};ntPreview();}
+function ntAudience(){const t=$('#ntAudType').value;$('#ntGroupWrap').hidden=t!=='group';$('#ntEmailsWrap').hidden=t!=='emails';}
+async function loadNotices(){const note=$('#ntNote'),body=$('#ntBody');note.innerHTML='';
+ if(!liveMode()){body.hidden=true;note.innerHTML='<div class="panel"><p>Notifications are available once your organization is connected to NexpatchOnline.</p></div>';return}
+ if(!['admin','owner'].includes(currentRole())){body.hidden=true;note.innerHTML='<div class="panel"><p>Only admins and owners can send notifications. Active notices appear as a banner at the top of every page.</p></div>';return}
+ body.hidden=false;
+ try{const d=await api('/notifications/templates');NT.templates=d.templates;NT.severities=d.severities;NT.settings=d.settings;
+  $('#ntTemplate').innerHTML=d.templates.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.label)+'</option>').join('');$('#ntSeverity').innerHTML=d.severities.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.label)+'</option>').join('');
+  $('#ntOrg').value=d.settings.orgName||'';$('#ntSupport').value=d.settings.supportEmail||'';$('#ntColor').value=d.settings.color||'';$('#ntFooter').value=d.settings.footer||'';
+  if(!d.emailReady){$('#ntChEmail').checked=false;$('#ntChEmail').disabled=true;note.innerHTML='<div class="panel"><p class="small">Email delivery isn’t set up on this platform yet. The portal banner and Windows script still work.</p></div>'}
+  if(!$('#ntTitleIn').value)ntApplyTemplate(true);else ntPreview();
+  await loadNoticeHistory()}catch(e){note.innerHTML='<div class="panel"><p>'+esc(e.message)+'</p></div>'}}
+async function loadNoticeHistory(){try{const d=await api('/notifications');NT.notices=d.notices;$('#ntHistory').innerHTML=d.notices.map(n=>{const live=n.status==='active'&&Date.parse(n.expiresAt)>Date.now();return '<tr class="nt-hist"><td>'+esc(new Date(n.createdAt).toLocaleString())+'<div class="small">'+esc(n.createdBy)+'</div></td><td><b>'+esc(n.title)+'</b><div class="small">'+esc((NT.severities.find(s=>s.id===n.severity)||{}).label||n.severity)+'</div></td><td>'+(n.channels.includes('email')?esc(n.emailsSent+' email(s) sent'+(n.emailsFailed?', '+n.emailsFailed+' failed':'')+' · '+n.audience):'')+(n.channels.includes('banner')?'<div class="small">Portal banner</div>':'')+'</td><td>'+(n.status==='resolved'?'Resolved':live?'Active':'Expired')+'</td><td style="white-space:nowrap"><button class="btn small" data-nt-script="'+esc(n.id)+'" type="button">Windows script</button> '+(n.status==='active'?'<button class="btn small" data-nt-resolve="'+esc(n.id)+'" type="button">Mark resolved</button>':'')+'</td></tr>'}).join('')||'<tr><td colspan="5" class="small">Nothing sent yet.</td></tr>'}catch(e){$('#ntHistory').innerHTML='<tr><td colspan="5">'+esc(e.message)+'</td></tr>'}}
+$('#ntTemplate').addEventListener('change',()=>ntApplyTemplate(false));
+$('#ntService').addEventListener('input',()=>{if(NT.applied&&$('#ntTitleIn').value===NT.applied.title&&$('#ntMessage').value===NT.applied.message)ntApplyTemplate(true)});
+['ntSeverity','ntTitleIn','ntMessage'].forEach(id=>$('#'+id).addEventListener('input',ntPreview));$('#ntSeverity').addEventListener('change',ntPreview);
+$('#ntAudType').addEventListener('change',ntAudience);
+let ntGroupTimer;$('#ntGroupSearch').addEventListener('input',()=>{clearTimeout(ntGroupTimer);ntGroupTimer=setTimeout(async()=>{const q=$('#ntGroupSearch').value.trim();if(q.length<2)return;try{const d=await api('/groups?search='+encodeURIComponent(q));$('#ntGroupSel').innerHTML=d.groups.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.name)+' ('+esc(g.kind)+')</option>').join('')||'<option value="">No groups found</option>'}catch(e){toast(e.message)}},350)});
+$('#ntRefresh').addEventListener('click',loadNoticeHistory);
+$('#ntForm').addEventListener('submit',async e=>{e.preventDefault();const email=$('#ntChEmail').checked,banner=$('#ntChBanner').checked;if(!email&&!banner){$('#ntStatus').textContent='Choose at least one way to deliver it.';return}
+ const audience={type:$('#ntAudType').value,groupId:$('#ntGroupSel').value,emails:$('#ntEmails').value};
+ if(!confirm('Send “'+$('#ntTitleIn').value+'”'+(email?' by email to '+$('#ntAudType').selectedOptions[0].textContent.toLowerCase():'')+(banner?' and show it as a banner':'')+'?'))return;
+ const b=e.submitter;b.disabled=true;$('#ntStatus').textContent='Sending…';
+ try{const d=await api('/notifications','POST',{template:$('#ntTemplate').value,severity:$('#ntSeverity').value,title:$('#ntTitleIn').value,message:$('#ntMessage').value,ctaText:$('#ntCtaText').value,ctaUrl:$('#ntCtaUrl').value,expiresInHours:Number($('#ntHours').value)||24,channels:{email,banner},audience});
+  $('#ntStatus').textContent='Sent'+(email?': '+d.notice.emailsSent+' email(s) accepted'+(d.notice.emailsFailed?', '+d.notice.emailsFailed+' failed':''):'')+'.';toast('Notification sent');loadNoticeBanner(true);await loadNoticeHistory()}catch(err){$('#ntStatus').textContent=err.message}finally{b.disabled=false}});
+$('#ntSettings').addEventListener('submit',async e=>{e.preventDefault();try{await api('/notifications/settings','PUT',{orgName:$('#ntOrg').value,supportEmail:$('#ntSupport').value,color:$('#ntColor').value,footer:$('#ntFooter').value});$('#ntSettingsStatus').textContent='Saved.'}catch(err){$('#ntSettingsStatus').textContent=err.message}});
+$('#ntHistory').addEventListener('click',async e=>{const s=e.target.closest('[data-nt-script]'),r=e.target.closest('[data-nt-resolve]');
+ if(s){try{const d=await api('/notifications/'+encodeURIComponent(s.dataset.ntScript)+'/toast-script');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d.script],{type:'text/plain'}));a.download=d.filename;a.click();URL.revokeObjectURL(a.href)}catch(err){toast(err.message)}}
+ if(r){const n=NT.notices.find(x=>x.id===r.dataset.ntResolve);if(!n||!confirm('Mark “'+n.title+'” as resolved? The banner will disappear.'))return;const followUp=n.channels.includes('email')&&confirm('Also email the same people that it is resolved?');try{await api('/notifications/'+encodeURIComponent(n.id)+'/resolve','POST',{sendFollowUp:followUp});toast('Marked as resolved');loadNoticeBanner(true);await loadNoticeHistory()}catch(err){toast(err.message)}}});
+async function loadNoticeBanner(force){const el=$('#noticeBanner');if(!el||!liveMode())return;if(!force&&Date.now()-NT.last<60000)return;NT.last=Date.now();try{const d=await api('/notifications/active');const sev={info:'#3B4FD8',warning:'#B45309',critical:'#B91C1C',resolved:'#15803D'};el.innerHTML=d.notices.map(n=>{const c=sev[n.severity]||sev.info;return '<div class="plan-banner" role="status" style="background:'+c+'1A;border:1px solid '+c+'"><span><b>'+esc(n.title)+'</b> '+esc(n.message.split(/\n/)[0])+'</span>'+(n.ctaUrl?'<a class="btn small" href="'+esc(n.ctaUrl)+'" target="_blank" rel="noopener noreferrer">'+esc(n.ctaText||'Learn more')+'</a>':'')+'</div>'}).join('')}catch(e){}}
+/* ---------- Guides added by the platform team ---------- */
+let customDocsLoaded=false;
+function docBodyHtml(t){return String(t||'').split(/\r?\n\s*\r?\n/).map(b=>{const L=b.split(/\r?\n/).filter(x=>x.trim());if(!L.length)return'';if(L.length===1&&/^##\s+/.test(L[0]))return'<h4>'+esc(L[0].replace(/^##\s+/,''))+'</h4>';if(L.every(x=>/^\s*-\s+/.test(x)))return'<ul>'+L.map(x=>'<li>'+esc(x.replace(/^\s*-\s+/,''))+'</li>').join('')+'</ul>';return'<p>'+L.map(esc).join('<br>')+'</p>'}).join('')}
+async function loadCustomDocsPortal(){if(customDocsLoaded||!liveMode())return;customDocsLoaded=true;try{const d=await api('/docs');let added=0;d.docs.forEach(x=>{if(!DOCS.some(y=>y.title===x.title)){DOCS.push({topic:x.topic,title:x.title,body:docBodyHtml(x.body)});added++}});if(added)renderDocumentation()}catch(e){customDocsLoaded=false}}
 /* ---------- Packaging wizard stepper ---------- */
 (function(){const f=document.getElementById('packWizard');if(!f)return;
  const steps=[...f.querySelectorAll('.pk-step')],dots=[...f.querySelectorAll('#pkSteps li')],back=f.querySelector('#pkBack'),next=f.querySelector('#pkNext'),submit=f.querySelector('button[type=submit]');let cur=1;

@@ -3,7 +3,7 @@ import { TableClient, odata } from '@azure/data-tables';
 import { DefaultAzureCredential } from '@azure/identity';
 import { createHash } from 'node:crypto';
 
-const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices', 'Catalog', 'SalesLeads', 'AppRequests', 'SiteContent', 'InstallReports', 'EmailConfig', 'EmailMessages', 'Invoices', 'InvoiceCounters', 'AppleDevices', 'AppleApps', 'PackageDrafts', 'PackagingJobs'];
+const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices', 'Catalog', 'SalesLeads', 'AppRequests', 'SiteContent', 'InstallReports', 'EmailConfig', 'EmailMessages', 'Invoices', 'InvoiceCounters', 'AppleDevices', 'AppleApps', 'PackageDrafts', 'PackagingJobs', 'RemediationScripts', 'AdminDocs', 'Notices'];
 const clients = {};
 let credential;
 let ready;

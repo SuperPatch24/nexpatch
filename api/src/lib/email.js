@@ -19,7 +19,7 @@ export function escapeHtml(value = '') {
 
 // Transactional email is deliberately best-effort: an email provider outage must
 // never roll back a client request, status change, or sales enquiry.
-export async function sendBrevoEmail({ to, subject, htmlContent, textContent, tags = [] }, logger = console) {
+export async function sendBrevoEmail({ to, subject, htmlContent, textContent, tags = [], replyTo, cc, bcc, scheduledAt }, logger = console) {
   const recipients = (Array.isArray(to) ? to : [to])
     .map(item => typeof item === 'string' ? { email: item } : item)
     .filter(item => item && EMAIL_RE.test(String(item.email || '')));
@@ -43,7 +43,11 @@ export async function sendBrevoEmail({ to, subject, htmlContent, textContent, ta
         subject: String(subject || 'NexpatchOnline notification').slice(0, 180),
         htmlContent: String(htmlContent || ''),
         ...(textContent ? { textContent: String(textContent) } : {}),
-        ...(tags.length ? { tags: tags.map(String).slice(0, 5) } : {})
+        ...(tags.length ? { tags: tags.map(String).slice(0, 5) } : {}),
+        ...(replyTo && EMAIL_RE.test(replyTo) ? { replyTo: { email: replyTo } } : {}),
+        ...(Array.isArray(cc) && cc.filter(a => EMAIL_RE.test(a)).length ? { cc: cc.filter(a => EMAIL_RE.test(a)).map(email => ({ email })) } : {}),
+        ...(Array.isArray(bcc) && bcc.filter(a => EMAIL_RE.test(a)).length ? { bcc: bcc.filter(a => EMAIL_RE.test(a)).map(email => ({ email })) } : {}),
+        ...(scheduledAt ? { scheduledAt: String(scheduledAt) } : {})
       }),
       signal: AbortSignal.timeout(12000)
     });

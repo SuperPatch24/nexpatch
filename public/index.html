@@ -538,6 +538,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <a href="#ac-supplemental" data-view="app-control" data-actab-link="supplemental">Supplemental policy</a>
     <a href="#ac-reports" data-view="app-control" data-actab-link="reports">App Control reports</a>
     <div class="nav-h">Organization</div>
+    <a href="#organization" data-view="organization">Company profile</a>
     <a href="#users" data-view="users">Users and access</a>
     <a href="#notifications" data-view="notifications">Notifications</a>
     <a href="#connect" data-view="connect" data-contab-link="setup">Connect to Intune</a>
@@ -605,7 +606,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>App</th><th>Latest</th><th style="width:30%">Installed versions</th><th>Status</th><th>Auto-publish</th><th></th></tr></thead>
+          <thead><tr><th>App</th><th>Latest</th><th>Last updated</th><th style="width:28%">Installed versions</th><th>Status</th><th>Auto-publish</th><th></th></tr></thead>
           <tbody id="catBody"></tbody>
         </table>
       </div>
@@ -950,6 +951,30 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 
     <!-- REMEDIATION SCRIPTS -->
     <section class="view" id="view-remediation" aria-labelledby="remTitle"><h1 id="remTitle">Remediation scripts</h1><p class="lede">Customer-facing library of approved remediation guidance. Scripts are read-only here; no script is executed or assigned automatically.</p><div class="panel"><div class="panel-head"><h2>Available scripts</h2><button class="btn small" id="remPortalRefresh" type="button">Refresh</button></div><div id="remPortalList" class="todo"><li class="small">Loading approved scripts…</li></div><p class="small">Only scripts that pass platform review and customer authorization should appear here. Execution, assignment and per-device result reporting are not enabled in this release.</p></div></section>
+
+    <section class="view" id="view-organization" aria-labelledby="orgTitle">
+      <h1 id="orgTitle">Company profile</h1>
+      <p class="lede">Your company details, where your data is stored, your subscription, and when NexpatchOnline last synced with your Intune tenant.</p>
+      <div id="orgNote"></div>
+      <div id="orgBody">
+        <div class="grid2" style="align-items:start">
+          <form class="panel" id="orgForm"><fieldset id="orgFields" style="border:0;padding:0;margin:0">
+            <div class="panel-head"><h2>Company</h2></div>
+            <div style="display:flex;gap:16px;align-items:center;margin-bottom:14px">
+              <div style="width:88px;height:88px;flex:none;border:1px solid var(--line);border-radius:12px;display:grid;place-items:center;background:var(--sunk);overflow:hidden"><img id="orgLogoImg" alt="Company logo" hidden style="max-width:100%;max-height:100%"><span class="small" id="orgLogoEmpty">No logo</span></div>
+              <div><input type="file" id="orgLogoFile" accept="image/png,image/jpeg,image/webp" hidden><button class="btn small" type="button" id="orgLogoPick">Upload logo</button> <button class="btn small" type="button" id="orgLogoRemove" hidden>Remove</button><p class="small" style="margin:6px 0 0">PNG, JPEG or WebP. It is resized automatically.</p></div>
+            </div>
+            <label class="field"><span>Company name *</span><input id="orgName" required maxlength="120"></label>
+            <button class="btn primary" type="submit" id="orgSave">Save</button> <span class="small" id="orgStatus" role="status"></span>
+          </fieldset></form>
+          <div>
+            <div class="panel"><div class="panel-head"><h2>Data store location</h2></div><dl class="pk-review" id="orgData"></dl></div>
+            <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Subscription</h2></div><dl class="pk-review" id="orgSub"></dl></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Update sync</h2><button class="btn small" type="button" id="orgSyncNow">Sync now</button></div><dl class="pk-review" id="orgSync"></dl><p class="small" id="orgSyncMsg" role="status"></p></div>
+      </div>
+    </section>
 
     <section class="view" id="view-notifications" aria-labelledby="ntTitle">
       <h1 id="ntTitle">Notifications</h1>
@@ -1731,7 +1756,7 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation','notifications'];
+const VIEWS=['overview','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation','notifications','organization'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
@@ -1747,7 +1772,7 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog') renderCatalog(); if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog'){ renderCatalog(); loadLastUpdated(); } if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='organization') loadOrg(); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Owner'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
@@ -1940,6 +1965,12 @@ $('#ovTodo').addEventListener('click', e=>{ const b=e.target.closest('[data-pub]
 
 /* ---------- Catalog ---------- */
 let filter='all';
+/* Last successful publish per app, from Intune publishing jobs. */
+const LU={map:{},at:0};
+function lastUpdatedCell(a){ const x=LU.map[a.name];
+  if(x&&x.at){ return '<td>'+esc(new Date(x.at).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))+'<span class="sub">'+(/^\d/.test(x.version||'')?'v'+esc(x.version)+' \u00b7 ':'')+(x.operationType==='update'?'Update only':'Deployment')+'</span></td>'; }
+  return '<td>\u2014<span class="sub">'+(liveMode()?'Not published yet':'Shown once connected')+'</span></td>'; }
+async function loadLastUpdated(force){ if(!liveMode()||(!force&&Date.now()-LU.at<60000))return; LU.at=Date.now(); try{ const r=await api('/publish-summary'); LU.map=r.apps||{}; renderCatalog(); }catch(e){} }
 function renderCatalog(){
   $('#catalogCount').textContent = S.apps.length.toLocaleString() + ' applications in the catalog';
   const q=$('#catSearch').value.trim().toLowerCase();
@@ -1954,12 +1985,12 @@ function renderCatalog(){
     const versionLabel=a.source==='msstore'?(storeReady?'Intune / Store managed':'Awaiting Store ID verification'):(a.latest||'Checked at publish');
     const packageLabel=a.source==='msstore'?(a.storeProductId||'No product ID yet'):(a.winget||'');
     return '<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span><span class="sub">'+sourceLabel+(a.source==='msstore'?' · '+(storeReady?'Verified':'Candidate'):'')+'</span></td>'+
-    '<td>'+esc(versionLabel)+'<span class="sub">'+esc(packageLabel)+'</span></td>'+
+    '<td>'+esc(versionLabel)+'<span class="sub">'+esc(packageLabel)+'</span></td>'+lastUpdatedCell(a)+
     '<td>'+bar(a,true)+'<span class="sub">'+t+' installs, '+behind+' behind'+(a.fleet[3]?', '+a.fleet[3]+' vulnerable':'')+'</span></td>'+
     '<td><span class="pill '+(a.source==='msstore'&&!storeReady?'p-neutral':st.cls)+'">'+(a.source==='msstore'&&!storeReady?'Needs verification':st.t)+'</span>'+(a.cves?'<span class="sub">'+a.cves+' CVE'+(a.cves>1?'s':'')+' fixed in latest</span>':'')+'</td>'+
     '<td><label class="switch"><input type="checkbox" data-auto="'+a.id+'" '+(S.auto[a.id]?'checked':'')+' '+(a.source==='msstore'?'disabled title="Microsoft Store and Intune manage Store app updates"':'')+' aria-label="Auto-publish '+esc(a.name)+'"><span></span></label></td>'+
     '<td><div class="row" style="flex-wrap:nowrap">'+(a.source==='msstore'?(storeReady?'<button class="btn small primary" type="button" data-pub="'+a.id+'">Deploy</button>':'<span class="small">Not deployable yet</span>'):'<button class="btn small'+(st.k==='vuln'?' primary':'')+'" type="button" data-pub="'+a.id+'">Publish</button>')+(a.custom?'<button class="btn small ghost" type="button" data-del="'+a.id+'" aria-label="Remove '+esc(a.name)+'">Remove</button>':'')+'</div></td></tr>'; }).join('')
-  : '<tr><td colspan="6" class="empty">No apps match. Clear the search or pick another filter.</td></tr>';
+  : '<tr><td colspan="7" class="empty">No apps match. Clear the search or pick another filter.</td></tr>';
 }
 $('#catSearch').addEventListener('input', renderCatalog);
 $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>{ filter=b.dataset.filter; $$('[data-filter]').forEach(x=>x.setAttribute('aria-pressed', x===b)); renderCatalog(); }));
@@ -2178,14 +2209,14 @@ async function renderJobs(quiet){
   try{ const r=await api('/publish'); JOBS=r.jobs;
     r.jobs.filter(jobBusy).forEach(j=>{ if(!WATCH.has(j.id)){ const app=S.apps.find(a=>a.name===j.appName)||{name:j.appName,id:''}; watchJob(j.id, app, Object.assign(defaultCfg(app), (S.pubPrefs||{})[app.id]||{})); } });
     $('#jobsBody').innerHTML = r.jobs.length ? r.jobs.map(j=>{ const L=JOB_LABEL[j.status]||[j.status,'p-neutral'];
-      return '<tr><td><b>'+esc(j.appName)+'</b>'+(j.version?'<span class="sub">'+esc(j.version)+'</span>':'')+'</td><td><span class="pill '+L[1]+'">'+(jobBusy(j)?'<span class="spin"></span>':'')+L[0]+'</span>'+(jobBusy(j)&&j.step?'<span class="sub">'+esc(j.step)+'</span>':'')+(j.error?'<span class="sub" style="color:var(--red)">'+esc(j.error)+'</span>':'')+'</td><td>'+esc(j.summary||'')+'</td><td>'+esc(j.createdBy||'')+'</td><td>'+new Date(j.createdAt).toLocaleString()+'</td><td><button class="btn small ghost" type="button" data-job="'+esc(j.id)+'">View log</button></td></tr>'; }).join('')
+      return '<tr><td><b>'+esc(j.displayName||j.appName)+'</b>'+(j.version?'<span class="sub">'+esc(j.version)+'</span>':'')+'</td><td><span class="pill '+L[1]+'">'+(jobBusy(j)?'<span class="spin"></span>':'')+L[0]+'</span>'+(jobBusy(j)&&j.step?'<span class="sub">'+esc(j.step)+'</span>':'')+(j.error?'<span class="sub" style="color:var(--red)">'+esc(j.error)+'</span>':'')+'</td><td>'+esc(j.summary||'')+'</td><td>'+esc(j.createdBy||'')+'</td><td>'+new Date(j.createdAt).toLocaleString()+'</td><td><button class="btn small ghost" type="button" data-job="'+esc(j.id)+'">View log</button></td></tr>'; }).join('')
       : '<tr><td colspan="6" class="empty">Nothing published from NexpatchOnline yet. Open an app in the catalog and choose Publish to Intune.</td></tr>';
   }catch(e){ $('#jobsBody').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; }
 }
 let JOBS=[];
 $('#jobsRefresh').addEventListener('click', renderJobs);
 $('#jobsBody').addEventListener('click', async e=>{ const b=e.target.closest('[data-job]'); if(!b) return;
-  try{ const j=await api('/publish/'+encodeURIComponent(b.dataset.job)); showCode(j.appName+' \u2013 publishing log', (JOB_LABEL[j.status]||[j.status])[0]+(j.error?': '+j.error:''), (j.log||[]).map(l=>new Date(l.at).toLocaleTimeString()+'  '+l.text).join('\n') || 'No log yet.'); }
+  try{ const j=await api('/publish/'+encodeURIComponent(b.dataset.job)); showCode((j.displayName||j.appName)+' \u2013 publishing log', (JOB_LABEL[j.status]||[j.status])[0]+(j.error?': '+j.error:''), (j.log||[]).map(l=>new Date(l.at).toLocaleTimeString()+'  '+l.text).join('\n') || 'No log yet.'); }
   catch(err){ toast(err.message); } });
 function renderDeployments(){ renderJobs(); $('#depList').innerHTML = S.deployments.length ? S.deployments.map(depHTML).join('') + '<p class="small" style="margin-top:18px">NexpatchOnline tracks the schedule. Device-level install results are in Intune under Apps, Windows, then the app’s device install status.</p>' : '<div class="empty"><p>No updates published yet.</p><a class="btn primary" href="#catalog">Pick an app to publish</a></div>'; }
 $('#depList').addEventListener('click', e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; S.deployments=S.deployments.filter(d=>d.id!==b.dataset.rm); save(); renderDeployments(); toast('Deployment removed from NexpatchOnline'); });
@@ -2542,6 +2573,29 @@ $('#pkDetectType').addEventListener('change',renderPackageDetection);$('#pkType'
 $('#openPackagingWizard')?.addEventListener('click',()=>{const d=$('#catalogPackaging');d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});fillPackageCatalogPickers();renderPackageDetection();});
 $('#catalogPackaging')?.addEventListener('toggle',()=>{if($('#catalogPackaging').open){fillPackageCatalogPickers();renderPackageDetection();}});
 renderPackageDetection();
+/* ---------- Company profile ---------- */
+const orgDT=iso=>iso?new Date(iso).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}):'Never';
+const orgD=iso=>iso?new Date(iso).toLocaleDateString(undefined,{dateStyle:'medium'}):'\u2014';
+function orgRows(el,rows){el.textContent='';rows.forEach(([k,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v||'\u2014';el.append(dt,dd)})}
+function orgShowLogo(l){const i=$('#orgLogoImg');if(l&&l.dataUrl){i.src=l.dataUrl;i.hidden=false;$('#orgLogoEmpty').hidden=true;$('#orgLogoRemove').hidden=false}else{i.hidden=true;i.removeAttribute('src');$('#orgLogoEmpty').hidden=false;$('#orgLogoRemove').hidden=true}}
+async function loadOrg(){const note=$('#orgNote'),body=$('#orgBody');note.innerHTML='';
+ if(!liveMode()){body.hidden=true;note.innerHTML='<div class="panel"><p>Your company profile is available once your organization is connected to NexpatchOnline.</p></div>';return}
+ body.hidden=false;const admin=['admin','owner'].includes(currentRole());$('#orgFields').disabled=!admin;$('#orgSyncNow').hidden=!admin;
+ try{const [d,lg]=await Promise.all([api('/org'),api('/org/logo').catch(()=>({logo:null}))]);
+  $('#orgName').value=d.companyName||'';orgShowLogo(lg.logo);
+  const loc=d.dataLocation;orgRows($('#orgData'),[['Region',loc.value||'Not specified yet'],['What is stored there','Your inventory, publishing history, settings and notices'],['Set by',loc.source==='configured'?'NexpatchOnline':loc.source==='azure-region'?'The Azure region of the NexpatchOnline service':'Ask your NexpatchOnline contact']]);
+  const s=d.subscription,planName=s.plan==='active'?'Active subscription':s.plan==='trial'?'Free trial':s.plan==='expired'?'Expired':s.plan;
+  orgRows($('#orgSub'),[['Plan',planName],['Status',s.active?'Active':'Not active'],...(s.plan==='trial'?[['Trial started',orgD(s.trialStartedAt)],['Trial ends',orgD(s.trialEndsAt)+(s.daysLeft!=null?' ('+s.daysLeft+' day'+(s.daysLeft===1?'':'s')+' left)':'')]]:[]),...(s.plan==='active'?[['Subscribed since',orgD(s.activatedAt)]]:[]),['Connected to Intune',orgD(d.connectedAt)],['Tenant ID',d.tenantId]]);
+  const y=d.sync,next=new Date(y.nextRunAt);
+  orgRows($('#orgSync'),[['Last sync',orgDT(y.lastSyncAt)],['Result',y.lastSyncError?'Failed: '+y.lastSyncError:y.lastSyncAt?y.lastSyncCount+' app versions found':'No sync yet'],['Sync schedule',y.schedule+' (about '+next.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+' your time)'],['Next scheduled sync',y.scheduledSyncActive?orgDT(y.nextRunAt):'Paused: your subscription is not active'],['What it does','Reads installed apps from Intune and checks which have newer versions']]);
+ }catch(e){note.innerHTML='<div class="panel"><p>'+esc(e.message)+'</p></div>';body.hidden=true}}
+$('#orgForm').addEventListener('submit',async e=>{e.preventDefault();$('#orgStatus').textContent='Saving\u2026';try{await api('/org','PUT',{companyName:$('#orgName').value});$('#orgStatus').textContent='Saved.'}catch(err){$('#orgStatus').textContent=err.message}});
+$('#orgLogoPick').addEventListener('click',()=>$('#orgLogoFile').click());
+$('#orgLogoFile').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>5*1048576){$('#orgStatus').textContent='Choose an image under 5 MB.';return}
+ try{const bmp=await createImageBitmap(f),s=Math.min(1,256/Math.max(bmp.width,bmp.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(bmp.width*s));c.height=Math.max(1,Math.round(bmp.height*s));c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+  const r=await api('/org/logo','PUT',{data:c.toDataURL('image/png').split(',')[1]});orgShowLogo(r.logo);$('#orgStatus').textContent='Logo updated.'}catch(err){$('#orgStatus').textContent=err.message||'That file couldn\u2019t be used as a logo.'}});
+$('#orgLogoRemove').addEventListener('click',async()=>{if(!confirm('Remove the company logo?'))return;try{await api('/org/logo','DELETE');orgShowLogo(null);$('#orgStatus').textContent='Logo removed.'}catch(err){$('#orgStatus').textContent=err.message}});
+$('#orgSyncNow').addEventListener('click',async e=>{const b=e.currentTarget;b.disabled=true;$('#orgSyncMsg').textContent='Syncing with Intune\u2026';try{const r=await api('/inventory/sync','POST');$('#orgSyncMsg').textContent='Synced '+r.count+' app versions.';SERVER.me=await api('/me');await loadOrg()}catch(err){$('#orgSyncMsg').textContent=err.message}finally{b.disabled=false}});
 /* ---------- Notifications (outage / maintenance notices) ---------- */
 let NT={templates:[],severities:[],settings:{},applied:null,notices:[],last:0};
 const ntColor=s=>(NT.severities.find(x=>x.id===s)||{color:'#3B4FD8'}).color;
@@ -2791,13 +2845,13 @@ async function loadPlatJobs(){
   try{ PLAT.jobs=(await api('/platform/jobs')).jobs; }catch(e){ $('#platJobsBody').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; return; }
   const list=(PLAT.jobs||[]).filter(j=>PJ_FILTER==='all'||(PJ_FILTER==='failed'&&j.status==='failed')||(PJ_FILTER==='busy'&&jobBusy(j)));
   $('#platJobsBody').innerHTML = list.length ? list.map(j=>{ const L=JOB_LABEL[j.status]||[j.status,'p-neutral'];
-    return '<tr><td><code style="font-size:.78rem">'+esc(j.tenantId.slice(0,8))+'\u2026</code></td><td><b>'+esc(j.appName)+'</b>'+(j.version?'<span class="sub">'+esc(j.version)+'</span>':'')+'</td><td><span class="pill '+L[1]+'">'+(jobBusy(j)?'<span class="spin"></span>':'')+L[0]+'</span>'+(j.error?'<span class="sub" style="color:var(--red)">'+esc(j.error)+'</span>':jobBusy(j)&&j.step?'<span class="sub">'+esc(j.step)+'</span>':'')+'</td><td>'+esc(j.createdBy||'')+'</td><td>'+new Date(j.createdAt).toLocaleString()+'</td><td><button class="btn small ghost" type="button" data-pjob="'+esc(j.tenantId)+'|'+esc(j.id)+'">View log</button></td></tr>'; }).join('')
+    return '<tr><td><code style="font-size:.78rem">'+esc(j.tenantId.slice(0,8))+'\u2026</code></td><td><b>'+esc(j.displayName||j.appName)+'</b>'+(j.version?'<span class="sub">'+esc(j.version)+'</span>':'')+'</td><td><span class="pill '+L[1]+'">'+(jobBusy(j)?'<span class="spin"></span>':'')+L[0]+'</span>'+(j.error?'<span class="sub" style="color:var(--red)">'+esc(j.error)+'</span>':jobBusy(j)&&j.step?'<span class="sub">'+esc(j.step)+'</span>':'')+'</td><td>'+esc(j.createdBy||'')+'</td><td>'+new Date(j.createdAt).toLocaleString()+'</td><td><button class="btn small ghost" type="button" data-pjob="'+esc(j.tenantId)+'|'+esc(j.id)+'">View log</button></td></tr>'; }).join('')
     : '<tr><td colspan="6" class="empty">No publishing jobs in this view.</td></tr>';
 }
 $$('[data-pjf]').forEach(b=>b.addEventListener('click',()=>{ PJ_FILTER=b.dataset.pjf; $$('[data-pjf]').forEach(x=>x.setAttribute('aria-pressed',x===b)); loadPlatJobs(); }));
 $('#platJobsRefresh').addEventListener('click', loadPlatJobs);
 $('#platJobsBody').addEventListener('click', async e=>{ const b=e.target.closest('[data-pjob]'); if(!b) return; const [tid,id]=b.dataset.pjob.split('|');
-  try{ const j=await api('/platform/jobs/'+encodeURIComponent(tid)+'/'+encodeURIComponent(id)); showCode(j.appName+' \u2013 '+tid, (JOB_LABEL[j.status]||[j.status])[0]+(j.error?': '+j.error:''), (j.log||[]).map(l=>new Date(l.at).toLocaleTimeString()+'  '+l.text).join('\n')||'No log yet.'); }catch(err){ toast(err.message); } });
+  try{ const j=await api('/platform/jobs/'+encodeURIComponent(tid)+'/'+encodeURIComponent(id)); showCode((j.displayName||j.appName)+' \u2013 '+tid, (JOB_LABEL[j.status]||[j.status])[0]+(j.error?': '+j.error:''), (j.log||[]).map(l=>new Date(l.at).toLocaleTimeString()+'  '+l.text).join('\n')||'No log yet.'); }catch(err){ toast(err.message); } });
 function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80); }
 function openPlatApp(a){ PLAT.editing=a?a.id:null; $('#platDlgTitle').textContent=a?'Edit '+a.name:'Add an app for every organization';
   $('#plName').value=a?a.name:''; $('#plWinget').value=a?a.winget:''; $('#plVendor').value=a?a.vendor:''; $('#plReg').value=a?a.reg:''; $('#plProcs').value=a?a.procs:''; $('#plCat').value=a?a.category:''; $('#plExe').value=a?a.exe:''; $('#plEnabled').checked=a?a.enabled:true; $('#plMsg').textContent='';

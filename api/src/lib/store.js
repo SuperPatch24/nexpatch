@@ -3,7 +3,7 @@ import { TableClient, odata } from '@azure/data-tables';
 import { DefaultAzureCredential } from '@azure/identity';
 import { createHash } from 'node:crypto';
 
-const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices', 'Catalog', 'SalesLeads', 'AppRequests', 'SiteContent', 'InstallReports', 'EmailConfig', 'EmailMessages', 'Invoices', 'InvoiceCounters', 'AppleDevices', 'AppleApps', 'PackageDrafts', 'PackagingJobs', 'RemediationScripts', 'AdminDocs', 'Notices'];
+const TABLES = ['Tenants', 'Inventory', 'SyncRuns', 'Members', 'AuditLog', 'PublishJobs', 'AcEvents', 'AcDecisions', 'AcDevices', 'Catalog', 'SalesLeads', 'AppRequests', 'SiteContent', 'InstallReports', 'EmailConfig', 'EmailMessages', 'Invoices', 'InvoiceCounters', 'AppleDevices', 'AppleApps', 'PackageDrafts', 'PackagingJobs', 'RemediationScripts', 'AdminDocs', 'Notices', 'OrgProfiles'];
 const clients = {};
 let credential;
 let ready;
@@ -161,7 +161,7 @@ export async function getJob(tenantId, jobId) {
 export async function listJobs(tenantId, limit = 30) {
   await ensureTables();
   const out = [];
-  for await (const j of table('PublishJobs').listEntities({ queryOptions: { filter: odata`PartitionKey eq ${tenantId}`, select: ['RowKey', 'status', 'appName', 'version', 'summary', 'appId', 'createdBy', 'createdAt', 'finishedAt', 'error', 'step'] } })) out.push(j);
+  for await (const j of table('PublishJobs').listEntities({ queryOptions: { filter: odata`PartitionKey eq ${tenantId}`, select: ['RowKey', 'status', 'appName', 'version', 'summary', 'appId', 'createdBy', 'createdAt', 'finishedAt', 'error', 'step', 'operationType', 'source'] } })) out.push(j);
   return out.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, limit);
 }
 

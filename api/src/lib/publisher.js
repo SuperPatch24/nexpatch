@@ -1,6 +1,7 @@
 // Publishes a Win32 app to a client's Intune, with the deployment options chosen on the website.
 // Everything runs in the cloud: the package only contains a small script, and winget installs the app on each device.
 import { graph, graphAll } from './graph.js';
+import { updateAppName, isUpdateAppName } from './naming.js';
 import { latestWingetVersion } from './winget.js';
 import { buildContent } from './intunewin.js';
 import { WRAPPER, DETECT, REQUIREMENT } from './templates.js';
@@ -23,6 +24,12 @@ const fromLocalInput = v => (v ? `${v.length === 16 ? v + ':00' : v.slice(0, 19)
 async function findApps(tid, name) {
   const apps = await graphAll(tid, `${B}?$filter=${encodeURIComponent("isof('microsoft.graph.win32LobApp')")}`);
   return apps.filter(a => a.displayName === name).sort((a, b) => Date.parse(a.createdDateTime) - Date.parse(b.createdDateTime));
+}
+
+// Every Intune app that belongs to this catalog app: the normal install app and any "Update for <app> <version>" apps.
+async function findFamily(tid, name) {
+  const apps = await graphAll(tid, `${B}?$filter=${encodeURIComponent("isof('microsoft.graph.win32LobApp')")}`);
+  return apps.filter(a => a.displayName === name || isUpdateAppName(a.displayName, name)).sort((a, b) => Date.parse(a.createdDateTime) - Date.parse(b.createdDateTime));
 }
 
 async function resolveGroup(tid, value) {
@@ -152,11 +159,11 @@ export async function publishApp(tid, app, o, log) {
   const assignments = buildAssignments(o);
   const includes = assignments.filter(a => a.mode !== 'exclude');
   const uninstallOnly = includes.length > 0 && includes.every(a => a.intent === 'uninstall');
-  const existing = await findApps(tid, app.name);
+  const existing = await findFamily(tid, app.name);
   let target, version, superseded = false;
 
   if (uninstallOnly) {
-    target = existing.at(-1);
+    target = existing.filter(a => a.displayName === app.name).at(-1) || existing.at(-1);
     if (!target) throw new Error(`${app.name} isn\u2019t in Intune, so there\u2019s nothing to uninstall.`);
     if (/exit 0/.test(target.uninstallCommandLine || '')) throw new Error(`${app.name} was published by an older NexpatchOnline version without an uninstall command. Publish it again first.`);
     version = target.displayVersion;
@@ -164,7 +171,7 @@ export async function publishApp(tid, app, o, log) {
   } else {
     await log('Checking winget for the latest version');
     version = await latestWingetVersion(app.winget);
-    const same = existing.find(a => a.displayVersion === version);
+    const same = existing.find(a => a.displayVersion === version && (o.updateOnly ? isUpdateAppName(a.displayName, app.name) : a.displayName === app.name));
     if (same) {
       target = same;
       await log(`${app.name} ${version} is already in Intune, so only the assignments are added`);
@@ -195,7 +202,8 @@ export async function publishApp(tid, app, o, log) {
 
       const body = {
         '@odata.type': '#microsoft.graph.win32LobApp',
-        displayName: app.name, description: `${app.name} ${version}, packaged by NexpatchOnline from winget (${app.winget}).`, publisher: app.vendor || app.name,
+        displayName: o.updateOnly ? updateAppName(app.name, version) : app.name,
+        description: o.updateOnly ? `Update for ${app.name} to ${version}. Installs only on devices that already have ${app.name}. Packaged by NexpatchOnline from winget (${app.winget}).` : `${app.name} ${version}, packaged by NexpatchOnline from winget (${app.winget}).`, publisher: app.vendor || app.name,
         displayVersion: version, developer: '', owner: '', notes: o.notes || '', informationUrl: o.infoUrl || '', privacyInformationUrl: '', isFeatured: !!o.featured,
         fileName: 'Install-Update.intunewin', setupFilePath: 'Install-Update.ps1',
         installCommandLine: 'powershell.exe -ExecutionPolicy Bypass -NoProfile -File .\\Install-Update.ps1',
@@ -277,5 +285,5 @@ export async function publishApp(tid, app, o, log) {
       await log(`Skipped ${a.label}: ${err.message}`);
     }
   }
-  return { appId: target.id, version, assignmentsAdded: added };
+  return { appId: target.id, version, assignmentsAdded: added, intuneName: target.displayName };
 }

@@ -28,6 +28,7 @@ docs/
 - **Users and access:** each organization manages its own people with Viewer, Admin and Owner roles, invitations and an activity log.
 - **Inventory:** pulled from Intune by the backend on approval, on demand, and nightly.
 - **Deployment options:** update-only applicability; assignments to groups (name or ID), All devices or All users,
+- **Update-only deployments** are published to Intune as "Update for <app> <version>" (and shown that way in Deployments). The catalog shows when each app was last updated, and the Company profile page shows company name and logo, data location, subscription, and the last and next update sync.
   each with its own intent, include/exclude, filter, start and deadline; optional rollout rings instead;
   hardware, registry and script applicability rules;
   notifications, restart behavior and grace periods; running-app handling (close, warn, wait, retry later);

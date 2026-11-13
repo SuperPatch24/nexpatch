@@ -5,6 +5,7 @@ import { planStatus, TRIAL_DAYS } from '../lib/plan.js';
 import { platformRole } from '../lib/platform.js';
 import { latestWingetVersion } from '../lib/winget.js';
 import { findApps, verifyStore, verifyWinget } from '../lib/appfinder.js';
+import { cleanVersionSource } from '../lib/versionwatch.js';
 
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
 const STORE_ID = /^[A-Z0-9]{8,16}$/i;
@@ -15,7 +16,9 @@ const shape = r => ({ id: r.rowKey, name: r.name, vendor: r.vendor || '', winget
   storeProductId: r.storeProductId || '', appStoreUrl: r.appStoreUrl || '', storeType: r.storeType || '',
   verificationStatus: r.verificationStatus || (r.source === 'msstore' ? 'candidate' : 'verified'),
   deployable: r.source === 'msstore' ? !!(r.storeProductId && r.appStoreUrl && r.verificationStatus === 'verified') : !!r.winget,
-  enabled: r.enabled !== false, updatedBy: r.updatedBy || '', updatedAt: r.updatedAt || null });
+  enabled: r.enabled !== false, updatedBy: r.updatedBy || '', updatedAt: r.updatedAt || null,
+  versionSource: r.versionSource || 'auto', versionRepo: r.versionRepo || '', versionFeed: r.versionFeed || '', versionPattern: r.versionPattern || '',
+  latestVersion: r.latestVersion || '', latestCheckedAt: r.latestCheckedAt || null, latestChangedAt: r.latestChangedAt || null, previousVersion: r.previousVersion || '', latestError: r.latestError || '' });
 function requirePlatform(user, roles = ['superadmin']) { const role = platformRole(user); if (!role || !roles.includes(role)) throw new HttpError(403, 'Your platform administrator role does not allow this action.'); }
 
 // GET /api/catalog – the shared app catalog every organization sees (enabled apps only).
@@ -48,7 +51,10 @@ app.http('platformCatalogSave', { methods: ['PUT'], authLevel: 'anonymous', rout
     }
     if (source === 'msstore' && b.storeVerified === true && (!storeProductId || !appStoreUrl || !vendor)) throw new HttpError(400, 'A verified Store entry needs a product ID, Microsoft Store URL and verified publisher.');
     if (source === 'msstore' && storeProductId && appStoreUrl && !appStoreUrl.toUpperCase().includes(storeProductId)) throw new HttpError(400, 'The Store URL must contain the same Product ID entered above.');
+    const vs = cleanVersionSource(b); if (vs.error) throw new HttpError(400, vs.error);
+    const prev = (await getRow('Catalog', GLOBAL, id)) || {};
     await putRow('Catalog', GLOBAL, id, {
+      ...vs.value, latestVersion: prev.latestVersion || '', latestCheckedAt: prev.latestCheckedAt || '', latestChangedAt: prev.latestChangedAt || '', previousVersion: prev.previousVersion || '', latestError: prev.latestError || '',
       name, source, winget: source === 'winget' ? winget : '', storeProductId, appStoreUrl,
       storeType: String(b.storeType || '').slice(0, 40), verificationStatus,
       vendor, reg: String(b.reg || name).slice(0, 200),
@@ -80,6 +86,7 @@ app.http('platformCatalogAddVerified', { methods: ['POST'], authLevel: 'anonymou
     name: v.name.slice(0, 120), source, winget: source === 'winget' ? pid : '', storeProductId: source === 'msstore' ? pid.toUpperCase() : '',
     appStoreUrl: source === 'msstore' ? v.url : '', storeType: source === 'msstore' ? 'msstore' : '', verificationStatus: 'verified',
     vendor: v.publisher.slice(0, 120), reg: v.name.slice(0, 200), procs: '', exe: '', category, enabled: true,
+    versionSource: 'auto', latestVersion: v.version || '', latestCheckedAt: v.version ? new Date().toISOString() : '',
     updatedBy: user.email || user.userId, updatedAt: new Date().toISOString() }, 'Replace');
   await audit(GLOBAL, user.email || user.userId, 'catalog.added-verified', `${v.name} (${source}:${pid})`);
   return { added: shape(await getRow('Catalog', GLOBAL, slug)), checks: v.checks };

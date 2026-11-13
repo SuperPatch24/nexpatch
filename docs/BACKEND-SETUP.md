@@ -272,3 +272,10 @@ Apps are added to the shared catalog from the Admin Center: `POST /api/platform/
 - `DATA_STORE_LOCATION` (optional app setting): the region name shown to customers as their data store location (for example `Canada Central`). If unset, the Function App's own Azure region is shown when Azure provides it.
 - Company logos are stored in a private `nexpatch-org-assets` container in the same storage account used for packaging (`BLOB_STORAGE_CONNECTION` or `BLOB_STORAGE_URL`).
 - The sync schedule shown to customers comes from `api/src/lib/org.js` and is the same value the nightly timer uses (daily at 07:00 UTC).
+
+## Version watch
+
+- A timer (`versionWatch`) runs every two hours and checks a batch of the apps that were checked longest ago, so each app is checked about once a day.
+- Set a read-only `GITHUB_TOKEN` app setting. WinGet vendor browsing and version checks make many GitHub calls, and anonymous access is rate limited quickly.
+- Optional: set `VERSION_WATCH_EMAIL` to `on` to email the saved admin recipients when new versions are found.
+- RSS/Atom feed addresses must be public https URLs (IP addresses, localhost and internal names are refused).

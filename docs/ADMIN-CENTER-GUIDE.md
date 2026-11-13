@@ -56,3 +56,9 @@ Website settings edit supported public text fields; they are not an unrestricted
 ## Operational safety
 
 Catalog edits are shared with every connected client organization. Verify package identifiers, publishers, Store region availability and update behavior before enabling deployment. Do not automatically add catalog-gap suggestions without review.
+
+## Vendors and version checks
+
+- **Browse a vendor:** in Catalog, type a vendor such as Microsoft or Oracle to list every package that vendor has on WinGet. Add apps one at a time, or add the shown apps (up to 25 at once). Each is verified when added; ones that fail are skipped. Check a vendor's license terms before offering an app to customers.
+- **Version checks:** every catalog app is checked against its vendor source about once a day. Choose the source per app in the catalog form: automatic (WinGet or Microsoft Store), GitHub releases (`owner/name`), or any public RSS/Atom feed (optionally with a pattern that picks the version out of the newest entry's title). **Check versions now** runs a batch immediately, and **New versions detected** lists what changed in the last 45 days.
+- Detection only records versions. Nothing is downloaded, packaged or published automatically: WinGet apps are built at publish time from the latest version, so customers with auto-publish on get the new version at their next run.

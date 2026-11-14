@@ -10,21 +10,22 @@ test('the free trial is 15 days', () => {
 });
 test('Starter is flat, monthly only and capped at 25 devices; no per-device charge', () => {
   const e = estimate({ tier: 'starter', devices: 20 });
-  assert.equal(e.monthly, 29); assert.equal(e.usage, 0); assert.equal(e.overLimit, false);
+  assert.equal(e.monthly, 19); assert.equal(e.usage, 0); assert.equal(e.overLimit, false);
   assert.ok(estimate({ tier: 'starter', devices: 20, billing: 'annual' }).error);
   assert.equal(estimate({ tier: 'starter', devices: 40 }).suggest, 'pro');
 });
 test('Pro and Pro Plus: platform license plus per-device usage; annual discounts the license only', () => {
-  assert.equal(estimate({ tier: 'pro', devices: 100 }).monthly, 99 + 100 * 3);
+  assert.equal(estimate({ tier: 'pro', devices: 100 }).monthly, 49 + 100 * 1);
   const a = estimate({ tier: 'pro', devices: 100, billing: 'annual' });
-  assert.equal(a.platform, 84.15); assert.equal(a.usage, 300); assert.equal(a.annualLicenseTotal, 1009.8);
-  assert.equal(estimate({ tier: 'proplus', devices: 300 }).monthly, 249 + 300 * 2.75);
-  assert.equal(estimate({ tier: 'pro', devices: 150 }).suggest, 'proplus');
-  assert.equal(estimate({ tier: 'proplus', devices: 400 }).suggest, 'enterprise');
+  assert.equal(a.platform, 41.65); assert.equal(a.usage, 100); assert.equal(a.annualLicenseTotal, 499.8);
+  assert.equal(estimate({ tier: 'proplus', devices: 300 }).monthly, 129 + 300 * 1);
+  assert.equal(estimate({ tier: 'pro', devices: 150 }).suggest, null);
+  assert.equal(estimate({ tier: 'pro', devices: 200 }).suggest, 'proplus');
+  assert.equal(estimate({ tier: 'proplus', devices: 600 }).suggest, 'enterprise');
 });
 test('App Control adds a small per-device price', () => {
   const e = estimate({ tier: 'pro', devices: 100, appControl: true });
-  assert.equal(e.appControl, 100 * APP_CONTROL_PER_DEVICE); assert.equal(e.monthly, 99 + 300 + 40);
+  assert.equal(e.appControl, 15); assert.equal(APP_CONTROL_PER_DEVICE, 0.15); assert.equal(e.monthly, 49 + 100 + 15);
 });
 test('Enterprise is a quote, and unknown plans are rejected', () => {
   assert.equal(estimate({ tier: 'enterprise', devices: 5 }).contact, true);

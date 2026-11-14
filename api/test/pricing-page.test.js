@@ -16,7 +16,7 @@ test('page plan table equals the API plan table', () => {
 test('page estimator gives the same totals as the API estimator', () => {
   const src = /function planEstimate[\s\S]*?\n(?=function renderPlanCards)/.exec(html)[0];
   const planEstimate = new Function('PLANS', 'r2', `${src}; return planEstimate;`)(PLANS, n => Math.round(n * 100) / 100);
-  for (const tier of ['starter', 'pro', 'proplus']) for (const devices of [1, 25, 100, 300, 500]) for (const billing of ['monthly', 'annual']) for (const ac of [false, true]) {
+  for (const tier of ['starter', 'pro', 'proplus']) for (const devices of [1, 25, 100, 150, 500, 600]) for (const billing of ['monthly', 'annual']) for (const ac of [false, true]) {
     const a = estimate({ tier, devices, billing, appControl: ac });
     if (a.error) continue;
     const p = planEstimate(tier, devices, billing, ac);

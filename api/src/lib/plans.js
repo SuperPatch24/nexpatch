@@ -2,12 +2,12 @@
 // (a test fails if the two drift apart). PROPOSED launch prices in USD; billing/metering is not active yet.
 export const TRIAL_DAYS = 15;
 export const ANNUAL_DISCOUNT = 0.15;          // applies to the platform license only
-export const APP_CONTROL_PER_DEVICE = 0.4;    // per device per month, optional add-on
+export const APP_CONTROL_PER_DEVICE = 0.15;   // per device per month, optional add-on
 
 export const TIERS = {
-  starter:    { label: 'Starter',  flat: 29,  perDevice: 0,   maxDevices: 25,   annual: false, customApps: 2,  packageRequests: 2 },
-  pro:        { label: 'Pro',      flat: 99,  perDevice: 3.0, maxDevices: 100,  annual: true,  customApps: 10, packageRequests: 10 },
-  proplus:    { label: 'Pro Plus', flat: 249, perDevice: 2.75, maxDevices: 300, annual: true,  customApps: 40, packageRequests: 40 },
+  starter:    { label: 'Starter',  flat: 19,  perDevice: 0,   maxDevices: 25,   annual: false, customApps: 2,  packageRequests: 2 },
+  pro:        { label: 'Pro',      flat: 49,  perDevice: 1.0, maxDevices: 150,  annual: true,  customApps: 10, packageRequests: 10 },
+  proplus:    { label: 'Pro Plus', flat: 129, perDevice: 1.0, maxDevices: 500, annual: true,  customApps: 40, packageRequests: 40 },
   enterprise: { label: 'Enterprise', custom: true }
 };
 export const isTier = t => Object.prototype.hasOwnProperty.call(TIERS, t);

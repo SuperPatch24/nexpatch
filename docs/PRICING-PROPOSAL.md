@@ -10,12 +10,12 @@ Platform license (monthly or annual) + per-device usage + optional App Control a
 
 | Plan | Platform license | Per device / month | Devices | Custom app builds / month | App package requests / month | Annual license |
 |---|---:|---:|---:|---:|---:|---:|
-| Starter | $29 | none | up to 25 | 2 | 2 | not offered (monthly only) |
-| Pro | $99 | $3.00 | up to 100 | 10 | 10 | $1,009.80 / year |
-| Pro Plus | $249 | $2.75 | up to 300 | 40 | 40 | $2,539.80 / year |
-| Enterprise | quote | quote | over 300, or custom | custom | custom | quote |
+| Starter | $19 | none | up to 25 | 2 | 2 | not offered (monthly only) |
+| Pro | $49 | $1.00 | up to 150 | 10 | 10 | $499.80 / year |
+| Pro Plus | $129 | $1.00 | up to 500 | 40 | 40 | $1,315.80 / year |
+| Enterprise | quote | quote | over 500, or custom | custom | custom | quote |
 
-- **App Control add-on:** $0.40 per device per month, any plan.
+- **App Control add-on:** $0.15 per device per month, any plan.
 - **Annual billing:** 15% off the platform license only. Per-device usage is billed monthly.
 - **Limits:** custom app builds are packaging drafts started in the month; package requests are application requests submitted in the month. Both reset on the 1st (UTC). Device counts are shown against the plan but not blocked.
 - Organizations marked paid before tiers existed have no limits until a tier is set.

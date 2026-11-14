@@ -385,10 +385,11 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <h1 id="heroTitle">Keep every app patched. Let only approved apps run.</h1>
         <p class="big" id="heroSubtitle">NexpatchOnline finds what’s installed across your Intune devices, packages new versions, rolls them out in rings, and builds App Control policies you can actually manage.</p>
         <div class="row">
-          <button class="btn primary lg" type="button" data-go="login">Sign in with Microsoft</button>
+          <button class="btn primary lg" type="button" data-trial="pro">Try it free for 15 days</button>
+          <button class="btn lg" type="button" data-go="login">Sign in</button>
           <button class="btn lg" type="button" data-demo>Explore with sample data</button>
         </div>
-        <p class="hero-note">No agents to install. NexpatchOnline works through Microsoft Graph and the Intune tools already on your devices.</p>
+        <p class="hero-note"><b>No credit card needed.</b> Sign in with your Microsoft work account to start. No agents to install. NexpatchOnline works through Microsoft Graph and the Intune tools already on your devices.</p>
       </div>
       <div class="preview" aria-hidden="true">
         <div class="ph">
@@ -451,22 +452,27 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     </section>
 
     <section class="wrap sec" id="pub-pricing" aria-labelledby="pricingTitle">
-      <p class="eyebrow">Simple pricing</p><h2 class="big" id="pricingTitle">Plans that grow with your device fleet.</h2>
-      <p class="lede">Proposed launch pricing in USD. Final subscriptions, billing and plan limits will be confirmed before paid checkout is enabled.</p>
-      <div class="features">
-        <div class="feature"><p class="eyebrow">Starter</p><h3 style="font-size:2rem;margin:4px 0">$49 <small>/ month</small></h3><p>Up to 50 managed devices</p><p>App catalog, automated publishing, deployment rings and documentation.</p></div>
-        <div class="feature"><p class="eyebrow">Growth</p><h3 style="font-size:2rem;margin:4px 0">$149 <small>/ month</small></h3><p>Up to 250 managed devices</p><p>Starter features plus reporting, scheduling and multiple administrators.</p></div>
-        <div class="feature"><p class="eyebrow">Business</p><h3 style="font-size:2rem;margin:4px 0">$399 <small>/ month</small></h3><p>Up to 1,000 managed devices</p><p>Growth features plus advanced App Control, path rules and audit history.</p></div>
-        <div class="feature"><p class="eyebrow">Enterprise</p><h3 style="font-size:2rem;margin:4px 0">Custom</h3><p>For larger and multi-tenant environments</p><p>Custom limits, onboarding, security reviews and priority support.</p><button class="btn primary" type="button" data-scroll="enterpriseContact">Contact Enterprise sales</button></div>
+      <p class="eyebrow">Simple pricing</p><h2 class="big" id="pricingTitle">A platform license, plus a small price per device.</h2>
+      <p class="lede">Every plan starts with a 15-day free trial with Pro limits and no credit card. Proposed launch pricing in USD. Final billing, plan limits and checkout will be confirmed before paid subscriptions are enabled.</p>
+      <div class="features" id="planCards"></div>
+      <p class="small" id="planNotes"></p>
+      <div class="panel" id="estimator" style="margin-top:24px"><div class="panel-head"><div><h2>Estimate your monthly cost</h2><p class="small" style="margin:0">Platform license plus per-device usage. App Control is optional.</p></div></div>
+        <div class="grid2" style="margin-top:12px">
+          <label class="field"><span>Managed devices</span><input id="estDevices" type="number" min="1" max="100000" value="100"></label>
+          <label class="field"><span>Plan</span><select id="estTier"></select></label>
+          <label class="field"><span>Billing for the platform license</span><select id="estBilling"><option value="monthly">Monthly</option><option value="annual">Annual (save 15%)</option></select></label>
+          <label class="check" style="align-self:end"><input type="checkbox" id="estAC"><span>Add App Control</span></label>
+        </div>
+        <dl class="pk-review" id="estOut" aria-live="polite"></dl>
+        <div class="row" style="align-items:center"><button class="btn primary" type="button" id="estTrial">Start 15-day free trial</button><span class="small" id="estMsg"></span></div>
       </div>
-      <p class="small">Annual billing: proposed 15% discount. These are recommendations, not active billing terms.</p>
       <div class="panel" id="enterpriseContact" style="margin-top:28px"><div class="panel-head"><div><h2>Talk to Enterprise sales</h2><p class="small" style="margin:0">Request a quote or product demonstration.</p></div></div>
         <form id="salesForm" class="grid2" style="margin-top:12px">
           <label class="field"><span>Your name *</span><input name="name" required maxlength="120" autocomplete="name"></label>
           <label class="field"><span>Business email *</span><input name="email" type="email" required maxlength="254" autocomplete="email"></label>
           <label class="field"><span>Company *</span><input name="company" required maxlength="160" autocomplete="organization"></label>
           <label class="field"><span>Country</span><input name="country" maxlength="80" autocomplete="country-name"></label>
-          <label class="field"><span>Managed devices</span><select name="devices"><option value="Not sure">Not sure yet</option><option>1–250</option><option>251–1,000</option><option>1,001–5,000</option><option>5,001–10,000</option><option>10,000+</option></select></label>
+          <label class="field"><span>Managed devices</span><select name="devices"><option value="Not sure">Not sure yet</option><option>1–25</option><option>26–100</option><option>101–300</option><option>301–1,000</option><option>1,000+</option></select></label>
           <label class="field"><span>What would you like to discuss?</span><textarea name="message" rows="3" maxlength="3000" placeholder="Tenants, requirements, demo request…"></textarea></label>
           <label class="check" style="grid-column:1/-1"><input type="checkbox" name="consent" required><span>It’s okay for NexpatchOnline to contact me about this enquiry.</span></label>
           <label hidden aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
@@ -478,7 +484,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <div class="wrap">
       <div class="cta-band">
         <div><h2>See your own fleet in minutes.</h2><p>Connect a tenant, import your inventory, and NexpatchOnline shows what’s out of date.</p></div>
-        <div class="row"><button class="btn primary lg" type="button" data-go="login">Sign in with Microsoft</button><button class="btn lg" type="button" data-demo>Explore with sample data</button></div>
+        <div class="row"><button class="btn primary lg" type="button" data-trial="pro">Try it free for 15 days</button><button class="btn lg" type="button" data-go="login">Sign in</button><button class="btn lg" type="button" data-demo>Explore with sample data</button></div>
       </div>
     </div>
 
@@ -506,7 +512,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <div class="login-card">
           <a class="back" href="#home">← Back to home</a>
           <h1>Sign in</h1>
-          <p class="small" style="margin:0 0 26px">Use your Microsoft work account. The first time, an admin approves NexpatchOnline’s access to your tenant.</p>
+          <p class="small" style="margin:0 0 10px">Use your Microsoft work account. The first time, an admin approves NexpatchOnline’s access to your tenant.</p><p class="small" id="trialNote" style="margin:0 0 20px"><b>New here?</b> Signing in starts your 15-day free trial. No credit card needed.</p>
           <button class="btn wide" type="button" id="msBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></svg>Sign in with Microsoft</button>
           <div class="divider">or use your work email</div>
           <label class="field"><span>Work email</span><input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="email"></label>
@@ -1219,6 +1225,20 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
   <div class="dlg-foot"><button class="btn" type="button" id="plCheck">Check winget</button><button class="btn primary" type="button" id="plSave">Save</button></div>
 </dialog>
 
+<dialog id="planDlg" aria-labelledby="planDlgTitle">
+  <div class="dlg-head"><h2 id="planDlgTitle">Set paid plan</h2><button class="btn ghost" type="button" id="planDlgClose">Close</button></div>
+  <div class="dlg-body">
+    <p class="small" id="planDlgOrg"></p>
+    <label class="field"><span>Plan</span><select id="planDlgTier"><option value="starter">Starter (up to 25 devices, monthly only)</option><option value="pro">Pro</option><option value="proplus">Pro Plus</option><option value="enterprise">Enterprise (custom limits)</option></select></label>
+    <label class="field"><span>Platform license billing</span><select id="planDlgBilling"><option value="monthly">Monthly</option><option value="annual">Annual</option></select></label>
+    <div class="check"><input type="checkbox" id="planDlgAC"><label for="planDlgAC"><b>App Control add-on</b> (priced per device)</label></div>
+    <label class="field"><span>Note (invoice number, agreed terms…)</span><input type="text" id="planDlgNote" maxlength="200"></label>
+    <p class="small">This records the plan and sets the monthly limits. It does not bill anyone: billing is handled outside NexpatchOnline for now.</p>
+    <p id="planDlgMsg" class="small" style="margin:8px 0 0"></p>
+  </div>
+  <div class="dlg-foot"><button class="btn primary" type="button" id="planDlgSave">Save plan</button></div>
+</dialog>
+
 <dialog id="codeDlg" aria-labelledby="codeTitle">
   <div class="dlg-head"><h2 id="codeTitle"></h2><button class="btn ghost" type="button" id="codeClose">Close</button></div>
   <div class="dlg-body"><p class="small" id="codeNote"></p><div class="code"><button class="btn small copy" type="button" data-copy="codeOut">Copy</button><pre id="codeOut"></pre></div></div>
@@ -1852,7 +1872,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function activateTenant(){
   // A fresh approval can take a minute to reach every Microsoft server, so retry a few times.
   for(let i=0;i<4;i++){
-    try{ await api('/tenant/activate','POST'); return true; }
+    try{ await api('/tenant/activate','POST',takeInterestOnce()); return true; }
     catch(e){ if(e.status!==409 || i===3) throw e; await sleep(15000); }
   }
 }
@@ -2573,6 +2593,36 @@ $('#pkDetectType').addEventListener('change',renderPackageDetection);$('#pkType'
 $('#openPackagingWizard')?.addEventListener('click',()=>{const d=$('#catalogPackaging');d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});fillPackageCatalogPickers();renderPackageDetection();});
 $('#catalogPackaging')?.addEventListener('toggle',()=>{if($('#catalogPackaging').open){fillPackageCatalogPickers();renderPackageDetection();}});
 renderPackageDetection();
+/* ---------- Plans and pricing (mirrors api/src/lib/plans.js; a test keeps them equal) ---------- */
+const PLANS=/*plans*/{"trialDays":15,"annualDiscount":0.15,"appControlPerDevice":0.4,"tiers":{"starter":{"label":"Starter","flat":29,"perDevice":0,"maxDevices":25,"annual":false,"customApps":2,"packageRequests":2},"pro":{"label":"Pro","flat":99,"perDevice":3.0,"maxDevices":100,"annual":true,"customApps":10,"packageRequests":10},"proplus":{"label":"Pro Plus","flat":249,"perDevice":2.75,"maxDevices":300,"annual":true,"customApps":40,"packageRequests":40}}}/*end*/;
+const money=n=>'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:Number.isInteger(n)?0:2,maximumFractionDigits:2});
+const money2=n=>'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const r2=n=>Math.round(n*100)/100;
+function planEstimate(tier,devices,billing,ac){const t=PLANS.tiers[tier];if(!t)return null;const n=Math.max(0,Math.floor(Number(devices)||0)),annual=billing==='annual'&&t.annual;
+ const platform=r2(t.flat*(annual?1-PLANS.annualDiscount:1)),usage=r2(t.perDevice*n),appc=ac?r2(PLANS.appControlPerDevice*n):0;return{platform,usage,appc,total:r2(platform+usage+appc),annual,n,over:n>t.maxDevices}}
+function renderPlanCards(){const el=$('#planCards');if(!el)return;const T=PLANS.tiers;
+ const card=(id)=>{const t=T[id];return '<div class="feature"><p class="eyebrow">'+t.label+(id==='pro'?' · most popular':'')+'</p><h3 style="font-size:2rem;margin:4px 0">'+money(t.flat)+' <small>/ month</small></h3>'+
+  '<p>'+(t.perDevice?'platform license, plus <b>'+money2(t.perDevice)+'</b> per device per month':'flat price, no per-device charge')+'</p>'+
+  '<p><b>Up to '+t.maxDevices.toLocaleString()+' devices</b></p><p>'+t.customApps+' custom app builds and '+t.packageRequests+' app package requests per month</p>'+
+  '<p class="small">'+(t.annual?'Annual license: '+money(r2(t.flat*12*(1-PLANS.annualDiscount)))+' per year (save 15%).':'Monthly billing only.')+'</p>'+
+  '<button class="btn primary" type="button" data-trial="'+id+'">Start 15-day free trial</button></div>'};
+ el.innerHTML=['starter','pro','proplus'].map(card).join('')+'<div class="feature"><p class="eyebrow">Enterprise</p><h3 style="font-size:2rem;margin:4px 0">Custom</h3><p>Custom device counts, app creation and request limits, multi-tenant environments, onboarding, security reviews and priority support.</p><button class="btn primary" type="button" data-scroll="enterpriseContact">Contact sales for a quote</button></div>';
+ $('#planNotes').textContent='App Control (policy building and deployment) adds '+money2(PLANS.appControlPerDevice)+' per device per month on any plan. Annual billing discounts the platform license by 15%; per-device usage is billed monthly. Starter has no annual option and no per-device charge. Plans, prices and limits are proposed and not yet billed.';
+ $('#estTier').innerHTML=['starter','pro','proplus'].map(i=>'<option value="'+i+'">'+T[i].label+'</option>').join('');estUpdate(true)}
+function estUpdate(auto){const d=Number($('#estDevices').value)||0;const fit=['starter','pro','proplus'].find(i=>PLANS.tiers[i].maxDevices>=d);
+ if(auto){ if(!fit){ $('#estTier').value='proplus'; } else $('#estTier').value=fit; }
+ const tier=$('#estTier').value,t=PLANS.tiers[tier];const bill=$('#estBilling');bill.querySelector('[value=annual]').disabled=!t.annual;if(!t.annual)bill.value='monthly';
+ const e=planEstimate(tier,d,bill.value,$('#estAC').checked);
+ orgRows($('#estOut'),[['Platform license',money(e.platform)+' / month'+(e.annual?' (billed '+money(r2(t.flat*12*(1-PLANS.annualDiscount)))+' per year)':'')],['Device usage',t.perDevice?e.n.toLocaleString()+' devices × '+money2(t.perDevice)+' = '+money(e.usage)+' / month':'Included'],...($('#estAC').checked?[['App Control',e.n.toLocaleString()+' devices × '+money2(PLANS.appControlPerDevice)+' = '+money(e.appc)+' / month']]:[]),['Estimated total',money(e.total)+' / month']]);
+ $('#estMsg').textContent=!fit?'Over '+PLANS.tiers.proplus.maxDevices.toLocaleString()+' devices: contact sales for an Enterprise quote.':e.over?'This plan covers up to '+t.maxDevices.toLocaleString()+' devices. Pick '+PLANS.tiers[fit].label+' or larger.':''}
+['estDevices'].forEach(id=>$('#'+id).addEventListener('input',()=>estUpdate(true)));['estTier','estBilling','estAC'].forEach(id=>$('#'+id).addEventListener('change',()=>estUpdate(false)));
+$('#estTrial').addEventListener('click',()=>startTrial($('#estTier').value,$('#estAC').checked));
+/* "Try it free": remember which plan the visitor looked at, then send them to sign in. Nothing is charged; the trial starts when they connect. */
+function startTrial(tier,ac){try{localStorage.setItem('nexpatch.interest',JSON.stringify({tier:PLANS.tiers[tier]?tier:'pro',appControl:!!ac}))}catch(e){}location.hash='#login'}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-trial]');if(b)startTrial(b.dataset.trial,false)});
+let _interest=null;function takeInterestOnce(){if(_interest===null)_interest=takeInterest();return _interest}
+function takeInterest(){try{const v=JSON.parse(localStorage.getItem('nexpatch.interest')||'null');localStorage.removeItem('nexpatch.interest');return v&&PLANS.tiers[v.tier]?{interestTier:v.tier,interestAppControl:!!v.appControl}:{}}catch(e){return{}}}
+renderPlanCards();
 /* ---------- Company profile ---------- */
 const orgDT=iso=>iso?new Date(iso).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}):'Never';
 const orgD=iso=>iso?new Date(iso).toLocaleDateString(undefined,{dateStyle:'medium'}):'\u2014';
@@ -2585,7 +2635,8 @@ async function loadOrg(){const note=$('#orgNote'),body=$('#orgBody');note.innerH
   $('#orgName').value=d.companyName||'';orgShowLogo(lg.logo);
   const loc=d.dataLocation;orgRows($('#orgData'),[['Region',loc.value||'Not specified yet'],['What is stored there','Your inventory, publishing history, settings and notices'],['Set by',loc.source==='configured'?'NexpatchOnline':loc.source==='azure-region'?'The Azure region of the NexpatchOnline service':'Ask your NexpatchOnline contact']]);
   const s=d.subscription,planName=s.plan==='active'?'Active subscription':s.plan==='trial'?'Free trial':s.plan==='expired'?'Expired':s.plan;
-  orgRows($('#orgSub'),[['Plan',planName],['Status',s.active?'Active':'Not active'],...(s.plan==='trial'?[['Trial started',orgD(s.trialStartedAt)],['Trial ends',orgD(s.trialEndsAt)+(s.daysLeft!=null?' ('+s.daysLeft+' day'+(s.daysLeft===1?'':'s')+' left)':'')]]:[]),...(s.plan==='active'?[['Subscribed since',orgD(s.activatedAt)]]:[]),['Connected to Intune',orgD(d.connectedAt)],['Tenant ID',d.tenantId]]);
+  const en=d.entitlements||{},lim=en.limits||{},us=en.usage||{},cap=n=>n==null?'Unlimited':n.toLocaleString(),tierName=en.tierLabel||(s.plan==='trial'?'Pro limits during the trial':'Not set'),use=(k,l)=>us[k]+' of '+cap(l[k])+(l[k]!=null&&us[k]>=l[k]?' (limit reached)':'');
+  orgRows($('#orgSub'),[['Plan',planName+(en.tierLabel?' \u00b7 '+en.tierLabel:'')],['Status',s.active?'Active':'Not active'],...(s.plan==='active'?[['Billing',en.billing==='annual'?'Annual platform license':en.billing==='monthly'?'Monthly':'\u2014'],['App Control add-on',en.appControl?'Included':'Not added']]:[]),...(s.plan==='trial'&&en.interestTier?[['Plan you were looking at',(PLANS.tiers[en.interestTier]||{}).label||en.interestTier]]:[]),['Plan limits',tierName],['Devices seen (approx.)',use('devicesSeen',{devicesSeen:lim.devices})],['Custom app builds this month',use('customApps',lim)],['App package requests this month',use('packageRequests',lim)],...(s.plan==='trial'?[['Trial started',orgD(s.trialStartedAt)],['Trial ends',orgD(s.trialEndsAt)+(s.daysLeft!=null?' ('+s.daysLeft+' day'+(s.daysLeft===1?'':'s')+' left)':'')]]:[]),...(s.plan==='active'?[['Subscribed since',orgD(s.activatedAt)]]:[]),['Connected to Intune',orgD(d.connectedAt)],['Tenant ID',d.tenantId]]);
   const y=d.sync,next=new Date(y.nextRunAt);
   orgRows($('#orgSync'),[['Last sync',orgDT(y.lastSyncAt)],['Result',y.lastSyncError?'Failed: '+y.lastSyncError:y.lastSyncAt?y.lastSyncCount+' app versions found':'No sync yet'],['Sync schedule',y.schedule+' (about '+next.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+' your time)'],['Next scheduled sync',y.scheduledSyncActive?orgDT(y.nextRunAt):'Paused: your subscription is not active'],['What it does','Reads installed apps from Intune and checks which have newer versions']]);
  }catch(e){note.innerHTML='<div class="panel"><p>'+esc(e.message)+'</p></div>';body.hidden=true}}
@@ -2829,15 +2880,22 @@ function drawPlatTenants(){
   const t=PLAT.tenants||[];
   $('#platTenBody').innerHTML = t.length ? t.map(x=>{ const pl=x.plan||{plan:'trial'}; const P=PLAN_PILL[pl.plan]||[pl.plan,'p-neutral'];
     return '<tr><td><code style="font-size:.8rem">'+esc(x.tenantId)+'</code><span class="sub">Connected by '+esc(x.activatedBy||'?')+(x.activatedAt?' on '+new Date(x.activatedAt).toLocaleDateString():'')+'</span></td>'+
-      '<td><span class="pill '+P[1]+'">'+P[0]+'</span><span class="sub">'+(pl.plan==='trial'?pl.daysLeft+' days left':pl.plan==='active'?esc(x.planNote||''):pl.trialEndsAt?'Ended '+new Date(pl.trialEndsAt).toLocaleDateString():'')+'</span></td>'+
+      '<td><span class="pill '+P[1]+'">'+P[0]+'</span><span class="sub">'+(pl.plan==='trial'?pl.daysLeft+' days left'+(x.interestTier?' \u00b7 interested in '+esc((PLANS.tiers[x.interestTier]||{}).label||x.interestTier):''):pl.plan==='active'?esc(((PLANS.tiers[x.tier]||{}).label||(x.tier==='enterprise'?'Enterprise':'No tier set'))+(x.billing?' \u00b7 '+x.billing:'')+(x.appControl?' \u00b7 App Control':'')+(x.planNote?' \u00b7 '+x.planNote:'')):pl.trialEndsAt?'Ended '+new Date(pl.trialEndsAt).toLocaleDateString():'')+'</span></td>'+
       '<td>'+x.members+(x.invites?'<span class="sub">'+x.invites+' invited</span>':'')+'</td>'+
       '<td>'+x.publishes30d+' publish'+(x.publishes30d===1?'':'es')+(x.failed30d?' \u00b7 <span style="color:var(--red)">'+x.failed30d+' failed</span>':'')+'<span class="sub">'+x.appVersions+' app versions \u00b7 up to '+x.devicesSeen+' devices \u00b7 App Control: '+(x.acSource==='defender'?'Defender':x.acSource==='collector'?'Collector':'off')+(x.acApps?' ('+x.acApps+' apps)':'')+'</span></td>'+
       '<td>'+(x.lastSyncAt?new Date(x.lastSyncAt).toLocaleString():'Never')+(x.lastSyncError?'<span class="sub" style="color:var(--red)">'+esc(x.lastSyncError)+'</span>':'')+'</td>'+
-      '<td><select data-plan="'+esc(x.tenantId)+'" aria-label="Change plan"><option value="">Change plan\u2026</option><option value="activate">Mark as paid</option><option value="extend">Extend trial 14 days</option><option value="restart">Restart 30-day trial</option><option value="expire">End trial now</option></select></td></tr>'; }).join('')
+      '<td><select data-plan="'+esc(x.tenantId)+'" aria-label="Change plan"><option value="">Change plan\u2026</option><option value="activate">Set paid plan…</option><option value="extend">Extend trial 14 days</option><option value="restart">Restart 15-day trial</option><option value="expire">End trial now</option></select></td></tr>'; }).join('')
     : '<tr><td colspan="6" class="empty">No organizations yet.</td></tr>';
 }
+let PLAN_DLG_TENANT='';
+function openPlanDlg(sel){PLAN_DLG_TENANT=sel.dataset.plan;sel.value='';const x=(PLAT.tenants||[]).find(t=>t.tenantId===PLAN_DLG_TENANT)||{};$('#planDlgOrg').textContent='Organization '+PLAN_DLG_TENANT+(x.interestTier?' (looked at '+((PLANS.tiers[x.interestTier]||{}).label||x.interestTier)+' when starting the trial)':'');
+ $('#planDlgTier').value=x.tier||x.interestTier||'pro';$('#planDlgBilling').value=x.billing||'monthly';$('#planDlgAC').checked=!!x.appControl;$('#planDlgNote').value='';$('#planDlgMsg').textContent='';planDlgSync();$('#planDlg').showModal()}
+function planDlgSync(){const t=PLANS.tiers[$('#planDlgTier').value];const ann=$('#planDlgBilling').querySelector('[value=annual]');ann.disabled=!!t&&!t.annual;if(t&&!t.annual)$('#planDlgBilling').value='monthly'}
+$('#planDlgTier').addEventListener('change',planDlgSync);$('#planDlgClose').addEventListener('click',()=>$('#planDlg').close());
+$('#planDlgSave').addEventListener('click',async()=>{try{await api('/platform/tenants/'+encodeURIComponent(PLAN_DLG_TENANT)+'/plan','PUT',{action:'activate',tier:$('#planDlgTier').value,billing:$('#planDlgBilling').value,appControl:$('#planDlgAC').checked,note:$('#planDlgNote').value});$('#planDlg').close();toast('Plan updated');renderPlatform()}catch(err){$('#planDlgMsg').textContent=err.message}});
 $('#platTenBody').addEventListener('change', async e=>{ const sel=e.target.closest('[data-plan]'); if(!sel||!sel.value) return; const action=sel.value;
-  const note = action==='activate' ? (prompt('Optional note, for example the invoice or plan name:','')||'') : '';
+  if(action==='activate'){ openPlanDlg(sel); return; }
+  const note = '';
   if(action==='expire' && !confirm('End this organization\u2019s trial now? Publishing and sync pause until it\u2019s marked as paid.')){ sel.value=''; return; }
   try{ await api('/platform/tenants/'+encodeURIComponent(sel.dataset.plan)+'/plan','PUT',{action,days:14,note}); toast('Plan updated'); renderPlatform(); }catch(err){ toast(err.message); sel.value=''; } });
 let PJ_FILTER='all';

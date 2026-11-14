@@ -359,6 +359,48 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 .pk-review{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:12px 0}
 .pk-review dt{color:var(--muted)}.pk-review dd{margin:0;overflow-wrap:anywhere}
 .nt-prev{border-radius:10px;padding:14px 16px;border:1px solid var(--line);border-left-width:6px}.nt-prev b{display:block;margin-bottom:4px}.nt-prev p{margin:0;white-space:pre-wrap}.nt-hist td{vertical-align:top}
+
+/* ---- Landing refresh ---- */
+.hero{padding-inline:clamp(16px,4vw,32px)}
+.kicker{margin:0 0 14px;font-weight:700;color:var(--teal);font-size:.95rem}
+.hero h1{max-width:17ch;font-weight:800;letter-spacing:-.025em}
+.cycle{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 30px 70px -34px rgba(42,54,168,.5)}
+.cy-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+.cy-head b{display:block;font-size:1.05rem}
+.cy-pct{text-align:right}.cy-pct b{font-size:2.6rem;line-height:1;color:var(--green)}.cy-pct span{display:block;font-size:.85rem;color:var(--muted)}
+.cy-chart{position:relative;display:flex;align-items:flex-end;gap:3px;height:150px;border-bottom:2px solid var(--line)}
+.cy-chart .d{flex:1;min-width:0;background:var(--amber);border-radius:3px 3px 0 0;transform-origin:bottom;animation:cyGrow .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i)*22ms)}
+.cy-chart .d.ok{background:var(--green)}
+.cy-chart .d.pt{background:var(--teal)}
+.cy-target{position:absolute;left:0;right:0;bottom:142px;height:0;border-top:2px dashed var(--muted);opacity:.6}
+.cy-target span{position:absolute;right:0;top:-22px;font-size:.78rem;font-style:normal;color:var(--muted);background:var(--surface);padding-left:6px}
+.cy-axis{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin:6px 0 18px}
+.cy-rows{display:grid;gap:8px;font-size:.9rem}
+.cy-rows>div{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.cy-rows span:nth-child(2){color:var(--muted)}
+.cy-note{margin:12px 0 0;font-size:.78rem;color:var(--muted)}
+@keyframes cyGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){.cy-chart .d{animation:none}}
+.features{gap:0;border-top:2px solid var(--ink)}
+.feature{background:none;border:0;border-radius:0;padding:24px 28px 8px 0;border-right:0}
+.feature .ic{background:none;color:var(--teal);width:auto;height:auto;display:block;margin-bottom:12px}
+.feature h3{font-size:1.15rem}
+.rep-sec{display:grid;grid-template-columns:.9fr 1.1fr;gap:56px;align-items:start}
+.rep-sec .lede{max-width:46ch}
+.rep-list{width:100%;border-collapse:collapse;font-size:.96rem}
+.rep-list th,.rep-list td{padding:14px 12px 14px 0;text-align:left;vertical-align:top;border-top:1px solid var(--line)}
+.rep-list tr:last-child th,.rep-list tr:last-child td{border-bottom:1px solid var(--line)}
+.rep-list th{width:38%;font-weight:700;background:none;color:var(--ink);font-size:1rem;text-transform:none;letter-spacing:0;position:static}.rep-list td{color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.final-cta{background:linear-gradient(135deg,#2A36A8,#3B4FD8 60%,#5B6CFF);color:#fff;border-radius:22px;padding:clamp(28px,5vw,60px)}
+.final-cta h2{font-size:clamp(1.7rem,3.4vw,2.6rem);line-height:1.1;margin:0 0 12px;max-width:20ch;letter-spacing:-.02em;color:#fff}
+.final-cta p{margin:0 0 24px;max-width:52ch;color:#E3E7FF;font-size:1.05rem}
+.btn.cta-solid{background:#fff;color:#2A36A8;border-color:#fff;font-weight:700}
+.btn.cta-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
+.btn.cta-solid:focus-visible,.btn.cta-ghost:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media (max-width:1000px){.rep-sec{grid-template-columns:1fr;gap:28px}.features{grid-template-columns:1fr 1fr}}
+.rep-sec>*{min-width:0}
+@media (max-width:560px){.rep-list,.rep-list tbody,.rep-list tr{display:block}.features{grid-template-columns:1fr}.cy-rows>div{grid-template-columns:1fr auto}.cy-rows span:nth-child(2){display:none}.rep-list th{width:auto;display:block;border-bottom:0;padding-bottom:0}.rep-list td{display:block;border-top:0;padding-top:4px}}
 </style>
 </head>
 <body>
@@ -372,6 +414,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           <img src="/nexpatch-logo.svg" alt="NexpatchOnline" style="width:250px;height:auto;max-width:100%">
         </div>
         <button class="linkbtn opt" type="button" data-scroll="pub-features">Features</button>
+        <button class="linkbtn opt" type="button" data-scroll="pub-reports">Reports</button>
         <button class="linkbtn opt" type="button" data-scroll="pub-how">How it works</button>
         <button class="linkbtn opt" type="button" data-scroll="pub-security">Security</button>
         <button class="linkbtn opt" type="button" data-scroll="pub-pricing">Pricing</button>
@@ -381,9 +424,9 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 
     <section class="wrap hero" aria-labelledby="heroTitle">
       <div>
-        <p class="eyebrow" id="heroEyebrow">For Microsoft Intune teams</p>
-        <h1 id="heroTitle">Keep every app patched. Let only approved apps run.</h1>
-        <p class="big" id="heroSubtitle">NexpatchOnline finds what’s installed across your Intune devices, packages new versions, rolls them out in rings, and builds App Control policies you can actually manage.</p>
+        <p class="kicker" id="heroEyebrow">Built for Microsoft Intune teams</p>
+        <h1 id="heroTitle">Every device patched by the next Patch Tuesday. Proof in one report.</h1>
+        <p class="big" id="heroSubtitle">NexpatchOnline finds what’s installed on your Intune devices, packages new app versions, rolls them out in rings, and reports exactly who is patched, who is behind, and why.</p>
         <div class="row">
           <button class="btn primary lg" type="button" data-trial="pro">Try it free for 15 days</button>
           <button class="btn lg" type="button" data-go="login">Sign in</button>
@@ -391,41 +434,58 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         </div>
         <p class="hero-note"><b>No credit card needed.</b> Sign in with your Microsoft work account to start. No agents to install. NexpatchOnline works through Microsoft Graph and the Intune tools already on your devices.</p>
       </div>
-      <div class="preview" aria-hidden="true">
-        <div class="ph">
-          <div><div class="small" style="font-weight:700">Patch compliance</div><div class="big-n">94%</div></div>
-          <span class="pill p-neutral">Example</span>
+      <div class="cycle" aria-hidden="true">
+        <div class="cy-head">
+          <div><span class="small">Monthly patch report</span><b>Patch Tuesday Nov 10 to Dec 8</b></div>
+          <div class="cy-pct"><b>96%</b><span>compliant</span></div>
         </div>
-        <div class="pv-rows">
-          <span>Google Chrome</span><div class="bar"><i class="s-cur" style="width:92%"></i><i class="s-b1" style="width:8%"></i></div>
-          <span>Acrobat Reader</span><div class="bar"><i class="s-cur" style="width:74%"></i><i class="s-b2" style="width:16%"></i><i class="s-vuln" style="width:10%"></i></div>
-          <span>Zoom Workplace</span><div class="bar"><i class="s-cur" style="width:86%"></i><i class="s-b1" style="width:14%"></i></div>
-          <span>7-Zip</span><div class="bar"><i class="s-cur" style="width:97%"></i><i class="s-b2" style="width:3%"></i></div>
+        <div class="cy-chart" id="cyChart"><i class="cy-target"><span>95% target</span></i></div>
+        <div class="cy-axis"><span>Patch Tuesday</span><span>Next Patch Tuesday</span></div>
+        <div class="cy-rows">
+          <div><b>Pilot ring</b><span>Day 1</span><span class="pill p-cur">100%</span></div>
+          <div><b>Early adopters</b><span>Day 5</span><span class="pill p-cur">98%</span></div>
+          <div><b>Everyone else</b><span>Day 10</span><span class="pill p-cur">94%</span></div>
+          <div><b>No check-in for 30 days</b><span>6 devices</span><span class="pill p-vuln">Follow up</span></div>
         </div>
-        <div class="pv-rings">
-          <div class="pv-ring done"><b>Pilot</b>Done</div>
-          <div class="pv-ring live"><b>Early adopters</b>Installing</div>
-          <div class="pv-ring"><b>Everyone</b>Starts Friday</div>
-        </div>
+        <p class="cy-note">Example data</p>
       </div>
     </section>
 
     <div class="works"><div class="wrap"><span>Works with</span><b>Microsoft Intune</b><b>Microsoft Entra ID</b><b>Windows Package Manager</b><b>App Control for Business</b><b>Microsoft Defender</b></div></div>
 
     <section class="wrap sec" id="pub-features" aria-labelledby="featTitle">
-      <p class="eyebrow">What it does</p>
       <h2 class="big" id="featTitle">Everything between “a new version is out” and “every device has it.”</h2>
       <p class="lede">Four jobs most Intune teams do by hand, in one place.</p>
       <div class="features">
         <div class="feature"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></div><h3>Discover</h3><p>See every app installed across your devices, how many versions are out there, and which ones can be patched.</p></div>
         <div class="feature"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h11M4 17h6"/></svg></div><h3>Patch in rings</h3><p>New versions go to a pilot group first, then wider rings, with install deadlines you set.</p></div>
         <div class="feature"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>App Control, made simple</h3><p>Build App Control policies with plain-language choices. Audit first, allow what people need, then enforce.</p></div>
-        <div class="feature"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>Prove it</h3><p>Compliance trends, exposure and install results, ready for Excel or a weekly status email.</p></div>
+        <div class="feature"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>Prove it</h3><p>A report for every Patch Tuesday cycle, plus device health, ready for Excel or your next audit.</p></div>
+      </div>
+    </section>
+
+    <section class="wrap sec" id="pub-reports" aria-labelledby="repSecTitle">
+      <div class="rep-sec">
+        <div>
+          <h2 class="big" id="repSecTitle">Reports your manager and your auditor will both read.</h2>
+          <p class="lede">Intune shows you devices one at a time. NexpatchOnline answers the questions people actually ask, and every report downloads as CSV or Excel.</p>
+          <div class="row"><button class="btn primary" type="button" data-trial="pro">Try it free for 15 days</button><button class="btn" type="button" data-demo>See sample reports</button></div>
+        </div>
+        <table class="rep-list">
+          <caption class="sr">Reports included</caption>
+          <tbody>
+            <tr><th scope="row">Monthly Patch Tuesday compliance</th><td>Which devices installed this month’s update, which didn’t, and how that compares with last month.</td></tr>
+            <tr><th scope="row">Microsoft 365 Apps updates</th><td>Which devices run an older Office build than the rest of your fleet.</td></tr>
+            <tr><th scope="row">Storage and memory</th><td>Devices that are almost out of disk space or too small on memory for the next Windows upgrade.</td></tr>
+            <tr><th scope="row">Windows versions</th><td>How many devices run each Windows release, and how many are behind on updates.</td></tr>
+            <tr><th scope="row">Compliance and encryption</th><td>Devices that fail Intune compliance or have no disk encryption.</td></tr>
+            <tr><th scope="row">No recent check-in</th><td>Devices that haven’t reported for 30 days, so you can chase them before they become a risk.</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
     <section class="wrap sec" id="pub-how" aria-labelledby="howTitle">
-      <p class="eyebrow">How it works</p>
       <h2 class="big" id="howTitle">Up and running in three steps.</h2>
       <p class="lede">No servers to manage and nothing to install on devices.</p>
       <ol class="how">
@@ -438,7 +498,6 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <section class="wrap sec" id="pub-security" aria-labelledby="secTitle">
       <div class="security">
         <div>
-          <p class="eyebrow">Security</p>
           <h2 class="big" id="secTitle">Your tenant stays in your control.</h2>
           <p class="lede" style="margin:0">NexpatchOnline works through Microsoft Graph with permissions you review before you approve. You can see what it does, and remove it at any time.</p>
         </div>
@@ -452,7 +511,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     </section>
 
     <section class="wrap sec" id="pub-pricing" aria-labelledby="pricingTitle">
-      <p class="eyebrow">Simple pricing</p><h2 class="big" id="pricingTitle">A platform license, plus a small price per device.</h2>
+      <h2 class="big" id="pricingTitle">A platform license, plus a small price per device.</h2>
       <p class="lede">Every plan starts with a 15-day free trial with Pro limits and no credit card. Proposed launch pricing in USD. Final billing, plan limits and checkout will be confirmed before paid subscriptions are enabled.</p>
       <div class="features" id="planCards"></div>
       <p class="small" id="planNotes"></p>
@@ -472,7 +531,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           <label class="field"><span>Business email *</span><input name="email" type="email" required maxlength="254" autocomplete="email"></label>
           <label class="field"><span>Company *</span><input name="company" required maxlength="160" autocomplete="organization"></label>
           <label class="field"><span>Country</span><input name="country" maxlength="80" autocomplete="country-name"></label>
-          <label class="field"><span>Managed devices</span><select name="devices"><option value="Not sure">Not sure yet</option><option>1–25</option><option>26–100</option><option>101–300</option><option>301–1,000</option><option>1,000+</option></select></label>
+          <label class="field"><span>Managed devices</span><select name="devices"><option value="Not sure">Not sure yet</option><option>1–25</option><option>26–150</option><option>151–500</option><option>501–1,000</option><option>1,000+</option></select></label>
           <label class="field"><span>What would you like to discuss?</span><textarea name="message" rows="3" maxlength="3000" placeholder="Tenants, requirements, demo request…"></textarea></label>
           <label class="check" style="grid-column:1/-1"><input type="checkbox" name="consent" required><span>It’s okay for NexpatchOnline to contact me about this enquiry.</span></label>
           <label hidden aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
@@ -487,6 +546,14 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <div class="row"><button class="btn primary lg" type="button" data-trial="pro">Try it free for 15 days</button><button class="btn lg" type="button" data-go="login">Sign in</button><button class="btn lg" type="button" data-demo>Explore with sample data</button></div>
       </div>
     </div>
+
+    <section class="wrap sec" aria-labelledby="ctaTitle">
+      <div class="final-cta">
+        <h2 id="ctaTitle">Start with this month’s Patch Tuesday.</h2>
+        <p>Connect your Intune tenant in a few minutes. Your first compliance report is ready after the first sync. No credit card, no agents, 15 days free.</p>
+        <div class="row"><button class="btn lg cta-solid" type="button" data-trial="pro">Try it free for 15 days</button><button class="btn lg cta-ghost" type="button" data-demo>Explore with sample data</button></div>
+      </div>
+    </section>
 
     <footer class="pub-foot"><div class="wrap"><span>© <span id="yr"></span> NexpatchOnline</span><span>Built for Microsoft Intune. Not affiliated with Microsoft. <a id="siteSupportLink" hidden></a></span></div></footer>
   </div>
@@ -694,9 +761,24 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <!-- REPORTS -->
     <section class="view" id="view-reports" aria-labelledby="repTitle">
       <h1 id="repTitle">Reports</h1>
-      <p class="lede">Compliance, exposure, install results, rollouts and App Control in one place. Copy any table straight into Excel, or copy a written summary for an email.</p>
+      <p class="lede">Device health, Patch Tuesday compliance, app compliance, exposure, install results, rollouts and App Control in one place. Copy any table straight into Excel, or copy a written summary for an email.</p>
       <div class="row" style="margin-bottom:20px"><button class="btn primary" type="button" id="repSummaryBtn">Copy summary for email</button><button class="btn" type="button" id="repSnapBtn">Record today’s snapshot</button><span class="small" id="repSource"></span></div>
       <div class="stats" id="repStats"></div>
+      <div class="panel" id="devReports">
+        <div class="panel-head"><div><h2>Device reports</h2><p class="small" style="margin:0" id="devSource">Hardware, storage, memory, Windows and Microsoft 365 Apps updates from Intune.</p></div><button class="btn small primary" type="button" id="devXlsxBtn">Download Excel workbook</button></div>
+        <div class="stats" id="devStats"></div>
+        <div class="row" style="margin:14px 0 8px;align-items:center"><label class="small" for="devPick" style="margin:0">Report</label><select id="devPick" style="max-width:320px"></select><button class="btn small" type="button" id="devCsvBtn">Download CSV</button><button class="btn small" type="button" data-rep="devrep">Copy for Excel</button></div>
+        <div class="table-wrap"><table class="compact" id="devTable"></table></div>
+      </div>
+      <div class="panel" id="ptReports">
+        <div class="panel-head"><div><h2>Monthly Patch Tuesday compliance</h2><p class="small" style="margin:0">Each report runs from one Patch Tuesday (second Tuesday of the month) to the next. A device is compliant when its Windows build moved forward during the cycle, or it joined already on the newest build in your fleet.</p></div><button class="btn small" type="button" id="ptCsvBtn">Download this cycle (CSV)</button></div>
+        <div class="row" style="margin:0 0 10px;align-items:center"><label class="small" for="ptPick" style="margin:0">Cycle</label><select id="ptPick" style="max-width:360px"></select></div>
+        <div class="stats" id="ptStats"></div>
+        <div class="table-wrap" style="margin-top:12px"><table class="compact" id="ptCycles"></table></div>
+        <h3 style="margin:16px 0 6px">Devices that need attention</h3>
+        <div class="table-wrap"><table class="compact" id="ptDevices"></table></div>
+        <p class="small" style="margin-top:8px">“Newest” is measured against your own fleet. Past cycles keep a summary and up to 120 non-compliant devices. History starts the first time devices sync, so the first cycle may look partial.</p>
+      </div>
       <div class="panel">
         <div class="panel-head"><div><h2>Compliance over time</h2><p class="small" style="margin:0">Share of tracked installs on the latest version. A snapshot is saved every time you import inventory.</p></div></div>
         <div class="trend" id="repTrend"></div>
@@ -1792,7 +1874,7 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog'){ renderCatalog(); loadLastUpdated(); } if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports') renderReports(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='organization') loadOrg(); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog'){ renderCatalog(); loadLastUpdated(); } if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports'){ renderReports(); loadDeviceReports(); } if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='organization') loadOrg(); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Owner'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
@@ -2556,6 +2638,50 @@ document.addEventListener('click', async e=>{ const b=e.target.closest('[data-re
   const tsv=[r.head].concat(r.rows).map(row=>row.map(c=>String(c==null?'':c).replace(/[\t\r\n]+/g,' ')).join('\t')).join('\r\n');
   const ok=await copyText(tsv); toast(ok?'Copied '+r.rows.length+' rows. Paste into Excel.':'Copy failed. Try again.'); });
 
+
+
+/* Landing: example Patch Tuesday climb */
+(function(){ const c=document.getElementById('cyChart'); if(!c) return;
+  const pts=[8,12,18,34,46,58,66,72,78,82,86,88,90,92,93,94,94,95,95,96,96,96,96,96,96,96,96,96];
+  c.insertAdjacentHTML('beforeend',pts.map((v,i)=>'<span class="d'+(i===0?' pt':v>=90?' ok':'')+'" style="--i:'+i+';height:'+Math.round(v*1.5)+'px"></span>').join('')); })();
+
+/* ---------- Device reports and Patch Tuesday compliance ---------- */
+let DEV=null;
+function downloadFile(name,text,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:type||'text/csv;charset=utf-8'})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); }
+async function loadDeviceReports(){
+  if(!liveMode()){ $('#devSource').textContent='Connect an active Intune tenant on the Connect page to see device reports.'; $('#devStats').innerHTML=''; $('#devTable').innerHTML=''; $('#ptStats').innerHTML=''; $('#ptCycles').innerHTML=''; $('#ptDevices').innerHTML=''; return; }
+  try{ DEV=await api('/reports/devices'); }catch(e){ $('#devSource').textContent=e.message; return; }
+  renderDeviceReports();
+}
+function renderDeviceReports(){
+  const d=DEV; if(!d) return; const s=d.summary;
+  $('#devSource').textContent=(d.syncedAt?'Device data from '+fmtDate(new Date(d.syncedAt))+'. Refreshed with every inventory sync (daily, or Sync now on the Connect page).':'No device data yet. Run an inventory sync on the Connect page.')+(d.syncError?' Last device sync problem: '+d.syncError:'');
+  const tile=(n,l,warn)=>'<div class="stat"><b'+(warn&&n?' style="color:var(--amber)"':'')+'>'+n+'</b><span>'+l+'</span></div>';
+  $('#devStats').innerHTML=tile(s.devices,'Windows devices')+tile(s.avgMemoryGb+' GB','Average memory')+tile(s.lowStorage,'Low storage',1)+tile(s.lowMemory,'Low memory',1)+tile(s.behindOnUpdates,'Behind on Windows updates',1)+tile(s.stale,'No check-in 30+ days',1)+tile(s.notEncrypted,'Not encrypted',1)+tile(s.m365Behind+' of '+s.m365Devices,'M365 Apps behind',1);
+  const pick=$('#devPick'), cur=pick.value||'hardware'; pick.innerHTML=Object.keys(d.titles).map(k=>'<option value="'+k+'"'+(k===cur?' selected':'')+'>'+esc(d.titles[k])+' ('+d.reports[k].rows.length+')</option>').join('');
+  showDevReport(); renderPatchTuesday();
+}
+function showDevReport(){
+  const d=DEV; if(!d) return; const k=$('#devPick').value, r=d.reports[k]; REP.devrep={head:r.head,rows:r.rows};
+  $('#devTable').innerHTML=thead(r.head)+'<tbody>'+(r.rows.length?r.rows.slice(0,500).map(row=>'<tr>'+row.map((c,i)=>'<td>'+(i===0?'<b>'+esc(String(c))+'</b>':esc(String(c==null?'':c)))+'</td>').join('')+'</tr>').join(''):emptyRow(r.head.length,'Nothing to report. That is good news, or no devices have synced yet.'))+'</tbody>'+(r.rows.length>500?'<tfoot><tr><td colspan="'+r.head.length+'" class="small">Showing the first 500 of '+r.rows.length+' rows. Download the CSV for everything.</td></tr></tfoot>':'');
+}
+function renderPatchTuesday(){
+  const d=DEV; if(!d) return; const pick=$('#ptPick'), cur=pick.value||d.cycles[0].cycle;
+  pick.innerHTML=d.cycles.map(c=>'<option value="'+c.cycle+'"'+(c.cycle===cur?' selected':'')+'>'+esc(c.label)+(c.current?' (current, in progress)':'')+'</option>').join('');
+  const c=d.cycles.find(x=>x.cycle===pick.value)||d.cycles[0], cls=c.pct>=95?'s-cur':c.pct>=80?'s-b2':'s-vuln';
+  $('#ptStats').innerHTML='<div class="stat"><b>'+c.pct+'%</b><span>Compliant</span></div><div class="stat"><b>'+c.compliant+' of '+c.devices+'</b><span>Devices patched</span></div><div class="stat"><b>'+c.stale+'</b><span>No check-in</span></div><div class="stat"><b>'+c.m365Current+' of '+c.m365Devices+'</b><span>M365 Apps current</span></div><div class="stat" style="grid-column:1/-1"><div class="bar thin"><i class="'+cls+'" style="width:'+c.pct+'%"></i></div><span>'+esc(fmtDate(new Date(c.start)))+' to '+esc(fmtDate(new Date(new Date(c.end).getTime()-86400000)))+'</span></div>';
+  REP.ptcycles={head:['Cycle','Starts','Ends','Devices','Compliant','Compliance %','No check-in'],rows:d.cycles.map(x=>[x.label,x.start.slice(0,10),x.end.slice(0,10),x.devices,x.compliant,x.pct,x.stale])};
+  $('#ptCycles').innerHTML=thead(REP.ptcycles.head)+'<tbody>'+REP.ptcycles.rows.map((r,i)=>'<tr'+(d.cycles[i].cycle===c.cycle?' style="background:var(--surface-2,rgba(0,0,0,.04))"':'')+'><td><b>'+esc(r[0])+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td><td>'+r[4]+'</td><td>'+r[5]+'%</td><td>'+r[6]+'</td></tr>').join('')+'</tbody>';
+  const live=c.cycle===d.currentCycle.cycle, rows=live?d.currentCycle.rows.filter(r=>!r.compliant).map(r=>[r.name,r.user,r.windows,r.reason]):(c.behind||[]);
+  $('#ptDevices').innerHTML=thead(['Device','User','Windows','Reason'])+'<tbody>'+(rows.length?rows.slice(0,300).map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join(''):emptyRow(4,'No devices need attention in this cycle.'))+'</tbody>';
+}
+$('#devPick').addEventListener('change',showDevReport);
+$('#ptPick').addEventListener('change',renderPatchTuesday);
+async function downloadServerCsv(path){ try{ const r=await api(path); downloadFile(r.filename,r.csv); }catch(e){ toast(e.message); } }
+$('#devCsvBtn').addEventListener('click',()=>downloadServerCsv('/reports/device-csv/'+encodeURIComponent($('#devPick').value)));
+$('#ptCsvBtn').addEventListener('click',()=>downloadServerCsv('/reports/device-csv/cycle?cycle='+encodeURIComponent($('#ptPick').value)));
+$('#devXlsxBtn').addEventListener('click',async()=>{ try{ const d=await api('/reports/devices.xlsx'); const raw=atob(d.base64), bytes=Uint8Array.from(raw,c=>c.charCodeAt(0)); const url=URL.createObjectURL(new Blob([bytes],{type:d.contentType})), a=document.createElement('a'); a.href=url; a.download=d.filename; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); toast('Device report workbook downloaded.'); }catch(e){ toast(e.message); } });
+
 /* ---------- Apple fleet and packaging wizard ---------- */
 async function loadApple(){
   if(!liveMode()){ $('#appleSyncState').textContent='Connect an active Intune tenant to load live Apple inventory.'; return; }
@@ -2594,7 +2720,7 @@ $('#openPackagingWizard')?.addEventListener('click',()=>{const d=$('#catalogPack
 $('#catalogPackaging')?.addEventListener('toggle',()=>{if($('#catalogPackaging').open){fillPackageCatalogPickers();renderPackageDetection();}});
 renderPackageDetection();
 /* ---------- Plans and pricing (mirrors api/src/lib/plans.js; a test keeps them equal) ---------- */
-const PLANS=/*plans*/{"trialDays":15,"annualDiscount":0.15,"appControlPerDevice":0.4,"tiers":{"starter":{"label":"Starter","flat":29,"perDevice":0,"maxDevices":25,"annual":false,"customApps":2,"packageRequests":2},"pro":{"label":"Pro","flat":99,"perDevice":3.0,"maxDevices":100,"annual":true,"customApps":10,"packageRequests":10},"proplus":{"label":"Pro Plus","flat":249,"perDevice":2.75,"maxDevices":300,"annual":true,"customApps":40,"packageRequests":40}}}/*end*/;
+const PLANS=/*plans*/{"trialDays":15,"annualDiscount":0.15,"appControlPerDevice":0.15,"tiers":{"starter":{"label":"Starter","flat":19,"perDevice":0,"maxDevices":25,"annual":false,"customApps":2,"packageRequests":2},"pro":{"label":"Pro","flat":49,"perDevice":1.0,"maxDevices":150,"annual":true,"customApps":10,"packageRequests":10},"proplus":{"label":"Pro Plus","flat":129,"perDevice":1.0,"maxDevices":500,"annual":true,"customApps":40,"packageRequests":40}}}/*end*/;
 const money=n=>'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:Number.isInteger(n)?0:2,maximumFractionDigits:2});
 const money2=n=>'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const r2=n=>Math.round(n*100)/100;

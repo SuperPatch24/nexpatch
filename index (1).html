@@ -950,7 +950,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <div id="acSourceNote"></div>
         <div class="choice" id="acSourceChoice">
           <label><input type="radio" name="acsrc" value="defender"> <b>Microsoft Defender</b><small>Nothing to install. Needs advanced hunting (Microsoft 365 E5, E5 Security or Defender for Endpoint P2). Events appear in about 15–20 minutes.</small></label>
-          <label><input type="radio" name="acsrc" value="collector"> <b>NexpatchOnline collector</b><small>Works with any licence. A small script on each device sends App Control events every 15 minutes. Deployed once with Intune.</small></label>
+          <label><input type="radio" name="acsrc" value="collector"> <b>NexpatchOnline agent</b><small>Works with any licence. A small agent on each device watches for App Control blocks and sends them within seconds. Deployed once with Intune.</small></label>
         </div>
         <div class="grid-f">
           <label class="field"><span>Base policy ID (needed for the supplemental policy)</span><input type="text" id="acBaseId" placeholder="{12345678-1234-1234-1234-123456789ABC}"></label>
@@ -961,6 +961,10 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <div class="panel-head"><div><h2>App Control activity</h2><p class="small" style="margin:0" id="acLiveSub">Apps App Control blocked or would have blocked on your devices.</p></div><div class="row"><button class="btn small" type="button" id="acSuppBtn">Download supplemental policy</button><button class="btn small" type="button" id="acRefresh">Refresh</button></div></div>
         <div class="toolbar"><input class="search" id="acSearch" type="search" placeholder="Search file or publisher" aria-label="Search App Control events"><div class="seg" role="group" aria-label="Filter"><button type="button" data-acf="needs" aria-pressed="true">Needs a decision</button><button type="button" data-acf="blocked">Blocked</button><button type="button" data-acf="audited">Audited</button><button type="button" data-acf="allowed">Allowed</button><button type="button" data-acf="all">All</button></div></div>
         <div class="table-wrap"><table class="compact"><thead><tr><th>App</th><th>Publisher</th><th>Status</th><th>Devices</th><th>Last seen</th><th>Decision</th><th></th></tr></thead><tbody id="acLiveBody"></tbody></table></div>
+      </div>
+      <div class="panel" id="acDevPanel" data-actab-panel="activity" hidden style="margin-bottom:20px">
+        <div class="panel-head"><div><h2>Devices running the agent</h2><p class="small" style="margin:0" id="acDevSub">Each device has its own credential. Revoke one if a device is lost or behaves oddly.</p></div></div>
+        <div class="table-wrap"><table class="compact"><thead><tr><th>Device</th><th>Status</th><th>Last seen</th><th>Agent</th><th></th></tr></thead><tbody id="acDevBody"></tbody></table></div>
       </div>
       <div class="ac" data-actab-panel="base">
         <div>
@@ -2596,27 +2600,41 @@ async function renderACLive(){
   try{ AC.settings=await api('/appcontrol/settings'); }catch(e){ $('#acSourceNote').innerHTML='<div class="note">'+esc(e.message)+'</div>'; return; }
   const st=AC.settings;
   $$('input[name=acsrc]').forEach(r=>r.checked=r.value===st.source); $('#acBaseId').value=st.basePolicyId||'';
-  $('#acSourceState').innerHTML = st.source ? '<i class="dot" style="background:var(--green)"></i>'+(st.source==='defender'?'Microsoft Defender':'NexpatchOnline collector') : '<i class="dot" style="background:var(--amber)"></i>Not set';
+  $('#acSourceState').innerHTML = st.source ? '<i class="dot" style="background:var(--green)"></i>'+(st.source==='defender'?'Microsoft Defender':'NexpatchOnline agent') : '<i class="dot" style="background:var(--amber)"></i>Not set';
   $('#acSourceInfo').textContent = st.source==='defender' ? (st.lastPollAt?'Last checked '+new Date(st.lastPollAt).toLocaleString():'Not checked yet')+(st.lastError?' \u00b7 Last error: '+st.lastError:'')
-    : st.source==='collector' ? (st.hasKey?'Device key created '+new Date(st.keyCreatedAt).toLocaleDateString():'No device key yet')+' \u00b7 '+st.devicesLast24h+' device'+(st.devicesLast24h===1?'':'s')+' reported in the last 24 hours' : '';
-  $('#acKeyBtn').hidden = st.source!=='collector'; $('#acKeyBtn').textContent = st.hasKey ? 'Replace device key and installer' : 'Create device key and installer';
+    : st.source==='collector' ? (st.hasKey?'Enrollment key '+(st.keyExpiresAt&&Date.parse(st.keyExpiresAt)<Date.now()?'expired':'valid until '+(st.keyExpiresAt?new Date(st.keyExpiresAt).toLocaleDateString():'unknown')):'No enrollment key yet')+' \u00b7 '+st.devicesLast24h+' device'+(st.devicesLast24h===1?'':'s')+' reported in the last 24 hours \u00b7 '+(st.devicesOnline||0)+' online now' : '';
+  $('#acKeyBtn').hidden = st.source!=='collector'; $('#acKeyBtn').textContent = st.hasKey ? 'Create a new installer (new enrollment key)' : 'Create installer';
   $('#acSourceNote').innerHTML = !st.source ? '<div class="note">Choose a source and save to start collecting events.</div>'
     : st.source==='defender' ? '<div class="note info">Defender needs the ThreatHunting.Read.All permission. After choosing it, approve NexpatchOnline again on the Connect page, then click Check connection.</div>' : '';
-  await loadACEvents();
-  clearInterval(AC.timer); AC.timer=setInterval(()=>{ if(location.hash==='#app-control' && liveMode()) loadACEvents(); else clearInterval(AC.timer); }, 60000);
+  await loadACEvents(); loadACDevices();
+  clearInterval(AC.timer); AC.lastPulse=null;
+  AC.timer=setInterval(async ()=>{ if(location.hash!=='#app-control' || !liveMode() || document.hidden){ if(location.hash!=='#app-control') clearInterval(AC.timer); return; }
+    try{ const p=await api('/appcontrol/pulse'); const changed=AC.lastPulse!==null && (p.lastIngestAt!==AC.lastPulse.lastIngestAt);
+      if(AC.settings && p.devicesOnline!==AC.settings.devicesOnline){ AC.settings.devicesOnline=p.devicesOnline; $('#acSourceInfo').textContent=$('#acSourceInfo').textContent.replace(/\d+ online now/, p.devicesOnline+' online now'); }
+      if(AC.lastPulse===null || p.lastEventAt!==AC.lastPulse.lastEventAt) await loadACEvents(AC.lastPulse!==null);
+      if(changed) loadACDevices();
+      AC.lastPulse=p; }catch(e){ /* try again in 10 seconds */ } }, 10000);
 }
-async function loadACEvents(){ try{ AC.events=(await api('/appcontrol/events')).events; }catch(e){ $('#acLiveBody').innerHTML='<tr><td colspan="7" class="empty">'+esc(e.message)+'</td></tr>'; const sub=$('#acRepSub'); if(sub) sub.textContent='Could not load App Control events: '+e.message; return; } drawACEvents(); }
+async function loadACDevices(){ const on=AC.settings&&AC.settings.source==='collector'; $('#acDevPanel').hidden=!on||!liveMode(); if(!on) return;
+  try{ const d=(await api('/appcontrol/devices')).devices; AC.devices=d;
+    $('#acDevBody').innerHTML=d.length?d.map(x=>'<tr><td><b>'+esc(x.name||x.id)+'</b></td><td><span class="pill '+(x.status==='revoked'?'p-vuln':x.online?'p-cur':'p-neutral')+'">'+(x.status==='revoked'?'Revoked':x.online?'Online':'Offline')+'</span></td><td>'+(x.lastSeen?esc(new Date(x.lastSeen).toLocaleString()):'Never')+'</td><td>'+esc(x.agent||'')+'</td><td>'+(x.status==='revoked'?'<button class="btn small" type="button" data-acdev="restore" data-id="'+esc(x.id)+'">Restore</button>':'<button class="btn small ghost" type="button" data-acdev="revoke" data-id="'+esc(x.id)+'">Revoke</button>')+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">No devices have enrolled yet. Deploy the installer with Intune.</td></tr>';
+  }catch(e){ $('#acDevBody').innerHTML='<tr><td colspan="5" class="empty">'+esc(e.message)+'</td></tr>'; } }
+$('#acDevBody').addEventListener('click', async e=>{ const b=e.target.closest('[data-acdev]'); if(!b) return;
+  if(b.dataset.acdev==='revoke' && !confirm('Revoke this device? It stops sending events until you restore it.')) return;
+  b.disabled=true; try{ await api('/appcontrol/devices/access','POST',{id:b.dataset.id,action:b.dataset.acdev}); toast(b.dataset.acdev==='revoke'?'Device revoked':'Device restored'); loadACDevices(); }catch(err){ toast(err.message); b.disabled=false; } });
+function announceNewAC(before){ const fresh=AC.events.filter(x=>!x.decision&&!before.has(x.key)); if(fresh.length) toast(fresh.length+' new App Control event'+(fresh.length===1?'':'s')+' from your devices'); }
+async function loadACEvents(announce){ const before=new Set(AC.events.filter(x=>!x.decision).map(x=>x.key)); try{ AC.events=(await api('/appcontrol/events')).events; if(announce) announceNewAC(before); }catch(e){ $('#acLiveBody').innerHTML='<tr><td colspan="7" class="empty">'+esc(e.message)+'</td></tr>'; const sub=$('#acRepSub'); if(sub) sub.textContent='Could not load App Control events: '+e.message; return; } drawACEvents(); }
 function drawACEvents(){ if(AC_TAB==='supplemental') renderACSupp(); if(AC_TAB==='reports') renderACReports();
   const q=$('#acSearch').value.trim().toLowerCase(), f=AC.filter;
   let list=AC.events.filter(e=> f==='all' || (f==='needs'&&!e.decision) || (f==='blocked'&&e.action==='blocked') || (f==='audited'&&e.action==='audited') || (f==='allowed'&&String(e.decision).startsWith('allow')));
   if(q) list=list.filter(e=>(e.file+' '+e.publisher+' '+e.path).toLowerCase().includes(q));
   const needs=AC.events.filter(e=>!e.decision).length;
-  $('#acLiveSub').textContent=AC.events.length+' app'+(AC.events.length===1?'':'s')+' seen \u00b7 '+needs+' need'+(needs===1?'s':'')+' a decision. Refreshes every minute.';
+  $('#acLiveSub').textContent=AC.events.length+' app'+(AC.events.length===1?'':'s')+' seen \u00b7 '+needs+' need'+(needs===1?'s':'')+' a decision. This page updates by itself.';
   $('#acLiveBody').innerHTML = list.length ? list.map(e=>{ const d=AC_DEC[e.decision]||AC_DEC['']; const k=esc(e.key);
     const acts = e.decision ? '<button class="btn small ghost" type="button" data-acd="undo" data-key="'+k+'">Undo</button>'
       : (e.hasSigner?'<button class="btn small primary" type="button" data-acd="allowPublisher" data-key="'+k+'">Allow publisher</button>':'')+(e.sha256?'<button class="btn small" type="button" data-acd="allowFile" data-key="'+k+'">Allow file</button>':'')+'<button class="btn small" type="button" data-acd="block" data-key="'+k+'">Block</button><button class="btn small ghost" type="button" data-acd="ignore" data-key="'+k+'">Ignore</button>';
     return '<tr><td><b>'+esc(e.file)+'</b><span class="sub" style="overflow-wrap:anywhere;max-width:300px">'+esc(e.path)+'</span></td><td>'+(e.publisher?esc(e.publisher):'<span class="small">Not signed</span>')+'</td><td><span class="pill '+(e.action==='blocked'?'p-vuln':'p-upd')+'">'+(e.action==='blocked'?'Blocked':'Audited')+'</span></td><td>'+(e.deviceCount>=50?'50+':e.deviceCount)+'</td><td>'+(e.lastSeen?new Date(e.lastSeen).toLocaleString():'')+'</td><td><span class="pill '+d[1]+'">'+d[0]+'</span>'+(e.decidedBy?'<span class="sub">'+esc(e.decidedBy)+'</span>':'')+'</td><td><div class="row" style="flex-wrap:nowrap">'+acts+'<button class="btn small ghost" type="button" data-acdet="'+k+'">Details</button></div></td></tr>'; }).join('')
-    : '<tr><td colspan="7" class="empty">'+(AC.events.length?'Nothing in this view.':(AC.settings&&AC.settings.source?'No App Control events yet. They appear here within about 15\u201320 minutes of happening.':'Choose an event source above to start collecting events.'))+'</td></tr>';
+    : '<tr><td colspan="7" class="empty">'+(AC.events.length?'Nothing in this view.':(AC.settings&&AC.settings.source?'No App Control events yet. They appear here within about a minute of happening.':'Choose an event source above to start collecting events.'))+'</td></tr>';
 }
 $$('[data-acf]').forEach(b=>b.addEventListener('click',()=>{ AC.filter=b.dataset.acf; $$('[data-acf]').forEach(x=>x.setAttribute('aria-pressed',x===b)); drawACEvents(); }));
 $('#acSearch').addEventListener('input', drawACEvents);
@@ -2626,7 +2644,7 @@ $('#acLiveBody').addEventListener('click', async e=>{
   if(det){ const ev=AC.events.find(x=>x.key===det.dataset.acdet); if(!ev) return;
     showCode(ev.file, (ev.action==='blocked'?'Blocked':'Audited')+' on '+ev.deviceCount+' device'+(ev.deviceCount===1?'':'s'), ['Path: '+ev.path,'Started by: '+(ev.process||'unknown'),'Policy: '+(ev.policy||'unknown'),'Publisher: '+(ev.publisher||'not signed'),'Issuer: '+(ev.issuer||'-'),'Authenticode SHA256: '+(ev.sha256||'-'),'File SHA256: '+(ev.sha256Flat||'-'),'Events: '+ev.count+'  First seen: '+(ev.firstSeen||'')+'  Last seen: '+(ev.lastSeen||''),'Last user: '+(ev.lastUser||'-'),'Devices: '+(ev.devices||[]).join(', ')].join('\n')); return; }
   if(!b) return;
-  const key=b.dataset.key, decision=b.dataset.acd; b.disabled=true;
+  const key=b.dataset.key, decision=b.dataset.acd; { const ev0=AC.events.find(x=>x.key===key); if(ev0 && (decision==='allowPublisher'||decision==='allowFile') && (ev0.deviceCount||0)<=1 && !confirm('This app was seen on only one device. Check the publisher and file before allowing it for everyone. Allow anyway?')) return; } b.disabled=true;
   try{ const r=await api('/appcontrol/decisions','POST',{key,decision}); const ev=AC.events.find(x=>x.key===key); if(ev){ ev.decision=r.decision; ev.decidedBy=r.decision?(SESSION&&SESSION.email)||'':''; }
     drawACEvents(); toast({allowPublisher:'Publisher allowed',allowFile:'File allowed',block:'Marked as blocked',ignore:'Ignored',undo:'Decision undone'}[decision]); }
   catch(err){ toast(err.message); b.disabled=false; }
@@ -2637,9 +2655,9 @@ $('#acCheckBtn').addEventListener('click', async ()=>{ $('#acCheckBtn').disabled
   try{ const r=await api('/appcontrol/check','POST',{}); $('#acSourceNote').innerHTML='<div class="note'+(r.ok?' info':'')+'">'+esc(r.message)+'</div>'; if(r.ok) loadACEvents(); }catch(e){ toast(e.message); }
   $('#acCheckBtn').disabled=false; });
 $('#acKeyBtn').addEventListener('click', async ()=>{
-  if(AC.settings&&AC.settings.hasKey && !confirm('Replacing the key stops devices that use the old one until the new installer is deployed. Continue?')) return;
+  if(AC.settings&&AC.settings.hasKey && !confirm('A new installer replaces the old enrollment key. Devices that already enrolled keep working. Continue?')) return;
   try{ const r=await api('/appcontrol/key','POST',{}); downloadText('Install-NexpatchOnlineCollector.ps1', r.installer); downloadText('Uninstall-NexpatchOnlineCollector.ps1', r.uninstaller);
-    showCode('Collector installer', 'Downloaded Install-NexpatchOnlineCollector.ps1 and Uninstall-NexpatchOnlineCollector.ps1. In Intune: Devices \u2192 Scripts and remediations \u2192 Platform scripts \u2192 Add \u2192 Windows. Upload the installer, set "Run this script using the logged on credentials" to No and "Run script in 64-bit PowerShell" to Yes, then assign a device group. The key inside is shown only now.', r.installer);
+    showCode('Agent installer', 'Downloaded Install-NexpatchOnlineCollector.ps1 and Uninstall-NexpatchOnlineCollector.ps1. Running the installer again on a device that has the older 15-minute collector replaces it with the live agent. In Intune: Devices \u2192 Scripts and remediations \u2192 Platform scripts \u2192 Add \u2192 Windows. Upload the installer, set "Run this script using the logged on credentials" to No and "Run script in 64-bit PowerShell" to Yes, then assign a device group. The enrollment key inside works for 30 days, only for devices in your Intune list, and each device deletes it after it enrolls. It is shown only now.', r.installer);
     renderACLive(); }catch(e){ toast(e.message); } });
 $('#acSuppBtn').addEventListener('click', async ()=>{
   try{ const r=await api('/appcontrol/supplemental'); downloadText('NexpatchOnline-Supplemental-v'+r.version+'.xml', r.xml);

@@ -1,0 +1,41 @@
+# Deploys the backend (api folder) to Azure Functions whenever it changes on main.
+# Setup: docs/AUTO-DEPLOY.md
+name: Deploy backend
+
+on:
+  push:
+    branches: [main]
+    paths: ['api/**']
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # sign in to Azure without storing a password
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install packages
+        working-directory: api
+        run: npm install --omit=dev
+
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ vars.FUNCTION_APP_NAME }}
+          package: api
+          sku: flexconsumption

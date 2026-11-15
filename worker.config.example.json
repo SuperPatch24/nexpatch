@@ -1,0 +1,12 @@
+{
+  "StorageConnectionString": "",
+  "ApiBaseUrl": "https://nexpatch-api-20022.azurewebsites.net",
+  "WorkerToken": "",
+  "IntuneWinAppUtilPath": "C:\\NexpatchWorker\\Microsoft-Win32-Content-Prep-Tool\\IntuneWinAppUtil.exe",
+  "WorkRoot": "D:\\NexpatchWork",
+  "PollSeconds": 10,
+  "EnableHyperVTest": false,
+  "TestVmName": "Nexpatch-Win11-Test",
+  "TestVmCredentialUser": "NexpatchTestAdmin",
+  "TestVmCredentialPassword": ""
+}

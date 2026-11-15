@@ -1,0 +1,16 @@
+# Node / Azure Functions
+node_modules/
+api/node_modules/
+api/local.settings.json
+
+# Local certificates and private keys
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Local tooling output
+.wrangler/
+.azure/
+.DS_Store
+Thumbs.db

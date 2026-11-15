@@ -19,8 +19,11 @@ export function withUser(handler, minRole = 'viewer') {
       const access = await resolveAccess(user);
       user.role = access.role;
       user.access = access.source;
+      user.tenantStatus = access.tenantStatus; user.tenantMessage = access.tenantMessage;
       if (minRole !== 'any') {
+        if (access.revoked) throw new HttpError(403, access.tenantMessage);
         if (!access.role) throw new HttpError(403, 'You don\u2019t have access to NexpatchOnline for your organization. Ask your IT administrator to add you.');
+        if (access.tenantStatus === 'suspended' && rank(minRole) > rank('viewer') ) throw new HttpError(403, access.tenantMessage);
         if (rank(access.role) < rank(minRole)) throw new HttpError(403, `This needs the ${ROLE_NAMES[minRole]} role or higher.`);
       }
       const body = await handler(request, context, user);

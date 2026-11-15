@@ -32,7 +32,7 @@ export function estimate({ tier, devices = 0, billing = 'monthly', appControl = 
 
 // What a connected organization may do each month. Trials get Pro limits. A paid organization with no tier recorded
 // (marked paid before tiers existed) is not limited. Expired trials fall back to Starter limits.
-export function limitsFor(t) {
+function baseLimitsFor(t) {
   const plan = t?.plan || (t?.trialEndsAt ? 'trial' : 'legacy');
   if (plan === 'active') {
     if (!t.tier) return { tier: null, devices: Infinity, customApps: Infinity, packageRequests: Infinity };
@@ -41,6 +41,15 @@ export function limitsFor(t) {
   }
   const x = plan === 'expired' ? TIERS.starter : TIERS.pro;
   return { tier: plan === 'expired' ? 'starter' : 'pro', devices: x.maxDevices, customApps: x.customApps, packageRequests: x.packageRequests };
+}
+
+// The operator can override a limit for one organization (blank = the plan's limit).
+const ovr = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+export function limitsFor(t) {
+  const l = { ...baseLimitsFor(t) };
+  const d = ovr(t?.limitDevices), c = ovr(t?.limitCustomApps), p = ovr(t?.limitPackageRequests);
+  if (d != null) l.devices = d; if (c != null) l.customApps = c; if (p != null) l.packageRequests = p;
+  return l;
 }
 
 export const monthStart = (now = new Date()) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();

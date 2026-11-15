@@ -158,3 +158,38 @@ export function toCsv(head, rows) {
   const cell = v => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };   // also blocks spreadsheet formula injection
   return '﻿' + [head, ...rows].map(r => r.map(cell).join(',')).join('\r\n');
 }
+
+// ---- Device insights: breakdowns for the Device insights page ----
+const tally = (items, keyFn, order) => {
+  const m = new Map(); for (const i of items) { const k = keyFn(i); m.set(k, (m.get(k) || 0) + 1); }
+  const rows = [...m.entries()].map(([label, count]) => ({ label, count }));
+  return order ? order.map(label => ({ label, count: m.get(label) || 0 })).concat(rows.filter(r => !order.includes(r.label))) : rows.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+};
+const bucket = (v, cuts, labels) => { for (let i = 0; i < cuts.length; i++) if (v < cuts[i]) return labels[i]; return labels[cuts.length]; };
+
+export function buildInsights(rawRows, now = new Date()) {
+  const devs = rawRows.map(r => shapeDevice(r, now)), total = devs.length;
+  const CONTACT = ['Today', '1 to 7 days', '8 to 30 days', 'Over 30 days', 'Never'];
+  const MEM = ['Under 4 GB', '4 to 7 GB', '8 to 15 GB', '16 to 31 GB', '32 GB or more', 'Unknown'];
+  const FREE = ['Under 10% free', '10 to 24% free', '25 to 49% free', '50% or more free', 'Unknown'];
+  const SIZE = ['Under 128 GB', '128 to 255 GB', '256 to 511 GB', '512 GB or more', 'Unknown'];
+  const byUser = new Map(); for (const d of devs) if (d.user) byUser.set(d.user, (byUser.get(d.user) || 0) + 1);
+  const months = []; for (let i = 5; i >= 0; i--) { const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)); months.push(d.toISOString().slice(0, 7)); }
+  const enrolled = months.map(m => ({ label: m, count: devs.filter(d => d.enrolledAt.slice(0, 7) === m).length }));
+  return {
+    total,
+    os: tally(devs, d => d.osLabel),
+    compliance: tally(devs, d => ({ compliant: 'Compliant', noncompliant: 'Not compliant', ingraceperiod: 'In grace period', unknown: 'Unknown', conflict: 'Conflict', error: 'Error' }[String(d.compliance).toLowerCase()] || 'Unknown')),
+    lastContact: tally(devs, d => !d.lastSync ? 'Never' : bucket(d.idleDays ?? 0, [1, 8, 31], ['Today', '1 to 7 days', '8 to 30 days', 'Over 30 days']), CONTACT),
+    memory: tally(devs, d => d.ramGb ? bucket(d.ramGb, [4, 8, 16, 32], ['Under 4 GB', '4 to 7 GB', '8 to 15 GB', '16 to 31 GB', '32 GB or more']) : 'Unknown', MEM),
+    freeSpace: tally(devs, d => d.freePct == null ? 'Unknown' : bucket(d.freePct, [10, 25, 50], ['Under 10% free', '10 to 24% free', '25 to 49% free', '50% or more free']), FREE),
+    diskSize: tally(devs, d => d.storageGb ? bucket(d.storageGb, [128, 256, 512], ['Under 128 GB', '128 to 255 GB', '256 to 511 GB', '512 GB or more']) : 'Unknown', SIZE),
+    manufacturers: tally(devs, d => d.manufacturer || 'Unknown').slice(0, 6),
+    models: tally(devs, d => [d.manufacturer, d.model].filter(Boolean).join(' ') || 'Unknown').slice(0, 8),
+    encryption: tally(devs, d => d.encrypted === true ? 'Encrypted' : d.encrypted === false ? 'Not encrypted' : 'Unknown'),
+    ownership: tally(devs, d => ({ company: 'Company owned', personal: 'Personal' }[String(d.owner).toLowerCase()] || 'Unknown')),
+    users: { people: byUser.size, noUser: devs.filter(d => !d.user).length, withSeveral: [...byUser.values()].filter(n => n > 1).length,
+      top: [...byUser.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 10).map(([label, count]) => ({ label, count })) },
+    enrolled
+  };
+}

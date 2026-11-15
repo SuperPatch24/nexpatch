@@ -315,8 +315,7 @@ body.is-public::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-
 .role-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
 .role-card b{display:block;margin-bottom:4px}
 .role-card span{font-size:.9rem;color:var(--muted)}
-body[data-role=viewer] :is(#appleSyncBtn,#packWizard button[type=submit],#acSourceSave,#acCheckBtn,#acKeyBtn,#acSuppBtn,[data-acd],#dPublishNow,[data-pub],#addAppBtn,#runbookBtn,#discAddAll,[data-dadd],#saveSettings,#consentBtn,#syncBox,#invImportBtn,#resetBtn,#invitePanel,#dMark,#dGen){display:none!important}
-body[data-role=admin] :is(#invitePanel,#acKeyBtn){display:none!important}
+body[data-role=viewer] :is(#appleSyncBtn,#packWizard button[type=submit],#acSourceSave,#acCheckBtn,#acKeyBtn,#acSuppBtn,[data-acd],#dPublishNow,[data-pub],#addAppBtn,#runbookBtn,#discAddAll,[data-dadd],#saveSettings,#consentBtn,#syncBox,#invImportBtn,#resetBtn,#invitePanel,#groupPanel,#dMark,#dGen,[data-remove-id]){display:none!important}
 body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 @media (max-width:760px){ .roles3{grid-template-columns:1fr} }
 .asg{border:1px solid var(--line);border-radius:10px;padding:12px 14px 4px;margin-top:10px;background:var(--sunk)}
@@ -401,6 +400,32 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 @media (max-width:1000px){.rep-sec{grid-template-columns:1fr;gap:28px}.features{grid-template-columns:1fr 1fr}}
 .rep-sec>*{min-width:0}
 @media (max-width:560px){.rep-list,.rep-list tbody,.rep-list tr{display:block}.features{grid-template-columns:1fr}.cy-rows>div{grid-template-columns:1fr auto}.cy-rows span:nth-child(2){display:none}.rep-list th{width:auto;display:block;border-bottom:0;padding-bottom:0}.rep-list td{display:block;border-top:0;padding-top:4px}}
+
+/* ---- Collapsible navigation, report tabs, insights bars ---- */
+.nav-group{display:block}
+.nav-h{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:0;cursor:pointer;text-align:left;font-family:inherit;border-radius:6px}
+.nav-h::after{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-right:4px;transition:transform .15s}
+.nav-h[aria-expanded="false"]::after{transform:rotate(-45deg)}
+.nav-h:hover{color:var(--ink)}
+.nav-h:focus-visible{outline:3px solid var(--teal);outline-offset:1px}
+.nav-items[hidden]{display:none}
+@media (max-width:860px){ .nav-group,.nav-items,.nav-items[hidden]{display:contents} .nav-h{display:none} }
+.repbar{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 20px;flex-wrap:wrap}
+.repbar button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer}
+.repbar button[aria-selected="true"]{color:var(--teal);border-color:var(--teal)}
+.repbar button:focus-visible{outline:3px solid var(--teal);outline-offset:-3px}
+[data-reppanel][hidden]{display:none!important}
+.barlist{display:grid;gap:8px;margin:10px 0 0}
+.barlist .br{display:grid;grid-template-columns:minmax(110px,38%) 1fr auto;gap:10px;align-items:center;font-size:.92rem}
+.barlist .br>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barlist .tr{height:10px;border-radius:6px;background:var(--sunk);overflow:hidden}
+.barlist .tr i{display:block;height:100%;background:var(--teal);border-radius:6px}
+.barlist .tr i.warn{background:var(--amber)}.barlist .tr i.bad{background:var(--red,#C0392B)}.barlist .tr i.good{background:var(--green)}
+.barlist b{font-variant-numeric:tabular-nums;min-width:2.2em;text-align:right}
+#app>main,main,.view{min-width:0}
+.grid2>*,#view-devices .panel{min-width:0}
+#insStats,#devStats,#m365Stats,#iosStats,#ptStats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.ins-empty{color:var(--muted);font-size:.92rem;padding:6px 0}
 </style>
 </head>
 <body>
@@ -599,25 +624,30 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       <img src="/nexpatch-logo.svg" alt="NexpatchOnline" style="width:250px;height:auto;max-width:100%">
     </div>
     <a href="#overview" data-view="overview">Overview</a>
-    <div class="nav-h">Apps</div>
+    <a href="#devices" data-view="devices">Device insights</a>
+    <div class="nav-group" data-group="apps"><button type="button" class="nav-h" aria-expanded="true" aria-controls="ng-apps">Apps</button><div class="nav-items" id="ng-apps">
     <a href="#catalog" data-view="catalog">Catalog <span class="count" id="navCount"></span></a>
     <a href="#discovery" data-view="discovery">Discovery</a>
     <a href="#deployments" data-view="deployments">Deployments</a>
     <a href="#reports" data-view="reports">App reports</a>
     <a href="#apple" data-view="apple">Apple apps & devices</a>
-    <div class="nav-h">App Control</div>
+    </div></div>
+    <div class="nav-group" data-group="appcontrol"><button type="button" class="nav-h" aria-expanded="true" aria-controls="ng-appcontrol">App Control</button><div class="nav-items" id="ng-appcontrol">
     <a href="#app-control" data-view="app-control" data-actab-link="activity">Activity</a>
     <a href="#ac-base" data-view="app-control" data-actab-link="base">Base policy</a>
     <a href="#ac-supplemental" data-view="app-control" data-actab-link="supplemental">Supplemental policy</a>
     <a href="#ac-reports" data-view="app-control" data-actab-link="reports">App Control reports</a>
-    <div class="nav-h">Organization</div>
+    </div></div>
+    <div class="nav-group" data-group="organization"><button type="button" class="nav-h" aria-expanded="true" aria-controls="ng-organization">Organization</button><div class="nav-items" id="ng-organization">
     <a href="#organization" data-view="organization">Company profile</a>
     <a href="#users" data-view="users">Users and access</a>
     <a href="#notifications" data-view="notifications">Notifications</a>
     <a href="#connect" data-view="connect" data-contab-link="setup">Connect to Intune</a>
-    <div class="nav-h">Resources</div>
+    </div></div>
+    <div class="nav-group" data-group="resources"><button type="button" class="nav-h" aria-expanded="true" aria-controls="ng-resources">Resources</button><div class="nav-items" id="ng-resources">
     <a href="#documentation" data-view="documentation">Documentation and guides</a>
     <a href="#requests" data-view="requests">Request an application</a>
+    </div></div>
     <div class="foot">
       <a href="/admin/" id="adminCenterLink" hidden style="font-size:12px">Open Admin Center ↗</a>
       <div class="user"><span class="avatar" id="userAvatar"></span><div class="who"><b id="userName"></b><span id="userEmail"></span></div></div>
@@ -739,12 +769,6 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       </div>
       <div class="table-wrap"><table class="compact"><thead><tr><th>App</th><th>Installs</th><th>Versions</th><th>Status</th><th>Winget package</th><th></th></tr></thead><tbody id="discBody"></tbody></table></div>
       <p class="small" id="discSource" style="margin-top:12px"></p>
-      <div class="panel" style="margin-top:20px">
-        <div class="panel-head"><div><h2>Find winget packages for unmatched apps</h2><p class="small" style="margin:0">NexpatchOnline recognizes common apps on its own. For the rest, this script searches winget on your packaging machine and copies the matches back.</p></div><button class="btn small" type="button" id="discScriptBtn">Get lookup script</button></div>
-        <textarea id="discImport" placeholder="Paste the JSON the lookup script copied"></textarea>
-        <button class="btn small" type="button" id="discImportBtn" style="margin-top:8px">Import matches</button>
-        <p class="small">Lookups match by name, so check the winget package shown next to each app before adding it. In-house apps aren’t in winget and need your own installer.</p>
-      </div>
     </section>
 
     <!-- DEPLOYMENTS -->
@@ -760,10 +784,80 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 
     <!-- REPORTS -->
     <section class="view" id="view-reports" aria-labelledby="repTitle">
-      <h1 id="repTitle">Reports</h1>
-      <p class="lede">Device health, Patch Tuesday compliance, app compliance, exposure, install results, rollouts and App Control in one place. Copy any table straight into Excel, or copy a written summary for an email.</p>
+      <h1 id="repTitle">App reports</h1>
+      <p class="lede">How current your apps are, what was updated, what is still unpatched, Microsoft 365 Apps and iOS apps. Copy any table straight into Excel, or copy a written summary for an email. Looking for device health or Patch Tuesday compliance? Open <a href="#devices">Device insights</a>.</p>
       <div class="row" style="margin-bottom:20px"><button class="btn primary" type="button" id="repSummaryBtn">Copy summary for email</button><button class="btn" type="button" id="repSnapBtn">Record today’s snapshot</button><span class="small" id="repSource"></span></div>
-      <div class="stats" id="repStats"></div>
+      <div class="repbar" role="tablist" aria-label="App reports" id="repTabs">
+        <button type="button" role="tab" data-reptab="apps" aria-selected="true">Apps</button>
+        <button type="button" role="tab" data-reptab="updates" aria-selected="false">App updates</button>
+        <button type="button" role="tab" data-reptab="unpatched" aria-selected="false">Unpatched apps</button>
+        <button type="button" role="tab" data-reptab="m365" aria-selected="false">Microsoft 365 Apps</button>
+        <button type="button" role="tab" data-reptab="ios" aria-selected="false">iOS apps</button>
+      </div>
+      <div class="stats" id="repStats" data-reppanel="apps"></div>
+      <div class="panel" data-reppanel="apps">
+        <div class="panel-head"><div><h2>Compliance over time</h2><p class="small" style="margin:0">Share of tracked installs on the latest version. A snapshot is saved every time you import inventory.</p></div></div>
+        <div class="trend" id="repTrend"></div>
+      </div>
+      <div class="panel" data-reppanel="apps">
+        <div class="panel-head"><div><h2>Patch compliance by app</h2><p class="small" style="margin:0">Least compliant first.</p></div><button class="btn small" type="button" data-rep="compliance">Copy for Excel</button></div>
+        <div class="table-wrap"><table class="compact" id="repCompliance"></table></div>
+      </div>
+      <div class="panel" data-reppanel="unpatched">
+        <div class="panel-head"><div><h2>Apps with installs behind the latest version</h2><p class="small" style="margin:0">Installs still on an older version, most behind first.</p></div><button class="btn small" type="button" data-rep="behind">Copy for Excel</button></div>
+        <div class="table-wrap"><table class="compact" id="repBehind"></table></div>
+      </div>
+      <div class="panel" data-reppanel="unpatched">
+        <div class="panel-head"><div><h2>Vulnerability exposure</h2><p class="small" style="margin:0">Apps with installs that have a known vulnerability, most exposed first.</p></div><button class="btn small" type="button" data-rep="exposure">Copy for Excel</button></div>
+        <div class="table-wrap"><table class="compact" id="repExposure"></table></div>
+      </div>
+      <div class="panel" data-reppanel="updates">
+        <div class="panel-head"><div><h2>Install results from Intune</h2><p class="small" style="margin:0" id="repResSource"></p></div><div class="row"><button class="btn small" type="button" id="repResScriptBtn">Get results script</button><button class="btn small" type="button" data-rep="results">Copy for Excel</button></div></div>
+        <div class="table-wrap"><table class="compact" id="repResults"></table></div>
+        <details style="margin-top:12px"><summary class="small" style="cursor:pointer">Import install results</summary>
+          <textarea id="repResImport" placeholder="Paste the JSON the results script copied"></textarea>
+          <button class="btn small" type="button" id="repResImportBtn" style="margin-top:8px">Import results</button>
+        </details>
+      </div>
+      <div class="panel" data-reppanel="updates">
+        <div class="panel-head"><div><h2>Rollout history</h2><p class="small" style="margin:0">Every update you published and how far it has rolled out.</p></div><button class="btn small" type="button" data-rep="deployments">Copy for Excel</button></div>
+        <div class="table-wrap"><table class="compact" id="repDeployments"></table></div>
+      </div>
+      <div class="panel" data-reppanel="m365">
+        <div class="panel-head"><div><h2>Microsoft 365 Apps updates</h2><p class="small" style="margin:0" id="m365Source">Which devices run an older Microsoft 365 Apps build than the newest one in your fleet.</p></div><div class="row"><button class="btn small" type="button" id="m365CsvBtn">Download CSV</button><button class="btn small" type="button" data-rep="m365">Copy for Excel</button></div></div>
+        <div class="stats" id="m365Stats"></div>
+        <h3 style="margin:14px 0 6px">Versions in your fleet</h3>
+        <div class="table-wrap"><table class="compact" id="m365Versions"></table></div>
+        <h3 style="margin:16px 0 6px">Devices, oldest build first</h3>
+        <div class="table-wrap"><table class="compact" id="m365Devices"></table></div>
+        <p class="small" style="margin-top:8px">“Newest” is measured against your own fleet. Update channels are not identified.</p>
+      </div>
+      <div class="panel" data-reppanel="ios">
+        <div class="panel-head"><div><h2>iOS apps</h2><p class="small" style="margin:0" id="iosSource">Apps detected on managed iPhones and iPads.</p></div><div class="row"><a class="btn small" href="#apple">Open Apple apps &amp; devices</a><button class="btn small" type="button" data-rep="ios">Copy for Excel</button></div></div>
+        <div class="stats" id="iosStats"></div>
+        <div class="table-wrap" style="margin-top:12px"><table class="compact" id="iosApps"></table></div>
+        <p class="small" style="margin-top:8px">These are version observations from Intune. Newer versions are not flagged because iOS app updates are controlled by the App Store and Intune.</p>
+      </div>
+    </section>
+
+    <!-- DEVICE INSIGHTS -->
+    <section class="view" id="view-devices" aria-labelledby="devTitle">
+      <h1 id="devTitle">Device insights</h1>
+      <p class="lede">Your managed Windows devices from Intune: how many, which Windows versions, when they last checked in, how they perform, who uses them and whether they are compliant.</p>
+      <p class="small" id="insSource"></p>
+      <div class="stats" id="insStats"></div>
+      <div class="grid2" style="align-items:start">
+        <div class="panel"><h2>Windows versions</h2><div id="insOs"></div></div>
+        <div class="panel"><h2>Compliance</h2><div id="insCompliance"></div></div>
+        <div class="panel"><h2>Last contact</h2><p class="small">When each device last checked in with Intune.</p><div id="insContact"></div></div>
+        <div class="panel"><h2>Encryption and ownership</h2><div id="insEnc"></div><div id="insOwn" style="margin-top:14px"></div></div>
+        <div class="panel"><h2>Performance: memory</h2><div id="insMem"></div></div>
+        <div class="panel"><h2>Performance: free disk space</h2><div id="insFree"></div></div>
+        <div class="panel"><h2>Disk size</h2><div id="insDisk"></div></div>
+        <div class="panel"><h2>Models</h2><div id="insModels"></div></div>
+        <div class="panel"><h2>Users</h2><p class="small" id="insUsersNote"></p><div id="insUsers"></div></div>
+        <div class="panel"><h2>Devices enrolled by month</h2><div id="insEnrolled"></div></div>
+      </div>
       <div class="panel" id="devReports">
         <div class="panel-head"><div><h2>Device reports</h2><p class="small" style="margin:0" id="devSource">Hardware, storage, memory, Windows and Microsoft 365 Apps updates from Intune.</p></div><button class="btn small primary" type="button" id="devXlsxBtn">Download Excel workbook</button></div>
         <div class="stats" id="devStats"></div>
@@ -778,30 +872,6 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <h3 style="margin:16px 0 6px">Devices that need attention</h3>
         <div class="table-wrap"><table class="compact" id="ptDevices"></table></div>
         <p class="small" style="margin-top:8px">“Newest” is measured against your own fleet. Past cycles keep a summary and up to 120 non-compliant devices. History starts the first time devices sync, so the first cycle may look partial.</p>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div><h2>Compliance over time</h2><p class="small" style="margin:0">Share of tracked installs on the latest version. A snapshot is saved every time you import inventory.</p></div></div>
-        <div class="trend" id="repTrend"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div><h2>Patch compliance by app</h2><p class="small" style="margin:0">Least compliant first.</p></div><button class="btn small" type="button" data-rep="compliance">Copy for Excel</button></div>
-        <div class="table-wrap"><table class="compact" id="repCompliance"></table></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div><h2>Vulnerability exposure</h2><p class="small" style="margin:0">Apps with installs that have a known vulnerability, most exposed first.</p></div><button class="btn small" type="button" data-rep="exposure">Copy for Excel</button></div>
-        <div class="table-wrap"><table class="compact" id="repExposure"></table></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div><h2>Install results from Intune</h2><p class="small" style="margin:0" id="repResSource"></p></div><div class="row"><button class="btn small" type="button" id="repResScriptBtn">Get results script</button><button class="btn small" type="button" data-rep="results">Copy for Excel</button></div></div>
-        <div class="table-wrap"><table class="compact" id="repResults"></table></div>
-        <details style="margin-top:12px"><summary class="small" style="cursor:pointer">Import install results</summary>
-          <textarea id="repResImport" placeholder="Paste the JSON the results script copied"></textarea>
-          <button class="btn small" type="button" id="repResImportBtn" style="margin-top:8px">Import results</button>
-        </details>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div><h2>Rollout history</h2><p class="small" style="margin:0">Every update you published and how far it has rolled out.</p></div><button class="btn small" type="button" data-rep="deployments">Copy for Excel</button></div>
-        <div class="table-wrap"><table class="compact" id="repDeployments"></table></div>
       </div>
     </section>
 
@@ -960,23 +1030,31 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       <p class="lede">Choose who in your organization can use NexpatchOnline, and what they can do. Everyone signs in with their own Microsoft work account.</p>
       <div id="usersNote"></div>
       <div class="roles3">
-        <div class="role-card"><b>Viewer</b><span>Sees the overview, discovery, deployments and reports. Can’t change anything.</span></div>
-        <div class="role-card"><b>Admin</b><span>Everything a viewer can, plus publishing apps, syncing inventory and App Control.</span></div>
-        <div class="role-card"><b>Owner</b><span>Everything an admin can, plus deciding who has access and with which role.</span></div>
+        <div class="role-card"><b>Admin</b><span>Manages everything on the console: publishing apps, syncing inventory, App Control, notifications, settings, and who has access.</span></div>
+        <div class="role-card"><b>Viewer</b><span>Can see settings, reports and activity, but can’t take any action or change anything.</span></div>
       </div>
       <div class="panel" id="invitePanel">
         <div class="panel-head" style="margin-bottom:10px"><h2>Invite someone</h2></div>
         <div class="row" style="align-items:flex-end">
           <label class="field" style="flex:1 1 260px;margin:0"><span>Work email (their Microsoft sign-in name)</span><input type="email" id="inviteEmail" placeholder="name@yourcompany.com" autocomplete="off"></label>
-          <label class="field" style="flex:0 1 170px;margin:0"><span>Role</span><select id="inviteRole"><option value="viewer">Viewer</option><option value="admin" selected>Admin</option><option value="owner">Owner</option></select></label>
+          <label class="field" style="flex:0 1 170px;margin:0"><span>Role</span><select id="inviteRole"><option value="viewer">Viewer</option><option value="admin" selected>Admin</option></select></label>
           <button class="btn primary" type="button" id="inviteBtn">Invite</button>
         </div>
         <p class="small" style="margin:10px 0 0">We will email an invitation through NexpatchOnline. Access activates when they sign in with this exact Microsoft account.</p>
       </div>
+      <div class="panel" id="groupPanel">
+        <div class="panel-head" style="margin-bottom:10px"><h2>Give an Entra group access</h2></div>
+        <div class="row" style="align-items:flex-end">
+          <label class="field gpick" style="flex:1 1 300px;margin:0"><span>Search for a group</span><input type="text" id="groupSearch" placeholder="Start typing a group name" autocomplete="off"><div class="gpick-list" id="groupResults" hidden></div></label>
+          <label class="field" style="flex:0 1 170px;margin:0"><span>Role</span><select id="groupRole"><option value="viewer">Viewer</option><option value="admin">Admin</option></select></label>
+          <button class="btn primary" type="button" id="groupAddBtn" disabled>Give access</button>
+        </div>
+        <p class="small" style="margin:10px 0 0">Everyone in the group gets the role, including people in nested groups. Add or remove people in Microsoft Entra ID and their access follows. Changes can take up to five minutes. If someone has a role of their own and one from a group, they get the higher one.</p>
+      </div>
       <div class="panel">
         <div class="panel-head"><h2>People with access</h2><span class="small" id="peopleCount"></span></div>
         <div class="table-wrap"><table class="compact"><thead><tr><th>Person</th><th>Role</th><th>Status</th><th>Last signed in</th><th></th></tr></thead><tbody id="peopleBody"></tbody></table></div>
-        <p class="small" style="margin:12px 0 0">Global Administrators and Intune Administrators in your Microsoft Entra ID always have owner access, so your organization can’t get locked out.</p>
+        <p class="small" style="margin:12px 0 0">Global Administrators and Intune Administrators in your Microsoft Entra ID always have admin access, so your organization can’t get locked out.</p>
       </div>
       <div class="grid2">
         <div class="panel"><h2>Recent activity</h2><p class="small">Sign-ins with new invitations, role changes, removals and syncs.</p><ul class="todo" id="auditList"></ul></div>
@@ -1858,7 +1936,7 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation','notifications','organization'];
+const VIEWS=['overview','devices','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation','notifications','organization'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
@@ -1871,15 +1949,17 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   const v = VIEWS.includes(h) ? h : 'overview';
   VIEWS.forEach(x=>document.getElementById('view-'+x).classList.toggle('active', x===v));
   $$('.nav a').forEach(a=>{ const on = a.dataset.view===v && (!a.dataset.actabLink || a.dataset.actabLink===AC_TAB); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
-  render(v); window.scrollTo(0,0); }
+  applyNavGroups(); render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog'){ renderCatalog(); loadLastUpdated(); } if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports'){ renderReports(); loadDeviceReports(); } if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='organization') loadOrg(); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
-const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Owner'};
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog'){ renderCatalog(); loadLastUpdated(); } if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports'){ renderReports(); loadDeviceReports(); loadIos(); } if(v==='devices') loadDeviceReports(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='organization') loadOrg(); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
+const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Admin'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
 function renderPlanBanner(){
   const b=$('#planBanner'); const pl=liveMode() && SERVER.me && SERVER.me.plan;
+  const acc=liveMode()&&SERVER.me&&SERVER.me.accessStatus;
+  if(acc==='suspended'){ b.hidden=false; b.className='plan-banner ended'; b.innerHTML='<span>'+esc(SERVER.me.accessMessage||'Your organization is suspended, so changes are turned off.')+'</span>'; return; }
   if(!pl || pl.plan==='active'){ b.hidden=true; return; }
   const contact = CFG.salesEmail ? ' <a href="mailto:'+esc(CFG.salesEmail)+'?subject=NexpatchOnline%20subscription">Subscribe</a>' : '';
   b.hidden=false; b.className='plan-banner '+(pl.active?'trial':'ended');
@@ -1889,7 +1969,7 @@ function renderPlanBanner(){
 function applyRole(){ renderPlanBanner();
   const r=currentRole(); document.body.dataset.role=r;
   const none=r==='none'; $('#noAccess').hidden=!none;
-  if(none) $('#noAccessText').textContent='You\u2019re signed in as '+(SESSION&&SESSION.email||'')+', but nobody has added you to NexpatchOnline for your organization.';
+  if(none) $('#noAccessText').textContent=(liveMode()&&SERVER.me.accessStatus==='revoked'&&SERVER.me.accessMessage)?SERVER.me.accessMessage:'You\u2019re signed in as '+(SESSION&&SESSION.email||'')+', but nobody has added you to NexpatchOnline for your organization.';
 }
 function renderNav(){ applyRole(); const n=S.apps.filter(a=>['upd','vuln'].includes(status(a).k)).length; $('#navCount').textContent=n||''; $('#navCount').hidden=!n;
   $('#tenantState').textContent = S.settings.tenant ? 'Tenant ' + S.settings.tenant.slice(0,8) + '…' : 'Not connected';
@@ -2586,6 +2666,10 @@ function renderReports(){
   REP.deployments={head:['App','Version','Deployment','Published','Assignments done','Finishes'],rows:S.deployments.map(d=>{ const sch=depSchedule(d); const done=sch.filter(x=>now>=(x.deadline??x.start)).length; return [d.name,d.version,d.summary||MODE_LABEL[d.mode]||'',d.at.slice(0,10),done+' of '+sch.length,finishAt(d).toISOString().slice(0,10)]; })};
   $('#repDeployments').innerHTML=thead(REP.deployments.head)+'<tbody>'+(S.deployments.length?REP.deployments.rows.map((r,i)=>{ const fin=now>=finishAt(S.deployments[i]).getTime(); return '<tr><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td><td>'+r[2]+'</td><td>'+fmtDate(new Date(S.deployments[i].at))+'</td><td>'+r[4]+'</td><td>'+(fin?'<span class="pill p-cur">Done</span>':fmtDate(finishAt(S.deployments[i])))+'</td></tr>'; }).join(''):emptyRow(6,'Nothing published yet.'))+'</tbody>';
 
+  const beh=S.apps.map(a=>({a:a,behind:a.fleet[1]+a.fleet[2]+a.fleet[3]})).filter(r=>r.behind>0).sort((x,y)=>y.behind-x.behind);
+  REP.behind={head:['App','Installs behind','Of which vulnerable','Latest version','Auto-publish'],rows:beh.map(r=>[r.a.name,r.behind,r.a.fleet[3],r.a.latest,S.auto[r.a.id]?'On':'Off'])};
+  $('#repBehind').innerHTML=thead(REP.behind.head)+'<tbody>'+(beh.length?REP.behind.rows.map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+r[1]+'</td><td>'+(r[2]?'<span class="pill p-vuln">'+r[2]+'</span>':'0')+'</td><td>'+esc(r[3])+'</td><td>'+r[4]+'</td></tr>').join(''):emptyRow(5,'Every tracked install is on the latest version.'))+'</tbody>';
+  showRepTab(REP_TAB);
 }
 function resultsScript(){
   return '# NexpatchOnline – export install results for NexpatchOnline apps from Intune\n# Needs: Install-Module Microsoft.Graph.Authentication -Scope CurrentUser\n\n' +
@@ -2646,10 +2730,24 @@ document.addEventListener('click', async e=>{ const b=e.target.closest('[data-re
   c.insertAdjacentHTML('beforeend',pts.map((v,i)=>'<span class="d'+(i===0?' pt':v>=90?' ok':'')+'" style="--i:'+i+';height:'+Math.round(v*1.5)+'px"></span>').join('')); })();
 
 /* ---------- Device reports and Patch Tuesday compliance ---------- */
+
+/* ---------- Collapsible navigation groups ---------- */
+const NAV_KEY='nexpatch.nav.collapsed';
+function navCollapsed(){ try{ const v=JSON.parse(localStorage.getItem(NAV_KEY)||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; } }
+function setNavGroup(g,open){ g.querySelector('.nav-h').setAttribute('aria-expanded',String(open)); g.querySelector('.nav-items').hidden=!open; }
+function applyNavGroups(){ const c=navCollapsed(); $$('.nav-group').forEach(g=>setNavGroup(g, !!g.querySelector('[aria-current="page"]') || !c.includes(g.dataset.group))); }
+$$('.nav-h').forEach(b=>b.addEventListener('click',()=>{ const g=b.closest('.nav-group'), open=b.getAttribute('aria-expanded')!=='true'; setNavGroup(g,open);
+  let c=navCollapsed().filter(x=>x!==g.dataset.group); if(!open) c.push(g.dataset.group); try{ localStorage.setItem(NAV_KEY,JSON.stringify(c)); }catch(e){} }));
+
+/* ---------- App report tabs ---------- */
+let REP_TAB='apps';
+function showRepTab(t){ REP_TAB=t; $$('[data-reptab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.reptab===t))); $$('[data-reppanel]').forEach(p=>{ p.hidden=p.dataset.reppanel!==t; }); }
+$$('[data-reptab]').forEach(b=>b.addEventListener('click',()=>showRepTab(b.dataset.reptab)));
+
 let DEV=null;
 function downloadFile(name,text,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:type||'text/csv;charset=utf-8'})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); }
 async function loadDeviceReports(){
-  if(!liveMode()){ $('#devSource').textContent='Connect an active Intune tenant on the Connect page to see device reports.'; $('#devStats').innerHTML=''; $('#devTable').innerHTML=''; $('#ptStats').innerHTML=''; $('#ptCycles').innerHTML=''; $('#ptDevices').innerHTML=''; return; }
+  if(!liveMode()){ $('#devSource').textContent='Connect an active Intune tenant on the Connect page to see device reports.'; $('#devStats').innerHTML=''; $('#devTable').innerHTML=''; $('#ptStats').innerHTML=''; $('#ptCycles').innerHTML=''; $('#ptDevices').innerHTML=''; $('#insSource').textContent='Connect an active Intune tenant on the Connect page to see device insights.'; $('#insStats').innerHTML=''; $('#m365Source').textContent='Connect an active Intune tenant to see Microsoft 365 Apps updates.'; return; }
   try{ DEV=await api('/reports/devices'); }catch(e){ $('#devSource').textContent=e.message; return; }
   renderDeviceReports();
 }
@@ -2659,7 +2757,7 @@ function renderDeviceReports(){
   const tile=(n,l,warn)=>'<div class="stat"><b'+(warn&&n?' style="color:var(--amber)"':'')+'>'+n+'</b><span>'+l+'</span></div>';
   $('#devStats').innerHTML=tile(s.devices,'Windows devices')+tile(s.avgMemoryGb+' GB','Average memory')+tile(s.lowStorage,'Low storage',1)+tile(s.lowMemory,'Low memory',1)+tile(s.behindOnUpdates,'Behind on Windows updates',1)+tile(s.stale,'No check-in 30+ days',1)+tile(s.notEncrypted,'Not encrypted',1)+tile(s.m365Behind+' of '+s.m365Devices,'M365 Apps behind',1);
   const pick=$('#devPick'), cur=pick.value||'hardware'; pick.innerHTML=Object.keys(d.titles).map(k=>'<option value="'+k+'"'+(k===cur?' selected':'')+'>'+esc(d.titles[k])+' ('+d.reports[k].rows.length+')</option>').join('');
-  showDevReport(); renderPatchTuesday();
+  showDevReport(); renderPatchTuesday(); renderInsights(); renderM365();
 }
 function showDevReport(){
   const d=DEV; if(!d) return; const k=$('#devPick').value, r=d.reports[k]; REP.devrep={head:r.head,rows:r.rows};
@@ -2675,6 +2773,48 @@ function renderPatchTuesday(){
   const live=c.cycle===d.currentCycle.cycle, rows=live?d.currentCycle.rows.filter(r=>!r.compliant).map(r=>[r.name,r.user,r.windows,r.reason]):(c.behind||[]);
   $('#ptDevices').innerHTML=thead(['Device','User','Windows','Reason'])+'<tbody>'+(rows.length?rows.slice(0,300).map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join(''):emptyRow(4,'No devices need attention in this cycle.'))+'</tbody>';
 }
+
+const barList=(items,total,tone)=>{ const rows=(items||[]).filter(r=>r.count>0||items.length<=6); if(!rows.length||!total) return '<p class="ins-empty">No data yet.</p>'; const max=Math.max(1,...rows.map(r=>r.count));
+  return '<div class="barlist">'+rows.map(r=>'<div class="br"><span title="'+esc(r.label)+'">'+esc(r.label)+'</span><span class="tr"><i class="'+((tone&&tone(r))||'')+'" style="width:'+Math.round(r.count/max*100)+'%"></i></span><b>'+r.count+'</b></div>').join('')+'</div>'; };
+function renderInsights(){
+  const d=DEV; if(!d||!d.insights) return; const i=d.insights, s=d.summary, n=i.total;
+  const pct=(a,b)=>b?Math.round(a/b*100):0, get=(l,k)=>((l.find(x=>x.label===k)||{}).count||0);
+  $('#insSource').textContent=d.syncedAt?'Device data from '+fmtDate(new Date(d.syncedAt))+'. Refreshed with every inventory sync.':'No device data yet. Run an inventory sync on the Connect page.';
+  const tile=(v,l)=>'<div class="stat"><b>'+v+'</b><span>'+l+'</span></div>';
+  $('#insStats').innerHTML=tile(n.toLocaleString(),'Managed Windows devices')+tile(pct(get(i.compliance,'Compliant'),n)+'%','Compliant')+tile(pct(get(i.lastContact,'Today')+get(i.lastContact,'1 to 7 days'),n)+'%','Checked in this week')+tile(i.users.people.toLocaleString(),'Users with a device')+tile(s.avgMemoryGb+' GB','Average memory')+tile(s.totalStorageTb+' TB','Total storage');
+  const good=r=>/^(Compliant|Today|Encrypted|Company)/.test(r.label)?'good':/^(Not|Over|Never|Under 10|Under 4|Conflict|Error)/.test(r.label)?'bad':/^(In grace|8 to|4 to|10 to|Unknown|Personal)/.test(r.label)?'warn':'';
+  $('#insOs').innerHTML=barList(i.os,n);
+  $('#insCompliance').innerHTML=barList(i.compliance,n,good);
+  $('#insContact').innerHTML=barList(i.lastContact,n,good);
+  $('#insEnc').innerHTML='<b class="small">Encryption</b>'+barList(i.encryption,n,good);
+  $('#insOwn').innerHTML='<b class="small">Ownership</b>'+barList(i.ownership,n,good);
+  $('#insMem').innerHTML=barList(i.memory,n,good);
+  $('#insFree').innerHTML=barList(i.freeSpace,n,r=>/^Under 10/.test(r.label)?'bad':/^10 to/.test(r.label)?'warn':'');
+  $('#insDisk').innerHTML=barList(i.diskSize,n);
+  $('#insModels').innerHTML=barList(i.models,n);
+  $('#insUsersNote').textContent=i.users.people+' people have a device. '+i.users.withSeveral+' have more than one'+(i.users.noUser?', and '+i.users.noUser+' devices have no primary user.':'.');
+  $('#insUsers').innerHTML=barList(i.users.top,n);
+  $('#insEnrolled').innerHTML=barList(i.enrolled,n);
+}
+function renderM365(){
+  const d=DEV; if(!d) return; const s=d.summary, v=d.reports.m365Versions, dv=d.reports.m365;
+  $('#m365Source').textContent=s.m365Devices?'Compared with the newest Microsoft 365 Apps build seen in your fleet ('+s.m365Newest+').':'No Microsoft 365 Apps detected yet. Run an inventory sync on the Connect page.';
+  $('#m365Stats').innerHTML='<div class="stat"><b>'+s.m365Devices+'</b><span>Devices with Microsoft 365 Apps</span></div><div class="stat"><b>'+(s.m365Devices-s.m365Behind)+'</b><span>On the newest build</span></div><div class="stat"><b style="color:'+(s.m365Behind?'var(--amber)':'inherit')+'">'+s.m365Behind+'</b><span>Behind</span></div>';
+  REP.m365={head:dv.head,rows:dv.rows};
+  $('#m365Versions').innerHTML=thead(v.head)+'<tbody>'+(v.rows.length?v.rows.map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'%</td><td><span class="pill '+(r[3]==='Current'?'p-cur':'p-upd')+'">'+r[3]+'</span></td></tr>').join(''):emptyRow(4,'No Microsoft 365 Apps versions yet.'))+'</tbody>';
+  $('#m365Devices').innerHTML=thead(dv.head)+'<tbody>'+(dv.rows.length?dv.rows.slice(0,500).map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td><span class="pill '+(r[3]==='Current'?'p-cur':'p-upd')+'">'+r[3]+'</span></td><td>'+esc(r[4])+'</td><td>'+esc(r[5])+'</td></tr>').join(''):emptyRow(6,'No devices to show.'))+'</tbody>';
+}
+$('#m365CsvBtn').addEventListener('click',()=>downloadServerCsv('/reports/device-csv/m365'));
+async function loadIos(){
+  if(!liveMode()){ $('#iosSource').textContent='Connect an active Intune tenant to see iOS apps.'; $('#iosStats').innerHTML=''; $('#iosApps').innerHTML=''; return; }
+  try{ const d=await api('/apple/overview'); const apps=(d.apps||[]).slice().sort((a,b)=>(b.deviceCount||0)-(a.deviceCount||0)), dev=d.devices||[];
+    REP.ios={head:['App','Publisher','Version','Devices'],rows:apps.map(a=>[a.name||'Unknown app',a.publisher||'',a.version||'',a.deviceCount||0])};
+    $('#iosSource').textContent=d.syncedAt?'From the Apple inventory synced '+fmtDate(new Date(d.syncedAt))+'. Sync it on the Apple apps & devices page.':'No Apple inventory yet. Sync it on the Apple apps & devices page.';
+    $('#iosStats').innerHTML='<div class="stat"><b>'+dev.length+'</b><span>iPhones and iPads</span></div><div class="stat"><b>'+new Set(apps.map(a=>a.name)).size+'</b><span>Different apps</span></div><div class="stat"><b>'+apps.length+'</b><span>App versions detected</span></div>';
+    $('#iosApps').innerHTML=thead(REP.ios.head)+'<tbody>'+(apps.length?REP.ios.rows.slice(0,500).map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+Number(r[3]).toLocaleString()+'</td></tr>').join(''):emptyRow(4,'No iOS apps detected yet.'))+'</tbody>';
+  }catch(e){ $('#iosSource').textContent=e.message; }
+}
+
 $('#devPick').addEventListener('change',showDevReport);
 $('#ptPick').addEventListener('change',renderPatchTuesday);
 async function downloadServerCsv(path){ try{ const r=await api(path); downloadFile(r.filename,r.csv); }catch(e){ toast(e.message); } }
@@ -2896,7 +3036,6 @@ function fleetFromInventory(app){ const rows=invRows().filter(r=>r.displayName.t
   const f=[0,0,0,0]; rows.forEach(r=>{ const n=+r.deviceCount||0; if(cmpVer(r.version,maxV)>=0) f[0]+=n; else if(major(r.version)===major(maxV)) f[1]+=n; else f[2]+=n; });
   app.fleet=f; if(!app.latest || app.latest==='From winget' || cmpVer(maxV,app.latest)>0) app.latest=maxV; }
 function appFromKnown(k){ return {id:'c-'+k.w.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name:k.n,vendor:k.v,winget:k.w,reg:k.r,procs:k.c?k.c.split(','):[],exe:winPath(k.e),latest:'From winget',fleet:[0,0,0,0],cves:0,custom:true}; }
-function discScript(names){ return '# NexpatchOnline – find winget packages for discovered apps\n# Run on the packaging machine. Needs: Install-Module Microsoft.WinGet.Client -Scope CurrentUser\n\n$Names = @(\n' + names.map(n=>'    '+psq(n)).join(',\n') + '\n)\n\n$Found = foreach ($N in $Names) {\n    $P = Find-WinGetPackage -Query $N -Source winget -ErrorAction SilentlyContinue | Select-Object -First 1\n    if ($P) { [pscustomobject]@{ name = $N; wingetId = $P.Id; wingetName = $P.Name; version = $P.Version } }\n    else { Write-Host "No winget package found for $N" }\n}\n@($Found) | ConvertTo-Json -Compress | Set-Clipboard\nWrite-Host "Copied $(@($Found).Count) matches. Paste them into NexpatchOnline, Discovery."\n'; }
 let dfilter='patch', DISC={};
 const DPILL={catalog:['Managed','p-cur'],known:['Patchable','p-upd'],matched:['Patchable','p-upd'],microsoft:['Updated by Microsoft','p-neutral'],oem:['Driver or OEM','p-neutral'],unknown:['Not matched','p-neutral'],ignored:['Ignored','p-neutral']};
 function renderDiscovery(){
@@ -2925,11 +3064,6 @@ $('#discBody').addEventListener('click', e=>{ const ig=e.target.closest('[data-d
   if(ig){ S.discIgnored[ig.dataset.dign]=true; save(); renderDiscovery(); toast('Hidden from discovery'); }
   if(rs){ delete S.discIgnored[rs.dataset.drestore]; save(); renderDiscovery(); toast('Back in discovery'); } });
 
-$('#discScriptBtn').addEventListener('click',()=>{ const names=Object.values(DISC).filter(g=>g.c.st==='unknown').sort((a,b)=>b.installs-a.installs).slice(0,200).map(g=>g.name); if(!names.length){ toast('Every discovered app is already matched'); return; }
-  showCode('Winget lookup script','Searches winget for '+names.length+' unmatched apps and copies the matches to your clipboard. Paste them back on the Discovery page.', discScript(names)); });
-$('#discImportBtn').addEventListener('click',()=>{ try{ let d=JSON.parse($('#discImport').value); if(!Array.isArray(d)) d=[d]; let n=0;
-  d.forEach(x=>{ if(x&&x.name&&x.wingetId){ S.discMatches[String(x.name).toLowerCase()]={wingetId:String(x.wingetId),wingetName:String(x.wingetName||''),version:String(x.version||'')}; n++; } });
-  if(!n) throw 0; save(); $('#discImport').value=''; dfilter='patch'; $$('[data-dfilter]').forEach(x=>x.setAttribute('aria-pressed', x.dataset.dfilter==='patch')); renderDiscovery(); toast(n+' winget matches imported'); }catch(e){ toast('Paste the JSON the lookup script copied'); } });
 
 /* ---------- Users and access ---------- */
 function sampleUsers(){
@@ -2944,22 +3078,21 @@ function sampleUsers(){
 }
 let USERS_CACHE=null;
 async function renderUsers(){
-  const live=liveMode(), role=currentRole(), owner=role==='owner';
+  const live=liveMode(), role=currentRole(), owner=(role==='owner'||role==='admin');
   $('#usersNote').innerHTML = live ? '' : (API_ON && SESSION && !SESSION.demo)
     ? '<div class="note">Connect your organization first on the <a href="#connect">Connect to Intune</a> page. Whoever connects it becomes its first owner.</div>'
     : isSampleData() ? '<div class="note info">Sample people. Changes here stay in this browser. With the backend connected, this page manages real access for your organization.</div>' : '<div class="note">Connect the backend to manage who in your organization can use NexpatchOnline.</div>';
-  if(role==='viewer'){ $('#peopleBody').innerHTML='<tr><td colspan="5" class="empty">Only admins and owners can see who has access.</td></tr>'; $('#auditList').innerHTML=''; $('#peopleCount').textContent=''; return; }
   let data;
   if(live){ $('#peopleBody').innerHTML='<tr><td colspan="5" class="empty">Loading\u2026</td></tr>';
     try{ const [u,a]=await Promise.all([api('/users'), api('/audit')]); data={people:u.people, events:a.events, me:u.you.userId}; }
     catch(e){ $('#peopleBody').innerHTML='<tr><td colspan="5" class="empty">'+esc(e.message)+'</td></tr>'; return; } }
   else { const d=sampleUsers(); data={people:d.people, events:d.events, me:'demo'}; }
   USERS_CACHE=data;
-  const people=[...data.people].sort((a,b)=>(a.kind===b.kind?0:a.kind==='member'?-1:1) || ['owner','admin','viewer'].indexOf(a.role)-['owner','admin','viewer'].indexOf(b.role));
-  $('#peopleCount').textContent=people.filter(p=>p.kind==='member').length+' with access, '+people.filter(p=>p.kind==='invite').length+' invited';
+  const people=[...data.people].map(p=>p.kind==='group'?{...p,name:p.name||p.groupName||'Entra group',email:'Entra group: everyone in it'}:p).sort((a,b)=>(a.kind===b.kind?0:a.kind==='member'?-1:1) || ['owner','admin','viewer'].indexOf(a.role)-['owner','admin','viewer'].indexOf(b.role));
+  $('#peopleCount').textContent=people.filter(p=>p.kind==='member').length+' with access, '+people.filter(p=>p.kind==='invite').length+' invited, '+people.filter(p=>p.kind==='group').length+' groups';
   $('#peopleBody').innerHTML = people.length ? people.map(p=>{ const you=p.id==='u_'+data.me || p.id==='u_demo';
-    const roleCell = owner ? '<select data-role-id="'+esc(p.id)+'" aria-label="Role for '+esc(p.email)+'">'+['viewer','admin','owner'].map(r=>'<option value="'+r+'"'+(p.role===r?' selected':'')+'>'+ROLE_NAME[r]+'</option>').join('')+'</select>' : '<span class="pill p-neutral">'+ROLE_NAME[p.role]+'</span>';
-    return '<tr><td><b>'+esc(p.name||p.email)+(you?' <span class="small">(you)</span>':'')+'</b><span class="sub">'+esc(p.email)+'</span></td><td style="min-width:130px">'+roleCell+'</td><td>'+(p.kind==='invite'?'<span class="pill p-upd">Invited</span>':'<span class="pill p-cur">Active</span>')+'</td><td>'+(p.lastSeenAt?new Date(p.lastSeenAt).toLocaleDateString():'<span class="small">Not yet</span>')+'</td><td>'+(owner?'<button class="btn small ghost" type="button" data-remove-id="'+esc(p.id)+'">'+(p.kind==='invite'?'Cancel invitation':'Remove')+'</button>':'')+'</td></tr>'; }).join('')
+    const roleCell = owner ? '<select data-role-id="'+esc(p.id)+'" aria-label="Role for '+esc(p.email)+'">'+['viewer','admin'].map(r=>'<option value="'+r+'"'+((p.role===r||(r==='admin'&&p.role==='owner'))?' selected':'')+'>'+ROLE_NAME[r]+'</option>').join('')+'</select>' : '<span class="pill p-neutral">'+ROLE_NAME[p.role]+'</span>';
+    return '<tr><td><b>'+esc(p.name||p.email)+(you?' <span class="small">(you)</span>':'')+'</b><span class="sub">'+esc(p.email)+'</span></td><td style="min-width:130px">'+roleCell+'</td><td>'+(p.kind==='invite'?'<span class="pill p-upd">Invited</span>':p.kind==='group'?'<span class="pill p-neutral">Group</span>':'<span class="pill p-cur">Active</span>')+'</td><td>'+(p.lastSeenAt?new Date(p.lastSeenAt).toLocaleDateString():'<span class="small">Not yet</span>')+'</td><td>'+(owner?'<button class="btn small ghost" type="button" data-remove-id="'+esc(p.id)+'">'+(p.kind==='invite'?'Cancel invitation':'Remove')+'</button>':'')+'</td></tr>'; }).join('')
     : '<tr><td colspan="5" class="empty">Nobody has been added yet.</td></tr>';
   $('#auditList').innerHTML = (data.events||[]).length ? data.events.slice(0,15).map(e=>'<li><i class="t-ic" style="background:var(--teal)"></i><div class="t-body"><b>'+esc(e.actor)+' '+esc(e.action)+'</b><span>'+esc(e.detail||'')+' \u00b7 '+new Date(e.at).toLocaleString()+'</span></div></li>').join('') : '<li><div class="t-body"><span>No activity yet.</span></div></li>';
 }
@@ -2980,11 +3113,18 @@ $('#peopleBody').addEventListener('change', async e=>{
 $('#peopleBody').addEventListener('click', async e=>{
   const b=e.target.closest('[data-remove-id]'); if(!b) return; const id=b.dataset.removeId;
   const p=(USERS_CACHE&&USERS_CACHE.people||[]).find(x=>x.id===id); if(!p) return;
-  if(!confirm((p.kind==='invite'?'Cancel the invitation for ':'Remove access for ')+p.email+'?')) return;
+  if(!confirm((p.kind==='invite'?'Cancel the invitation for ':'Remove access for ')+(p.email||p.name)+'?')) return;
   if(liveMode()){ try{ await api('/users/'+encodeURIComponent(id),'DELETE'); }catch(err){ toast(err.message); return; } }
   else { const d=sampleUsers(); if(p.kind==='member'&&p.role==='owner'&&d.people.filter(x=>x.kind==='member'&&x.role==='owner').length<=1){ toast('An organization needs at least one owner.'); return; } d.people.splice(d.people.indexOf(p),1); d.events.unshift({at:new Date().toISOString(),actor:SESSION.email,action:p.kind==='invite'?'cancelled invitation':'removed access',detail:p.email}); save(); }
   toast(p.kind==='invite'?'Invitation cancelled':'Access removed'); renderUsers();
 });
+
+let GROUP_PICK=null;
+$('#groupSearch').addEventListener('input',e=>{ GROUP_PICK=null; $('#groupAddBtn').disabled=true; groupSearch(e.target); });
+$('#groupSearch').addEventListener('focusout',()=>setTimeout(()=>{ $('#groupResults').hidden=true; },150));
+$('#groupResults').addEventListener('mousedown',e=>{ const b=e.target.closest('[data-gid]'); if(!b) return; e.preventDefault(); GROUP_PICK={id:b.dataset.gid,name:b.dataset.gname}; $('#groupSearch').value=b.dataset.gname; $('#groupResults').hidden=true; $('#groupAddBtn').disabled=false; });
+$('#groupAddBtn').addEventListener('click',async()=>{ if(!GROUP_PICK){ toast('Search for a group and choose it from the list'); return; }
+  try{ await api('/access-groups','POST',{groupId:GROUP_PICK.id,groupName:GROUP_PICK.name,role:$('#groupRole').value}); toast(GROUP_PICK.name+' now has '+ROLE_NAME[$('#groupRole').value]+' access'); GROUP_PICK=null; $('#groupSearch').value=''; $('#groupAddBtn').disabled=true; renderUsers(); }catch(e){ toast(e.message); } });
 $('#noAccessSignOut').addEventListener('click',()=>$('#signOutBtn').click());
 
 /* ---------- Platform admin (operators only) ---------- */

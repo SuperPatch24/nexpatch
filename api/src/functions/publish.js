@@ -5,6 +5,7 @@ import { getTenant, getRow, saveJob, getJob, listJobs, audit } from '../lib/stor
 import { publishApp, publishStoreApp } from '../lib/publisher.js';
 import { randomUUID } from 'node:crypto';
 import { planStatus } from '../lib/plan.js';
+import { featureOn, featureMessage } from '../lib/tenantsettings.js';
 
 const queue = output.storageQueue({ queueName: 'publish-jobs', connection: 'AzureWebJobsStorage' });
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
@@ -16,6 +17,7 @@ app.http('publishStart', {
     const t = await getTenant(user.tenantId);
     if (!t || t.status !== 'active') throw new HttpError(409, 'Connect your organization on the Connect page before publishing.');
     if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to keep publishing apps.');
+    if (!featureOn(t, 'packaging')) throw new HttpError(403, featureMessage('packaging'));
     const { app: a, options } = await readJson(req);
     const source = a?.source === 'msstore' ? 'msstore' : 'winget';
     if (!a || !a.name) throw new HttpError(400, 'The app name is required.');

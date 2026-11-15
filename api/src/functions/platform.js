@@ -2,10 +2,13 @@ import { app } from '@azure/functions';
 import { withUser, HttpError, readJson } from '../lib/http.js';
 import { getRow, putRow, deleteRow, listRows, listAllTenants, saveTenant, getTenant, getJob, audit } from '../lib/store.js';
 import { planStatus, TRIAL_DAYS } from '../lib/plan.js';
+import { isTier, TIERS } from '../lib/plans.js';
 import { platformRole } from '../lib/platform.js';
 import { latestWingetVersion } from '../lib/winget.js';
 import { findApps, verifyStore, verifyWinget } from '../lib/appfinder.js';
 import { cleanVersionSource } from '../lib/versionwatch.js';
+import { ACCESS, FEATURES, accessOf, featureOn, overrideNumber, parseDomains } from '../lib/tenantsettings.js';
+import { clearAccessCache } from '../lib/access.js';
 
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
 const STORE_ID = /^[A-Z0-9]{8,16}$/i;
@@ -127,7 +130,8 @@ app.http('platformTenants', { methods: ['GET'], authLevel: 'anonymous', route: '
         members: members.filter(m => m.kind === 'member').length, invites: members.filter(m => m.kind === 'invite').length,
         appVersions: inventory.length, devicesSeen: inventory.reduce((m, r) => Math.max(m, r.deviceCount || 0), 0),
         publishes30d: recent.length, failed30d: recent.filter(j => j.status === 'failed').length, acApps: acEvents.length,
-        plan: planStatus(t), planNote: t.planNote || '' });
+        plan: planStatus(t), planNote: t.planNote || '', tier: t.tier || '', billing: t.billing || '', appControl: t.appControl === true, interestTier: t.interestTier || '',
+        ...tenantSettings(t) });
     }
     return { tenants: rows.sort((a, b) => String(b.activatedAt).localeCompare(String(a.activatedAt))) };
   }, 'any') });
@@ -139,9 +143,14 @@ app.http('platformTenantPlan', { methods: ['PUT'], authLevel: 'anonymous', route
     const tid = String(req.params.id || '');
     const t = await getTenant(tid);
     if (!t) throw new HttpError(404, 'Organization not found.');
-    const { action, days, note } = await readJson(req);
+    const { action, days, note, tier, billing, appControl, paidUntil } = await readJson(req);
     const fields = { planNote: String(note || t.planNote || '').slice(0, 200), planChangedBy: user.email || user.userId, planChangedAt: new Date().toISOString() };
-    if (action === 'activate') fields.plan = 'active';
+    if (action === 'activate') {
+      if (!isTier(tier)) throw new HttpError(400, 'Choose a plan: Starter, Pro, Pro Plus or Enterprise.');
+      if (billing === 'annual' && !TIERS[tier].annual) throw new HttpError(400, `${TIERS[tier].label} is billed monthly only.`);
+      Object.assign(fields, { plan: 'active', tier, billing: billing === 'annual' ? 'annual' : 'monthly', appControl: appControl === true });
+      if (paidUntil !== undefined) fields.paidUntil = cleanDate(paidUntil);
+    }
     else if (action === 'extend') { const base = Math.max(Date.now(), Date.parse(t.trialEndsAt || 0) || 0); fields.plan = 'trial'; fields.trialEndsAt = new Date(base + (Math.min(Math.max(+days || 14, 1), 365)) * 864e5).toISOString(); }
     else if (action === 'restart') { fields.plan = 'trial'; fields.trialStartedAt = new Date().toISOString(); fields.trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString(); }
     else if (action === 'expire') fields.plan = 'expired';
@@ -149,6 +158,60 @@ app.http('platformTenantPlan', { methods: ['PUT'], authLevel: 'anonymous', route
     const saved = await saveTenant(tid, fields);
     await audit(tid, `NexpatchOnline (${user.email || user.userId})`, 'changed plan', `${action}${action === 'extend' ? ' ' + (days || 14) + ' days' : ''}`);
     return { tenantId: tid, plan: planStatus(saved) };
+  }, 'any') });
+
+// What the operator has set for one organization (multi-tenant administration).
+function tenantSettings(t) {
+  const features = {}; for (const k of Object.keys(FEATURES)) features[k] = featureOn(t, k);
+  const ps = planStatus(t);
+  const subscriptionEnded = !!(t.paidUntil && Date.parse(t.paidUntil) + 864e5 <= Date.now()) || ps.plan === 'expired';
+  return { label: t.label || '', billingContact: t.billingContact || '', paidUntil: t.paidUntil || '', allowedDomains: t.allowedDomains || '',
+    accessStatus: accessOf(t), accessReason: t.accessReason || '', accessChangedAt: t.accessChangedAt || null, accessChangedBy: t.accessChangedBy || '',
+    limitDevices: t.limitDevices ?? '', limitCustomApps: t.limitCustomApps ?? '', limitPackageRequests: t.limitPackageRequests ?? '', features,
+    subscriptionEnded, revokeDue: subscriptionEnded && accessOf(t) === 'active' };
+}
+const cleanDate = v => { if (!v) return ''; const d = new Date(v); if (isNaN(d)) throw new HttpError(400, 'Enter a valid date.'); return d.toISOString().slice(0, 10); };
+const cleanText = (v, n) => String(v ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, n);
+
+// Revoke, suspend or restore an organization's access, for example when its subscription has ended.
+// Revoked: nobody in the organization can use NexpatchOnline. Suspended: people can view but not change anything.
+app.http('platformTenantAccess', { methods: ['PUT'], authLevel: 'anonymous', route: 'platform/tenants/{id}/access',
+  handler: withUser(async (req, _c, user) => {
+    requirePlatform(user);
+    const tid = String(req.params.id || '');
+    const t = await getTenant(tid);
+    if (!t) throw new HttpError(404, 'Organization not found.');
+    const { action, reason } = await readJson(req);
+    const status = { revoke: 'revoked', suspend: 'suspended', restore: 'active' }[action];
+    if (!status) throw new HttpError(400, 'Choose revoke, suspend or restore.');
+    if (tid === user.tenantId && status !== 'active') throw new HttpError(409, 'You can’t revoke or suspend your own organization.');
+    await saveTenant(tid, { accessStatus: status, accessReason: status === 'active' ? '' : cleanText(reason, 120), accessChangedAt: new Date().toISOString(), accessChangedBy: user.email || user.userId });
+    clearAccessCache(tid);
+    await audit(tid, `NexpatchOnline (${user.email || user.userId})`, status === 'active' ? 'restored access' : status === 'revoked' ? 'revoked access' : 'suspended access', cleanText(reason, 120));
+    return { tenantId: tid, accessStatus: status };
+  }, 'any') });
+
+// Per-organization settings: label, billing contact, subscription end, limit overrides, feature switches, allowed invitation domains.
+app.http('platformTenantSettings', { methods: ['PUT'], authLevel: 'anonymous', route: 'platform/tenants/{id}/settings',
+  handler: withUser(async (req, _c, user) => {
+    requirePlatform(user);
+    const tid = String(req.params.id || '');
+    const t = await getTenant(tid);
+    if (!t) throw new HttpError(404, 'Organization not found.');
+    const b = await readJson(req);
+    const fields = { label: cleanText(b.label, 80), billingContact: cleanText(b.billingContact, 120), paidUntil: cleanDate(b.paidUntil),
+      allowedDomains: parseDomains(b.allowedDomains).join(', ') };
+    if (fields.billingContact && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fields.billingContact)) throw new HttpError(400, 'Enter a valid billing contact email, or leave it blank.');
+    for (const [k, src] of [['limitDevices', b.limitDevices], ['limitCustomApps', b.limitCustomApps], ['limitPackageRequests', b.limitPackageRequests]]) {
+      const n = overrideNumber(src);
+      if (src !== '' && src != null && n == null) throw new HttpError(400, 'Limits must be whole numbers, or blank to use the plan limit.');
+      fields[k] = n == null ? '' : n;
+    }
+    for (const k of Object.keys(FEATURES)) fields['feat_' + k] = b.features && b.features[k] === false ? 'off' : 'on';
+    await saveTenant(tid, fields);
+    clearAccessCache(tid);
+    await audit(tid, `NexpatchOnline (${user.email || user.userId})`, 'changed organization settings', Object.keys(FEATURES).filter(k => fields['feat_' + k] === 'off').map(k => FEATURES[k] + ' off').join(', ') || 'settings updated');
+    return { tenantId: tid, ...tenantSettings({ ...t, ...fields }) };
   }, 'any') });
 
 // Publishing jobs across every organization, newest first.

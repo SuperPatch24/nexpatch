@@ -1,14 +1,16 @@
 import { app } from '@azure/functions';
+import { featureOn, featureMessage } from '../lib/tenantsettings.js';
 import ExcelJS from 'exceljs';
 import { withUser, HttpError } from '../lib/http.js';
 import { getTenant } from '../lib/store.js';
 import { loadDevices, loadCycles } from '../lib/devices.js';
-import { buildReports, cycleCompliance, cycleFor, toCsv } from '../lib/devreports.js';
+import { buildReports, buildInsights, cycleCompliance, cycleFor, toCsv } from '../lib/devreports.js';
 
 const TITLES = { hardware: 'Hardware and storage', lowStorage: 'Low storage', lowMemory: 'Low memory', stale: 'No recent check-in', windows: 'Windows versions', security: 'Compliance and encryption', m365: 'Microsoft 365 Apps by device', m365Versions: 'Microsoft 365 Apps versions' };
 
 async function data(user) {
   const t = await getTenant(user.tenantId);
+  if (t && !featureOn(t, 'deviceReports')) throw new HttpError(403, featureMessage('deviceReports'));
   if (!t || t.status !== 'active') throw new HttpError(409, 'Your organization isn’t connected yet. Approve NexpatchOnline on the Connect page first.');
   const rows = await loadDevices(user.tenantId);
   const now = new Date(), live = cycleCompliance(rows.map(r => ({ ...r })), cycleFor(now), now);
@@ -21,7 +23,7 @@ async function data(user) {
 // GET /api/reports/devices – summary and every device report table, plus the Patch Tuesday cycles.
 app.http('deviceReports', { methods: ['GET'], authLevel: 'anonymous', route: 'reports/devices', handler: withUser(async (_r, _c, user) => {
   const d = await data(user);
-  return { syncedAt: d.t.lastDeviceSyncAt || null, syncError: d.t.lastDeviceSyncError || '', summary: d.summary, titles: TITLES, reports: d.reports,
+  return { syncedAt: d.t.lastDeviceSyncAt || null, syncError: d.t.lastDeviceSyncError || '', summary: d.summary, insights: buildInsights(d.rows, d.now), titles: TITLES, reports: d.reports,
     cycles: d.cycles.map(({ cycle, label, start, end, devices, compliant, pct, stale, m365Devices, m365Current, current }) => ({ cycle, label, start, end, devices, compliant, pct, stale, m365Devices, m365Current, current: !!current })),
     currentCycle: { ...d.cycles[0], rows: d.live.rows } };
 }, 'viewer') });

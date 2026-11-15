@@ -1,4 +1,5 @@
 import { app } from '@azure/functions';
+import { featureOn, featureMessage } from '../lib/tenantsettings.js';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { withUser, HttpError, readJson, json } from '../lib/http.js';
 import { getTenant, saveTenant, listActiveTenants, getRow, putRow, deleteRow, listRows, audit } from '../lib/store.js';
@@ -47,7 +48,7 @@ app.http('acKey', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontro
     await audit(user.tenantId, user.email || user.userId, 'created collector key', 'Previous key, if any, stopped working');
     const endpoint = new URL('/api/appcontrol/ingest', req.url).toString();
     return { key, installer: installerFor(user.tenantId, key, endpoint), uninstaller: UNINSTALLER };
-  }, 'owner') });
+  }, 'admin') });
 
 // Collector devices send events here (no user sign-in; authenticated by the organization's key).
 app.http('acIngest', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontrol/ingest',
@@ -172,6 +173,7 @@ app.http('acBaseDeploy', { methods: ['POST'], authLevel: 'anonymous', route: 'ap
   handler: withUser(async (req, _c, user) => {
     const t = await activeTenant(user.tenantId);
     if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to deploy App Control policies.');
+    if (!featureOn(t, 'appControl')) throw new HttpError(403, featureMessage('appControl'));
     const cfg = await readJson(req);
     const groups = Array.isArray(cfg.groups) ? cfg.groups : [];
     const groupIds = await resolveGroupIds(user.tenantId, groups);
@@ -198,6 +200,7 @@ app.http('acSuppDeploy', { methods: ['POST'], authLevel: 'anonymous', route: 'ap
   handler: withUser(async (req, _c, user) => {
     const t = await activeTenant(user.tenantId);
     if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to deploy App Control policies.');
+    if (!featureOn(t, 'appControl')) throw new HttpError(403, featureMessage('appControl'));
     if (!t.acBasePolicyId) throw new HttpError(409, 'Deploy the base policy first; the supplemental policy extends it.');
     const { xml } = await buildSupplemental(user.tenantId, t);
     const cfg = t.acBaseConfig ? JSON.parse(t.acBaseConfig) : {};

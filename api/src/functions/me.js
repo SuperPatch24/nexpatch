@@ -15,6 +15,7 @@ app.http('me', {
       user: { tenantId: user.tenantId, userId: user.userId, name: user.name, email: user.email },
       role: user.role,
       access: user.access,
+      accessStatus: user.tenantStatus || 'active', accessMessage: user.tenantMessage || '',
       platformAdmin: isPlatformAdmin(user),
       platformRole: platformRole(user),
       plan: t && t.status === 'active' ? planStatus(t) : null,

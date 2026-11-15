@@ -1,9 +1,11 @@
 import { app } from '@azure/functions';
+import { featureOn, featureMessage } from '../lib/tenantsettings.js';
+import { limitsFor, limitMessage, countThisMonth } from '../lib/plans.js';
 import { randomUUID, createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import { withUser, HttpError, readJson } from '../lib/http.js';
 import { graphAll } from '../lib/graph.js';
-import { listRows, putRow, deleteRow, audit } from '../lib/store.js';
+import { listRows, putRow, deleteRow, audit, getTenant } from '../lib/store.js';
 
 const clean = (v, n=200) => String(v ?? '').trim().slice(0,n);
 const safeJson = v => { try { return JSON.parse(v || '{}'); } catch { return {}; } };
@@ -43,6 +45,10 @@ app.http('packageDraftCreate', { methods:['POST'], authLevel:'anonymous', route:
   const b=await readJson(req); const name=clean(b.name,160), publisher=clean(b.publisher,160), installerType=clean(b.installerType,20).toLowerCase();
   if (!name || !['msi','exe'].includes(installerType)) throw new HttpError(400,'Enter an application name and a supported MSI or EXE installer type for the secure Windows packaging worker.');
   const sourceUrl=clean(b.sourceUrl,1000); if(sourceUrl && !/^https:\/\//i.test(sourceUrl)) throw new HttpError(400,'Installer URL must use HTTPS.');
+  const tn=await getTenant(user.tenantId), lim=limitsFor(tn);
+  if (!featureOn(tn, 'packaging')) throw new HttpError(403, featureMessage('packaging'));
+  const limitMsg=limitMessage('customApps',lim,countThisMonth(await listRows('PackageDrafts',user.tenantId,2000)));
+  if(limitMsg) throw new HttpError(402,limitMsg);
   const id=randomUUID(), at=new Date().toISOString();
   const fields={ name,publisher,version:clean(b.version,80),installerType,sourceUrl,architecture:clean(b.architecture,20)||'unknown',installCommand:clean(b.installCommand,500),uninstallCommand:clean(b.uninstallCommand,500),detectionRule:clean(b.detectionRule,1000),detectionType:clean(b.detectionType,40),detectionPath:clean(b.detectionPath,500),detectionValue:clean(b.detectionValue,300),installContext:clean(b.installContext,30),restartBehavior:clean(b.restartBehavior,40),returnCodes:clean(b.returnCodes,1000),dependencies:JSON.stringify(Array.isArray(b.dependencies)?b.dependencies.filter(x=>x&&typeof x.id==='string').slice(0,50).map(x=>({id:x.id.slice(0,100),name:clean(x.name,160)})):[]),dependencyType:clean(b.dependencyType,40),supersedence:JSON.stringify(Array.isArray(b.supersedence)?b.supersedence.filter(x=>x&&typeof x.id==='string').slice(0,50).map(x=>({id:x.id.slice(0,100),name:clean(x.name,160)})):[]),uninstallSuperseded:!!b.uninstallSuperseded,detectionScript:clean(b.detectionScript,12000),deploymentSchedule:'manual',deploymentRings:'',notificationSettings:'',reportingNotes:'',notes:'',status:'draft',stage:'intake',createdAt:at,createdBy:clean(user.email||user.userId,200),uploadReceived:false,packagingExecuted:false };
   await putRow('PackageDrafts',user.tenantId,id,fields,'Replace'); await audit(user.tenantId,user.email||user.userId,'created packaging draft',`${name} (${installerType})`);

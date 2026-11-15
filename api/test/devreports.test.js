@@ -92,3 +92,23 @@ test('CSV output is quoted correctly and neutralises spreadsheet formulas', () =
 test('shapeDevice tolerates empty rows', () => {
   const d = shapeDevice({}, now); assert.equal(d.freePct, null); assert.equal(d.stale, false); assert.equal(d.encrypted, null);
 });
+
+import { buildInsights } from '../src/lib/devreports.js';
+test('device insights bucket devices for the insights page', () => {
+  const i = buildInsights([
+    dev({ id: 'a', user: 'ann@x.com', manufacturer: 'Dell', model: 'Latitude', ramBytes: 16 * GB, lastSync: '2026-11-13T08:00:00Z', owner: 'company', enrolledAt: '2026-11-02T00:00:00Z' }),
+    dev({ id: 'b', user: 'ann@x.com', manufacturer: 'Dell', model: 'Latitude', ramBytes: 4 * GB, lastSync: '2026-11-10T00:00:00Z', compliance: 'noncompliant', encrypted: false }),
+    dev({ id: 'c', user: '', manufacturer: 'HP', model: 'EliteBook', ramBytes: 0, storageTotal: 0, storageFree: 0, lastSync: '' }),
+    dev({ id: 'd', user: 'bob@x.com', lastSync: '2026-08-01T00:00:00Z', osVersion: '10.0.26100.1', storageFree: 10 * GB })
+  ], now);
+  assert.equal(i.total, 4);
+  const get = (list, label) => list.find(x => x.label === label)?.count;
+  assert.equal(get(i.lastContact, 'Today'), 1); assert.equal(get(i.lastContact, '1 to 7 days'), 1); assert.equal(get(i.lastContact, 'Over 30 days'), 1); assert.equal(get(i.lastContact, 'Never'), 1);
+  assert.equal(get(i.memory, '16 to 31 GB'), 2); assert.equal(get(i.memory, 'Under 4 GB'), 0); assert.equal(get(i.memory, '4 to 7 GB'), 1); assert.equal(get(i.memory, 'Unknown'), 1);
+  assert.equal(get(i.compliance, 'Not compliant'), 1); assert.equal(get(i.encryption, 'Not encrypted'), 1);
+  assert.equal(get(i.os, 'Windows 11 24H2'), 1);
+  assert.equal(i.users.people, 2); assert.equal(i.users.noUser, 1); assert.equal(i.users.withSeveral, 1); assert.equal(i.users.top[0].label, 'ann@x.com');
+  assert.equal(get(i.models, 'Dell Latitude'), 2);
+  assert.equal(i.enrolled.length, 6); assert.equal(i.enrolled.at(-1).count, 1);
+  assert.equal(get(i.freeSpace, 'Under 10% free'), 1); assert.equal(get(i.freeSpace, 'Unknown'), 1);
+});

@@ -604,7 +604,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       </div>
     </section>
 
-    <footer class="pub-foot"><div class="wrap"><span>© <span id="yr"></span> NexpatchOnline</span><span>Built for Microsoft Intune. Not affiliated with Microsoft. <a id="siteSupportLink" hidden></a></span></div></footer>
+    <footer class="pub-foot"><div class="wrap"><span>© <span id="yr"></span> NexpatchOnline</span><span>Built for Microsoft Intune. Not affiliated with Microsoft. <a href="/legal/terms.html">Terms</a> · <a href="/legal/privacy.html">Privacy</a> · <a href="/legal/dpa.html">Data processing</a> <a id="siteSupportLink" hidden></a></span></div></footer>
   </div>
 
   <!-- LOGIN -->
@@ -633,6 +633,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           <div class="divider">or use your work email</div>
           <label class="field"><span>Work email</span><input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="email"></label>
           <button class="btn primary wide" type="button" id="emailBtn">Continue</button>
+          <p class="small" style="margin:12px 0 0">By signing in you agree to the <a href="/legal/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/legal/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. You’ll be asked to confirm after sign-in.</p>
           <p id="loginErr" role="alert" style="color:var(--red);font-weight:700;margin:10px 0 0;font-size:.9rem"></p>
           <p class="small" style="margin-top:18px">Just looking? <button class="linkbtn" type="button" data-demo style="padding:0;color:var(--teal)">Explore with sample data</button></p>
           <div class="preview-note" id="loginNote" hidden></div>
@@ -1374,6 +1375,16 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
   </div>
 </dialog>
 
+<dialog id="legalDlg" aria-labelledby="legalTitle" style="width:min(560px,96vw)">
+  <div style="padding:26px">
+    <h2 id="legalTitle" style="margin:0 0 6px">Before you continue</h2>
+    <p class="small" id="legalLead" style="margin:0 0 16px">Please review and accept these to use NexpatchOnline.</p>
+    <label class="check" id="legalTermsRow"><input type="checkbox" id="legalTerms"> <span>I have read and agree to the <a href="/legal/terms.html" target="_blank" rel="noopener">Terms of Service</a> and the <a href="/legal/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+    <label class="check" id="legalDpaRow" hidden style="margin-top:10px"><input type="checkbox" id="legalDpa"> <span>On behalf of my organization, I accept the <a href="/legal/dpa.html" target="_blank" rel="noopener">Data Processing Agreement</a> and confirm I am authorized to do so.</span></label>
+    <p id="legalErr" role="alert" style="color:var(--red);font-weight:700;margin:12px 0 0;font-size:.9rem"></p>
+    <div class="row" style="margin-top:18px;justify-content:space-between"><button class="btn" type="button" id="legalOut">Sign out</button><button class="btn primary" type="button" id="legalOk" disabled>Agree and continue</button></div>
+  </div>
+</dialog>
 <dialog id="addDlg" aria-labelledby="addTitle">
   <div class="dlg-head"><h2 id="addTitle">Add an app</h2><button class="btn ghost" type="button" id="aCancel">Close</button></div>
   <div class="dlg-body">
@@ -2055,6 +2066,7 @@ async function api(path, method, body){
   try{ res=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+path, { method:method||'GET', headers: body ? { Authorization:'Bearer '+token, 'Content-Type':'application/json' } : { Authorization:'Bearer '+token }, body: body ? JSON.stringify(body) : undefined }); }
   catch(e){ throw new Error('Couldn\u2019t reach the NexpatchOnline backend. Check apiBaseUrl in config.js and the CORS setting.'); }
   let out={}; try{ out=await res.json(); }catch(e){}
+  if(res.status===428 && !legalPromise){ try{ legalGate(await api('/legal/status')); }catch(e){} }
   if(!res.ok){ const err=new Error(out.error || ('The server returned an error ('+res.status+').')); err.status=res.status; throw err; }
   return out;
 }
@@ -2085,11 +2097,31 @@ async function mergeSharedCatalog(){
     if(added) save();
   }catch(e){}
 }
+let legalPromise=null;
+function legalGate(lg){
+  if(!lg || (!lg.needsTerms && !lg.needsDpa)) return Promise.resolve();
+  if(legalPromise) return legalPromise;
+  legalPromise=new Promise(resolve=>{
+    const dlg=$('#legalDlg'), t=$('#legalTerms'), d=$('#legalDpa'), ok=$('#legalOk');
+    $('#legalTermsRow').hidden=!lg.needsTerms; $('#legalDpaRow').hidden=!lg.needsDpa; t.checked=false; d.checked=false; $('#legalErr').textContent='';
+    $('#legalLead').textContent = lg.needsTerms ? 'Please review and accept these to use NexpatchOnline. You\u2019ll only be asked again if they change.' : 'Your organization\u2019s data is covered by this agreement. An admin needs to accept it once.';
+    const sync=()=>{ ok.disabled=!((!lg.needsTerms||t.checked)&&(!lg.needsDpa||d.checked)); };
+    t.onchange=sync; d.onchange=sync; sync();
+    dlg.addEventListener('cancel',e=>e.preventDefault());
+    $('#legalOut').onclick=()=>{ dlg.close(); legalPromise=null; $('#signOutBtn').click(); };
+    ok.onclick=async()=>{ ok.disabled=true; $('#legalErr').textContent='';
+      try{ await api('/legal/accept','POST',{terms:!!t.checked,dpa:!!d.checked}); dlg.close(); legalPromise=null; resolve(); }
+      catch(e){ $('#legalErr').textContent=e.message; sync(); } };
+    dlg.showModal();
+  });
+  return legalPromise;
+}
 async function loadFromServer(){
   if(!API_ON || !SESSION || SESSION.demo || !PCA) return;
   try{
     if(SERVER.pendingActivate){ SERVER.pendingActivate=false; await activateTenant(); CONSENT_MSG={ok:true,text:'Your organization is connected. Pulling your inventory from Intune now.'}; route(); SERVER.me=await api('/me'); await syncNow(); return; }
     SERVER.me=await api('/me');
+    if(SERVER.me.legal && (SERVER.me.legal.needsTerms||SERVER.me.legal.needsDpa)){ await legalGate(SERVER.me.legal); SERVER.me=await api('/me'); }
     $('#adminCenterLink').hidden=!SERVER.me.platformAdmin;
     const t=SERVER.me.tenant;
     if(t && t.status==='active') await mergeSharedCatalog();

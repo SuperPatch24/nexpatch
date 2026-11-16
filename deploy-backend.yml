@@ -24,7 +24,7 @@ jobs:
 
       - name: Install packages
         working-directory: api
-        run: npm install --omit=dev
+        run: npm ci --omit=dev
 
       - name: Sign in to Azure
         uses: azure/login@v2

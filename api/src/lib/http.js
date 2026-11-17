@@ -1,9 +1,10 @@
 // Shared HTTP helpers: JSON responses, friendly errors, signed-in user and role checks.
 import { verifyUser } from './auth.js';
 import { resolveAccess, rank } from './access.js';
+import { enforceSession, countRequest } from './sessions.js';
 
 export class HttpError extends Error {
-  constructor(status, message) { super(message); this.status = status; }
+  constructor(status, message, code) { super(message); this.status = status; if (code) this.code = code; }
 }
 
 export const json = (status, body) => ({ status, jsonBody: body });
@@ -12,10 +13,13 @@ const ROLE_NAMES = { viewer: 'Viewer', admin: 'Admin', owner: 'Owner' };
 
 // Wraps a handler so it only runs for a valid user with at least `minRole` in their organization.
 // minRole 'any' = any signed-in user (the handler decides).
-export function withUser(handler, minRole = 'viewer') {
+// options.skipSession: don't apply the organization's session and MFA rules (used by the
+// endpoints the browser needs to report a fresh sign-in and read the rules).
+export function withUser(handler, minRole = 'viewer', options = {}) {
   return async (request, context) => {
     try {
       const user = await verifyUser(request);
+      if (!options.skipSession) { user.sessionPolicy = await enforceSession(user); countRequest(user.tenantId); }
       const access = await resolveAccess(user);
       user.role = access.role;
       user.access = access.source;
@@ -29,7 +33,7 @@ export function withUser(handler, minRole = 'viewer') {
       const body = await handler(request, context, user);
       return json(200, body ?? {});
     } catch (err) {
-      if (err instanceof HttpError) return json(err.status, { error: err.message });
+      if (err instanceof HttpError) return json(err.status, { error: err.message, ...(err.code ? { code: err.code } : {}), ...(err.claims ? { claims: err.claims } : {}) });
       context.error('Unhandled error', err);
       return json(500, { error: 'Something went wrong on the server. Please try again.' });
     }

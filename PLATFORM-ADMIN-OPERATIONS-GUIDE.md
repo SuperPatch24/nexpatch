@@ -135,6 +135,9 @@ This section is the end-to-end record for creating and operating the NexpatchOnl
 6. Review platform reports and export permissions.
 7. Keep financial reporting disabled until a billing provider, verified webhooks, customer mapping and invoice records are implemented.
 8. Keep the auto-publish runbook in the Admin Center. Scheduling it requires a dedicated identity, least privilege, monitoring and stop conditions.
+9. Sign-in security: add the `auth_time` optional claim (Access token) to the API app registration before setting session limits. Set platform defaults in **Sign-in security** and per-organization overrides in **Organizations → Settings**. Require MFA only for organizations that have created the Conditional Access authentication context (default `c1`) with an MFA policy; the Dashboard's MFA sign-ins column shows which are ready. The security settings endpoints skip session rules so a platform administrator can always undo a lock-out.
+10. Dashboard: review sign-ins, daily activity, storage per container, packages, publishes and installs. Sign-in countries come from Cloudflare (`/cdn-cgi/trace`) and no IP address is stored; the Privacy Policy activity row lists this.
+11. Appearance: choose the default theme (Light, Dark, Ocean, High contrast) and the site icon in **Website settings**. People can still pick their own theme.
 
 ## 8.8 Shared application catalog operations
 

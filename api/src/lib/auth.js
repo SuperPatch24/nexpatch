@@ -37,6 +37,10 @@ export async function verifyUser(request) {
     name: payload.name || '',
     email: (payload.preferred_username || '').toLowerCase(),
     // Entra directory roles (role template IDs). Present when the app manifest has groupMembershipClaims = "DirectoryRole".
-    directoryRoles: Array.isArray(payload.wids) ? payload.wids : []
+    directoryRoles: Array.isArray(payload.wids) ? payload.wids : [],
+    // Session controls (see sessionpolicy.js). auth_time is an optional claim; acrs lists the
+    // Conditional Access authentication contexts the sign-in satisfied.
+    authTime: Number.isFinite(payload.auth_time) ? payload.auth_time : null,
+    acrs: Array.isArray(payload.acrs) ? payload.acrs : []
   };
 }

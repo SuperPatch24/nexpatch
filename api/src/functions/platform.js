@@ -9,6 +9,8 @@ import { findApps, verifyStore, verifyWinget } from '../lib/appfinder.js';
 import { cleanVersionSource } from '../lib/versionwatch.js';
 import { ACCESS, FEATURES, accessOf, featureOn, overrideNumber, parseDomains } from '../lib/tenantsettings.js';
 import { clearAccessCache } from '../lib/access.js';
+import { cleanTenantPolicy } from '../lib/sessionpolicy.js';
+import { THEMES, ICONS, cleanTheme, cleanIcon, iconUrl } from '../lib/appearance.js';
 
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
 const STORE_ID = /^[A-Z0-9]{8,16}$/i;
@@ -168,6 +170,7 @@ function tenantSettings(t) {
   return { label: t.label || '', billingContact: t.billingContact || '', paidUntil: t.paidUntil || '', allowedDomains: t.allowedDomains || '',
     accessStatus: accessOf(t), accessReason: t.accessReason || '', accessChangedAt: t.accessChangedAt || null, accessChangedBy: t.accessChangedBy || '',
     limitDevices: t.limitDevices ?? '', limitCustomApps: t.limitCustomApps ?? '', limitPackageRequests: t.limitPackageRequests ?? '', features,
+    sessionMaxHours: t.sessionMaxHours ?? '', sessionIdleMinutes: t.sessionIdleMinutes ?? '', mfaMode: t.mfaMode || 'default',
     subscriptionEnded, revokeDue: subscriptionEnded && accessOf(t) === 'active' };
 }
 const cleanDate = v => { if (!v) return ''; const d = new Date(v); if (isNaN(d)) throw new HttpError(400, 'Enter a valid date.'); return d.toISOString().slice(0, 10); };
@@ -208,6 +211,10 @@ app.http('platformTenantSettings', { methods: ['PUT'], authLevel: 'anonymous', r
       fields[k] = n == null ? '' : n;
     }
     for (const k of Object.keys(FEATURES)) fields['feat_' + k] = b.features && b.features[k] === false ? 'off' : 'on';
+    // Session rules: blank = use the platform default. Only sent by Admin Center versions that show them.
+    if ('sessionMaxHours' in b || 'sessionIdleMinutes' in b || 'mfaMode' in b) {
+      try { Object.assign(fields, cleanTenantPolicy(b)); } catch (e) { throw new HttpError(400, e.message); }
+    }
     await saveTenant(tid, fields);
     clearAccessCache(tid);
     await audit(tid, `NexpatchOnline (${user.email || user.userId})`, 'changed organization settings', Object.keys(FEATURES).filter(k => fields['feat_' + k] === 'off').map(k => FEATURES[k] + ' off').join(', ') || 'settings updated');
@@ -241,14 +248,16 @@ app.http('platformSalesLeads', { methods: ['GET'], authLevel: 'anonymous', route
 
 // Global website settings are editable only by platform administrators.
 app.http('platformSiteContentGet', { methods:['GET'], authLevel:'anonymous', route:'platform/site-content', handler:withUser(async(_req,_ctx,user)=>{
-  requirePlatform(user); const r=await getRow('SiteContent',GLOBAL,'website'); return {announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||'',updatedAt:r?.updatedAt||null};
+  requirePlatform(user); const r=await getRow('SiteContent',GLOBAL,'website'); return {announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||'',defaultTheme:cleanTheme(r?.defaultTheme),siteIcon:cleanIcon(r?.siteIcon),themes:THEMES,icons:ICONS,updatedAt:r?.updatedAt||null};
 },'any') });
 app.http('platformSiteContentSave', { methods:['PUT'], authLevel:'anonymous', route:'platform/site-content', handler:withUser(async(req,_ctx,user)=>{
   requirePlatform(user); const b=await readJson(req); const fields={announcement:String(b.announcement||'').trim().slice(0,500),supportEmail:String(b.supportEmail||'').trim().slice(0,254),heroTitle:String(b.heroTitle||'').trim().slice(0,180),heroSubtitle:String(b.heroSubtitle||'').trim().slice(0,500),updatedAt:new Date().toISOString(),updatedBy:user.email||user.userId};
+  if('defaultTheme' in b){ if(b.defaultTheme && !cleanTheme(b.defaultTheme)) throw new HttpError(400,'Choose one of the available themes.'); fields.defaultTheme=cleanTheme(b.defaultTheme); }
+  if('siteIcon' in b){ if(b.siteIcon && cleanIcon(b.siteIcon)!==b.siteIcon) throw new HttpError(400,'Choose one of the available icons.'); fields.siteIcon=cleanIcon(b.siteIcon); }
   if(fields.supportEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.supportEmail)) throw new HttpError(400,'Enter a valid support email address.');
   await putRow('SiteContent',GLOBAL,'website',fields,'Merge'); return {saved:true,...fields};
 },'any') });
 app.http('publicSiteContent', { methods:['GET'], authLevel:'anonymous', route:'site-content', handler:async()=>{
-  try { const r=await getRow('SiteContent',GLOBAL,'website'); return {status:200,jsonBody:{announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||''}}; }
-  catch { return {status:200,jsonBody:{announcement:'',supportEmail:''}}; }
+  try { const r=await getRow('SiteContent',GLOBAL,'website'); return {status:200,jsonBody:{announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||'',defaultTheme:cleanTheme(r?.defaultTheme),siteIcon:cleanIcon(r?.siteIcon),siteIconUrl:iconUrl(r?.siteIcon)}}; }
+  catch { return {status:200,jsonBody:{announcement:'',supportEmail:'',defaultTheme:'',siteIcon:'classic',siteIconUrl:'/favicon.svg'}}; }
 } });

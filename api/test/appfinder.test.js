@@ -69,7 +69,7 @@ test('admin vendor shortcuts are well-formed WinGet publisher names with no dupl
   const html = readFileSync(new URL('../../public/admin/index.html', import.meta.url), 'utf8');
   const chips = [...html.matchAll(/data-vendor="([^"]+)"/g)].map(m => m[1]);
   const list = [...html.matchAll(/<option value="([^"]+)">/g)].map(m => m[1]).filter(v => chips.includes(v));
-  assert.ok(chips.length >= 40, 'expected a broad vendor list');
+  assert.ok(chips.length >= 130, 'expected a broad vendor list');
   assert.equal(new Set(chips).size, chips.length);
   for (const v of chips) assert.match(v, /^[A-Za-z0-9][A-Za-z0-9._+-]{1,60}$/, v);   // the same rule listVendorPackages enforces
   assert.equal(new Set(list).size, chips.length, 'every shortcut is also in the type-ahead list');

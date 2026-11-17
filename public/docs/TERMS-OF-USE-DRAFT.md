@@ -1,5 +1,7 @@
 # NexpatchOnline Terms of Use — draft for legal review
 
+> Superseded: the published versions are in public/legal/ (terms.html, privacy.html, dpa.html). Edit company details in public/legal/legal-config.js.
+
 **Status: Draft template. Not legal advice and not ready for publication without review by qualified counsel in the jurisdictions where NexpatchOnline operates.**
 
 ## 1. Acceptance and eligibility

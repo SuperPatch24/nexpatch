@@ -62,3 +62,10 @@ Catalog edits are shared with every connected client organization. Verify packag
 - **Browse a vendor:** in Catalog, type a vendor such as Microsoft or Oracle to list every package that vendor has on WinGet. Add apps one at a time, or add the shown apps (up to 25 at once). Each is verified when added; ones that fail are skipped. Check a vendor's license terms before offering an app to customers.
 - **Version checks:** every catalog app is checked against its vendor source about once a day. Choose the source per app in the catalog form: automatic (WinGet or Microsoft Store), GitHub releases (`owner/name`), or any public RSS/Atom feed (optionally with a pattern that picks the version out of the newest entry's title). **Check versions now** runs a batch immediately, and **New versions detected** lists what changed in the last 45 days.
 - Detection only records versions. Nothing is downloaded, packaged or published automatically: WinGet apps are built at publish time from the latest version, so customers with auto-publish on get the new version at their next run.
+
+## Plans and the free trial
+
+- New organizations get a **15-day free trial** (no card) with Pro limits, starting when an admin connects the organization. The public site's "Try it free" buttons remember which plan the visitor looked at; you see it under Organizations ("interested in …").
+- To put an organization on a paid plan, choose **Set paid plan…** in the Organizations table: pick Starter, Pro, Pro Plus or Enterprise, monthly or annual platform license, and whether the App Control add-on applies. This records the plan and sets the monthly limits; it does not bill anyone.
+- Limits per month: custom app builds and app package requests (see `docs/PRICING-PROPOSAL.md`). When a limit is reached the customer sees a message to contact you. Customers see their plan, limits and usage under Company profile.
+- Existing trials keep the end date they were given; only new trials and "Restart trial" use 15 days.

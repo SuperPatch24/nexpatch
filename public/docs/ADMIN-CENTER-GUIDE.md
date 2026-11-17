@@ -60,3 +60,10 @@ Website settings edit supported public text fields; they are not an unrestricted
 ## Operational safety
 
 Catalog edits are shared with every connected client organization. Verify package identifiers, publishers, Store region availability and update behavior before enabling deployment. Do not automatically add catalog-gap suggestions without review.
+
+## Plans and the free trial
+
+- New organizations get a **15-day free trial** (no card) with Pro limits, starting when an admin connects the organization. The public site's "Try it free" buttons remember which plan the visitor looked at; you see it under Organizations ("interested in …").
+- To put an organization on a paid plan, choose **Set paid plan…** in the Organizations table: pick Starter, Pro, Pro Plus or Enterprise, monthly or annual platform license, and whether the App Control add-on applies. This records the plan and sets the monthly limits; it does not bill anyone.
+- Limits per month: custom app builds and app package requests (see `docs/PRICING-PROPOSAL.md`). When a limit is reached the customer sees a message to contact you. Customers see their plan, limits and usage under Company profile.
+- Existing trials keep the end date they were given; only new trials and "Restart trial" use 15 days.

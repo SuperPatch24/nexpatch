@@ -3,6 +3,7 @@ import { withUser } from '../lib/http.js';
 import { getTenant } from '../lib/store.js';
 import { isPlatformAdmin, platformRole } from '../lib/platform.js';
 import { planStatus } from '../lib/plan.js';
+import { legalStatus } from '../lib/legal.js';
 
 // GET /api/me – who is signed in, their role, and whether their organization is connected.
 app.http('me', {
@@ -11,7 +12,10 @@ app.http('me', {
   route: 'me',
   handler: withUser(async (_req, _ctx, user) => {
     const t = await getTenant(user.tenantId);
+    // What the person still has to accept; the app shows the "Before you continue" box when needed.
+    const legal = user.role ? await legalStatus(user, user.role).catch(() => null) : null;
     return {
+      legal,
       user: { tenantId: user.tenantId, userId: user.userId, name: user.name, email: user.email },
       role: user.role,
       access: user.access,

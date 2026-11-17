@@ -14,6 +14,9 @@ api/                     Backend (Azure Functions, Node.js 22)
   src/functions/         tenant, inventory, users, audit, publish (+ queue worker), reports, install-results, appcontrol, timers
   src/lib/               token checks, Table Storage, Microsoft Graph with certificate, Store discovery candidates
 wrangler.jsonc           Cloudflare settings (publishes ./public only)
+workers/windows-packager/ Windows packaging worker scripts (run on your own Windows host)
+drafts/                  Work in progress that is not deployed (App Control agent 2.1)
+.github/workflows/       deploy-backend.yml (deploys api/) and ci.yml (runs the API tests)
 docs/
   AUTO-DEPLOY.md         GitHub Actions deployment and platform administrators
   ENTRA-SETUP.md         App registration and sign-in

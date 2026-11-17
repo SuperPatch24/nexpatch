@@ -1,5 +1,7 @@
 # NexpatchOnline Privacy Notice — draft for legal review
 
+> Superseded: the published versions are in public/legal/ (terms.html, privacy.html, dpa.html). Edit company details in public/legal/legal-config.js.
+
 **Status: Draft template. Complete with actual data flows, retention periods, subprocessors, legal bases and contact details before publishing.**
 
 ## Information processed

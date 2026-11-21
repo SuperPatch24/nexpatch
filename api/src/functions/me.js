@@ -13,7 +13,8 @@ app.http('me', {
   route: 'me',
   handler: withUser(async (_req, _ctx, user) => {
     const t = await getTenant(user.tenantId);
-    const legal = user.role ? { ...(await legalStatus(user, user.role)), urls: DOC_URLS } : null;
+    // What the person still has to accept; the app shows the "Before you continue" box when needed.
+    const legal = user.role ? await legalStatus(user, user.role).then(l => ({ ...l, urls: DOC_URLS })).catch(() => null) : null;
     return {
       legal,
       user: { tenantId: user.tenantId, userId: user.userId, name: user.name, email: user.email },

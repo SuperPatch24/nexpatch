@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { BlobServiceClient, BlobSASPermissions, StorageSharedKeyCredential, generateBlobSASQueryParameters } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
 import { withUser, HttpError, readJson } from '../lib/http.js';
-import { putRow, getRow, listRows, listAllTenants, audit } from '../lib/store.js';
+import { putRow, getRow, listRows, listAllTenants, audit, getTenant } from '../lib/store.js';
+import { limitsFor, limitMessage, countThisMonth } from '../lib/plans.js';
 import { platformRole } from '../lib/platform.js';
 import { escapeHtml, notifyPlatformAdmins, sendBrevoEmail } from '../lib/email.js';
 
@@ -25,6 +26,8 @@ app.http('requestCreate', { methods:['POST'], authLevel:'anonymous', route:'requ
   if(!name) throw new HttpError(400,'Enter the application name.');
   const downloadUrl=String(b.downloadUrl||'').trim().slice(0,2048);
   if(downloadUrl && !/^https:\/\//i.test(downloadUrl)) throw new HttpError(400,'Download links must use HTTPS.');
+  const limitMsg=limitMessage('packageRequests',limitsFor(await getTenant(user.tenantId)),countThisMonth(await listRows('AppRequests',user.tenantId,2000)));
+  if(limitMsg) throw new HttpError(402,limitMsg);
   const id=randomUUID(), now=new Date().toISOString();
   const row={name,publisher:String(b.publisher||'').trim().slice(0,160),website:String(b.website||'').trim().slice(0,2048),downloadUrl,version:String(b.version||'').trim().slice(0,80),architecture:String(b.architecture||'unknown').slice(0,20),notes:String(b.notes||'').trim().slice(0,3000),status:'submitted',adminNotes:'',createdAt:now,updatedAt:now,requestedBy:user.email||user.userId,scanStatus:'not-uploaded'};
   await putRow('AppRequests',user.tenantId,id,row,'Replace');

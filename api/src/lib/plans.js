@@ -62,3 +62,20 @@ export function limitMessage(kind, limits, used) {
   if (!Number.isFinite(max) || used < max) return '';
   return `Your plan includes ${max} ${NOUN[kind]} per month and you have used them all. They reset on the 1st (UTC). Contact NexpatchOnline to upgrade your plan.`;
 }
+
+// A company asking to change its plan (nothing is charged here; the operator confirms and activates it).
+export function validatePlanRequest(b = {}, { devices = 0, current = {} } = {}) {
+  const tier = String(b.tier || '');
+  if (!isTier(tier)) return { error: 'Choose a plan.' };
+  const t = TIERS[tier];
+  const billing = b.billing === 'annual' ? 'annual' : 'monthly';
+  if (billing === 'annual' && !t.annual) return { error: `${t.label} is billed monthly only.` };
+  if (!t.custom && devices > t.maxDevices) return { error: `You have about ${devices.toLocaleString()} devices and ${t.label} covers up to ${t.maxDevices.toLocaleString()}. Choose a larger plan.` };
+  const appControl = b.appControl === true;
+  const same = current.plan === 'active' && current.tier === tier && (current.billing || 'monthly') === billing && (current.appControl === true) === appControl;
+  if (same) return { error: 'That is already your plan.' };
+  return { request: { tier, billing, appControl, note: String(b.note || '').trim().slice(0, 300) } };
+}
+
+export const CLEAR_PLAN_REQUEST = { reqTier: '', reqBilling: '', reqAppControl: false, reqNote: '', reqAt: '', reqBy: '' };
+export const planRequestOf = t => (t?.reqTier ? { tier: t.reqTier, tierLabel: TIERS[t.reqTier]?.label || t.reqTier, billing: t.reqBilling || 'monthly', appControl: t.reqAppControl === true, note: t.reqNote || '', at: t.reqAt || null, by: t.reqBy || '' } : null);

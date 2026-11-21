@@ -3,11 +3,23 @@
 
 export const ACCESS = ['active', 'suspended', 'revoked'];
 export const FEATURES = {
+  apps:       'Apps and patching',
   packaging:  'Packaging and publishing',
   appControl: 'App Control',
   nightlySync: 'Nightly inventory sync',
-  deviceReports: 'Device reports'
+  deviceReports: 'Device reports',
+  automation: 'Automation'
 };
+
+// Which keys are whole products a company is granted (the rest are functions inside them), in the order the Admin Center shows them.
+export const PRODUCT_FEATURES = ['apps', 'appControl', 'automation', 'deviceReports'];
+export const featureMap = t => Object.fromEntries(Object.keys(FEATURES).map(k => [k, featureOn(t, k)]));
+// Turns a { key: true|false } request into stored fields. Only keys that are named change; unknown keys are ignored.
+export function featureFields(requested = {}) {
+  const f = {};
+  for (const k of Object.keys(FEATURES)) if (requested && typeof requested[k] === 'boolean') f['feat_' + k] = requested[k] ? 'on' : 'off';
+  return f;
+}
 
 // Access status: active (normal), suspended (can sign in and read, nothing can be changed), revoked (no access at all).
 export const accessOf = t => (ACCESS.includes(t?.accessStatus) ? t.accessStatus : 'active');

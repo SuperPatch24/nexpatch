@@ -1,6 +1,7 @@
 // Deploys App Control policies to Intune as configuration (settings catalog) policies via Microsoft Graph.
 // Base and supplemental use the same App Control settings-catalog shape, just a different template reference.
-import { graph } from './graph.js';
+import { graphAs } from './graph.js';
+const graph = graphAs('appcontrol');
 
 const CP = '/beta/deviceManagement/configurationPolicies';
 const TEMPLATES = {

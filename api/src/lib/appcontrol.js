@@ -1,7 +1,8 @@
 // App Control live events: shared storage for both sources, the Defender poll, and the supplemental policy.
 import { createHash, randomUUID } from 'node:crypto';
 import { getRow, putRow, listRows } from './store.js';
-import { graph } from './graph.js';
+import { graphAs } from './graph.js';
+const graph = graphAs('appcontrol');
 
 const clip = (v, n = 400) => (v == null ? '' : String(v)).slice(0, n);
 const hex = v => (/^[0-9a-fA-F]{20,128}$/.test(String(v || '').trim()) ? String(v).trim().toUpperCase() : '');

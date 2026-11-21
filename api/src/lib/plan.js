@@ -1,5 +1,6 @@
 // Free trial and subscription status per organization.
-export const TRIAL_DAYS = 30;
+import { TRIAL_DAYS } from './plans.js';
+export { TRIAL_DAYS };
 
 export function planStatus(t) {
   if (!t) return { plan: 'none', active: false, daysLeft: 0, trialEndsAt: null };

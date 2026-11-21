@@ -8,7 +8,7 @@ export class HttpError extends Error {
   constructor(status, message, code) { super(message); this.status = status; if (code) this.code = code; }
 }
 
-export const json = (status, body) => ({ status, jsonBody: body });
+export const json = (status, body, extra = {}) => ({ status, jsonBody: body, ...extra });
 
 const ROLE_NAMES = { viewer: 'Viewer', admin: 'Admin', owner: 'Owner' };
 

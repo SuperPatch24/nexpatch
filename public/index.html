@@ -33,20 +33,6 @@
   --green:#66BE8C; --green-soft:#1D3527; --code-bg:#0B0F1C; --code-ink:#DCE2F5; --code-dim:#7C88B0;
   color-scheme: dark;
 }
-:root[data-theme="ocean"]{
-  --bg:#EAF4F4; --surface:#FFFFFF; --sunk:#F2F8F8; --ink:#0F2A33; --muted:#4B6670; --line:#C7DDE0;
-  --teal:#0B7285; --teal-soft:#D3ECEF; --amber:#9A6200; --amber-soft:#F4E9CF; --red:#B4312A; --red-soft:#F6DCD9;
-  --green:#1E7B4F; --green-soft:#D7EEE2; --code-bg:#0E2A33; --code-ink:#D9EEF1; --code-dim:#86AAB2;
-  color-scheme: light;
-}
-:root[data-theme="contrast"]{
-  --bg:#000000; --surface:#0A0A0A; --sunk:#141414; --ink:#FFFFFF; --muted:#E0E0E0; --line:#FFFFFF;
-  --teal:#FFD400; --teal-soft:#2B2600; --amber:#FFB000; --amber-soft:#2E2000; --red:#FF6B6B; --red-soft:#3A0000;
-  --green:#4CFF8F; --green-soft:#00300F; --code-bg:#000000; --code-ink:#FFFFFF; --code-dim:#CCCCCC;
-  color-scheme: dark;
-}
-:root[data-theme="contrast"] a{text-decoration:underline}
-:root[data-theme="contrast"] .nav a[aria-current="page"]{color:#000;background:var(--teal)}
 *,*::before,*::after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
 body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;font-variant-numeric:tabular-nums}
@@ -65,7 +51,6 @@ a{color:var(--teal)}
 .nav .foot{margin-top:auto;padding:12px;font-size:.82rem;color:var(--muted);position:sticky;bottom:-24px;background:var(--surface)}
 .nav::-webkit-scrollbar{width:8px}.nav::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
 .theme-btn{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;margin-top:8px;font-size:.82rem}
-select.theme-btn{background:var(--surface);color:var(--ink);max-width:132px}
 
 main{padding:36px clamp(16px,4vw,48px) 64px;max-width:1240px;width:100%}
 .view{display:none}
@@ -693,7 +678,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
       <a href="/admin/" id="adminCenterLink" hidden style="font-size:12px">Open Admin Center ↗</a>
       <div class="user"><span class="avatar" id="userAvatar"></span><div class="who"><b id="userName"></b><span id="userEmail"></span></div></div>
       <div id="tenantState">Not connected</div>
-      <div class="row" style="gap:6px"><select class="theme-btn" id="themeBtn" aria-label="Theme"><option value="">Site default</option><option value="light">Light</option><option value="dark">Dark</option><option value="ocean">Ocean</option><option value="contrast">High contrast</option></select><button class="theme-btn" id="signOutBtn" type="button">Sign out</button></div>
+      <div class="row" style="gap:6px"><button class="theme-btn" id="themeBtn" type="button">Switch theme</button><button class="theme-btn" id="signOutBtn" type="button">Sign out</button></div>
     </div>
   </nav>
 
@@ -2068,47 +2053,20 @@ async function initAuth(){
     await PCA.initialize();
     const res = await PCA.handleRedirectPromise({ navigateToLoginRequestUrl:false });
     const acct = (res && res.account) || PCA.getActiveAccount() || PCA.getAllAccounts()[0] || null;
-    if(acct){ PCA.setActiveAccount(acct); setSession(sessionFromAccount(acct)); if(res){ history.replaceState(null,'','/#overview'); toast('Signed in as '+acct.username); if(API_ON) reportSignIn(); } }
+    if(acct){ PCA.setActiveAccount(acct); setSession(sessionFromAccount(acct)); if(res){ history.replaceState(null,'','/#overview'); toast('Signed in as '+acct.username); } }
     else if(SESSION && !SESSION.demo) setSession(null);
   }catch(e){ LOGIN_MSG=friendlyAuthError(e); if(SESSION && !SESSION.demo) setSession(null); history.replaceState(null,'','/#login'); }
 }
-// The organization's session rules (set by the platform administrator) can ask for a fresh
-// sign-in (session_expired / session_idle) or a step-up to MFA (mfa_required + a claims challenge).
-let CLAIMS_TOKEN=null;
-async function sessionChallenge(out, account, retry, retried){
-  if(out.code==='mfa_required' && out.claims){
-    try{ sessionStorage.setItem('nexpatch-claims', out.claims); }catch(e){}
-    CLAIMS_TOKEN=null;
-    if(!retried){ try{ const r=await PCA.acquireTokenSilent({ scopes:[API_SCOPE], account, claims:out.claims }); CLAIMS_TOKEN={ token:r.accessToken, exp:r.expiresOn ? +new Date(r.expiresOn) : Date.now()+600000 }; return retry(true); }catch(e){} }
-    toast(out.error); await PCA.acquireTokenRedirect({ scopes:[API_SCOPE], account, claims:out.claims }); return new Promise(()=>{});
-  }
-  if(out.code==='session_expired' || out.code==='session_idle'){
-    toast(out.error); await PCA.loginRedirect({ scopes:[API_SCOPE], prompt:'login', loginHint:account.username }); return new Promise(()=>{});
-  }
-  const err=new Error(out.error||'Please sign in again.'); err.status=401; throw err;
-}
-// Report a fresh interactive sign-in once, with the country Cloudflare sees (no IP address is sent or stored).
-async function reportSignIn(){
-  let country=''; try{ const t=await (await fetch('/cdn-cgi/trace',{cache:'no-store'})).text(); country=(/^loc=([A-Z]{2})$/m.exec(t)||[])[1]||''; }catch(e){}
-  try{ await api('/session/signin','POST',{ country }); }catch(e){}
-}
-async function api(path, method, body, retried){
+async function api(path, method, body){
   if(!API_ON || !PCA) throw new Error('The NexpatchOnline backend isn\u2019t set up on this site yet.');
   const account=PCA.getActiveAccount(); if(!account) throw new Error('Please sign in again.');
   let token;
-  // After an MFA step-up, keep asking for the auth context claim. MSAL skips its cache when claims
-  // are passed, so reuse that token here until shortly before it expires.
-  let claims=null; try{ claims=sessionStorage.getItem('nexpatch-claims'); }catch(e){}
-  try{
-    if(claims && CLAIMS_TOKEN && CLAIMS_TOKEN.exp-Date.now()>300000) token=CLAIMS_TOKEN.token;
-    else { const r=await PCA.acquireTokenSilent(claims ? { scopes:[API_SCOPE], account, claims } : { scopes:[API_SCOPE], account }); token=r.accessToken; if(claims) CLAIMS_TOKEN={ token, exp:r.expiresOn ? +new Date(r.expiresOn) : Date.now()+600000 }; }
-  }
+  try{ token=(await PCA.acquireTokenSilent({ scopes:[API_SCOPE], account })).accessToken; }
   catch(e){ if(window.msal && e instanceof msal.InteractionRequiredAuthError){ await PCA.acquireTokenRedirect({ scopes:[API_SCOPE], account }); return new Promise(()=>{}); } throw new Error(friendlyAuthError(e)); }
   let res;
   try{ res=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+path, { method:method||'GET', headers: body ? { Authorization:'Bearer '+token, 'Content-Type':'application/json' } : { Authorization:'Bearer '+token }, body: body ? JSON.stringify(body) : undefined }); }
   catch(e){ throw new Error('Couldn\u2019t reach the NexpatchOnline backend. Check apiBaseUrl in config.js and the CORS setting.'); }
   let out={}; try{ out=await res.json(); }catch(e){}
-  if(res.status===401 && out.code) return sessionChallenge(out, account, ()=>api(path, method, body), retried);
   if(res.status===428 && !legalPromise){ try{ legalGate(await api('/legal/status')); }catch(e){} }
   if(!res.ok){ const err=new Error(out.error || ('The server returned an error ('+res.status+').')); err.status=res.status; throw err; }
   return out;
@@ -2137,8 +2095,9 @@ async function mergeSharedCatalog(){
       if(app){Object.assign(app,fields);if(g.latestVersion)app.latest=g.latestVersion;return;}
       app=Object.assign({id:'g-'+g.id,latest:g.latestVersion||'',fleet:[0,0,0,0],cves:0},fields);
       S.apps.push(app); fleetFromInventory(app); added++; });
+    SERVER.catalogAt=Date.now(); SERVER.catalogErr='';
     if(added) save();
-  }catch(e){}
+  }catch(e){ SERVER.catalogErr=e.message||'Could not load the shared catalog.'; }
 }
 let legalPromise=null;
 function legalGate(lg){
@@ -2162,12 +2121,12 @@ function legalGate(lg){
 async function loadFromServer(){
   if(!API_ON || !SESSION || SESSION.demo || !PCA) return;
   try{
-    if(SERVER.pendingActivate){ SERVER.pendingActivate=false; await activateTenant(); CONSENT_MSG={ok:true,text:'Your organization is connected. Pulling your inventory from Intune now.'}; route(); SERVER.me=await api('/me'); await syncNow(); return; }
+    if(SERVER.pendingActivate){ SERVER.pendingActivate=false; await activateTenant(); CONSENT_MSG={ok:true,text:'Your organization is connected. Pulling your inventory from Intune now.'}; route(); SERVER.me=await api('/me'); await mergeSharedCatalog(); await syncNow(); return; }
     SERVER.me=await api('/me');
     if(SERVER.me.legal && (SERVER.me.legal.needsTerms||SERVER.me.legal.needsDpa)){ await legalGate(SERVER.me.legal); SERVER.me=await api('/me'); }
     $('#adminCenterLink').hidden=!SERVER.me.platformAdmin;
     const t=SERVER.me.tenant;
-    if(t && t.status==='active') await mergeSharedCatalog();
+    await mergeSharedCatalog();
     if(t && t.status==='active'){
       if(!S.settings.tenant) S.settings.tenant=t.tenantId;
       const inv=await api('/inventory');
@@ -2208,7 +2167,7 @@ $$('[data-go]').forEach(b=>b.addEventListener('click',()=>{ location.hash='#'+b.
 })();
 $$('[data-scroll]').forEach(b=>b.addEventListener('click',()=>{ const t=document.getElementById(b.dataset.scroll); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); }));
 $('#pubCta').addEventListener('click',()=>{ location.hash = SESSION ? '#overview' : '#login'; });
-$('#signOutBtn').addEventListener('click',()=>{ const real=SESSION && !SESSION.demo; setSession(null); CLAIMS_TOKEN=null; try{ sessionStorage.removeItem('nexpatch-claims'); }catch(e){}
+$('#signOutBtn').addEventListener('click',()=>{ const real=SESSION && !SESSION.demo; setSession(null);
   if(real && PCA){ PCA.logoutRedirect({ account: PCA.getActiveAccount() || undefined }).catch(()=>{ location.hash='#home'; }); return; }
   location.hash='#home'; toast('Signed out'); });
 $('#yr').textContent=new Date().getFullYear();
@@ -2269,6 +2228,7 @@ function lastUpdatedCell(a){ const x=LU.map[a.name];
   return '<td>\u2014<span class="sub">'+(liveMode()?'Not published yet':'Shown once connected')+'</span></td>'; }
 async function loadLastUpdated(force){ if(!liveMode()||(!force&&Date.now()-LU.at<60000))return; LU.at=Date.now(); try{ const r=await api('/publish-summary'); LU.map=r.apps||{}; renderCatalog(); }catch(e){} }
 function renderCatalog(){
+  if(API_ON && SESSION && !SESSION.demo && !SERVER.busy && (!SERVER.catalogAt || Date.now()-SERVER.catalogAt>60000)){ SERVER.catalogAt=Date.now(); mergeSharedCatalog().then(()=>{ if(location.hash==='#catalog') renderCatalog(); }); }
   $('#catalogCount').textContent = S.apps.length.toLocaleString() + ' applications in the catalog';
   const q=$('#catSearch').value.trim().toLowerCase();
   let rows=[...S.apps].sort((a,b)=>risk(b)-risk(a));
@@ -3360,21 +3320,14 @@ $('#invImportBtn').addEventListener('click',()=>{ let d; try{ d=JSON.parse($('#i
 $('#resetBtn').addEventListener('click',()=>{ if(!confirm('Replace your catalog, deployments, policy and settings with the sample data?')) return; S=fresh(); save(); render('connect'); renderNav(); toast('Reset to sample data'); });
 
 /* ---------- Theme ---------- */
-// Theme: the person's own choice wins, then the platform default, then the device setting.
-const THEMES=['light','dark','ocean','contrast']; let SITE_THEME='';
-function applyTheme(){ let t=''; try{ t=localStorage.getItem('nexpatch-theme')||''; }catch(e){} if(!THEMES.includes(t)) t=THEMES.includes(SITE_THEME)?SITE_THEME:'';
-  const r=document.documentElement; if(t) r.dataset.theme=t; else delete r.dataset.theme;
-  const meta=document.querySelector('meta[name="theme-color"]'); if(meta) meta.content=getComputedStyle(r).getPropertyValue('--teal').trim()||'#3B4FD8'; }
-$('#themeBtn').addEventListener('change',e=>{ try{ if(e.target.value) localStorage.setItem('nexpatch-theme',e.target.value); else localStorage.removeItem('nexpatch-theme'); }catch(err){} applyTheme(); });
-try{ $('#themeBtn').value=THEMES.includes(localStorage.getItem('nexpatch-theme'))?localStorage.getItem('nexpatch-theme'):''; }catch(e){}
-applyTheme();
-function applySiteIcon(url){ if(!/^\/(favicon\.svg|icons\/[a-z]+\.svg)$/.test(url||'')) return; document.querySelectorAll('link[rel="icon"]').forEach(l=>l.href=url); }
+$('#themeBtn').addEventListener('click',()=>{ const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark?'light':'dark'; try{ localStorage.setItem('nexpatch-theme', r.dataset.theme); }catch(e){} });
+try{ const t=localStorage.getItem('nexpatch-theme'); if(t) document.documentElement.dataset.theme=t; }catch(e){}
 
 const REQUEST_STATUS_LABEL={'submitted':'Submitted','under-review':'Under review','need-information':'Need information','packaging':'Packaging','testing':'Testing','approved':'Approved','published':'Published','rejected':'Rejected'};
 async function loadMyRequests(){ if(!liveMode()) { $('#rqBody').innerHTML='<tr><td colspan="3" class="empty">Connect your organization to submit and track requests.</td></tr>'; return; } try { const r=await api('/requests'); $('#rqBody').innerHTML=r.requests.length?r.requests.map(x=>'<tr><td><b>'+esc(x.name)+'</b>'+(x.fileName?'<span class="sub">Installer: '+esc(x.fileName)+' · security scan: '+esc(x.scanStatus)+'</span>':'')+(x.adminNotes?'<span class="sub">Team: '+esc(x.adminNotes)+'</span>':'')+'</td><td><span class="pill p-neutral">'+esc(REQUEST_STATUS_LABEL[x.status]||x.status)+'</span></td><td>'+new Date(x.createdAt).toLocaleDateString()+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">No requests yet.</td></tr>'; } catch(e){ $('#rqBody').innerHTML='<tr><td colspan="3" class="empty">'+esc(e.message)+'</td></tr>'; } }
 $('#rqRefresh').addEventListener('click',loadMyRequests);
 $('#appRequestForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,btn=$('#rqSubmit'),st=$('#rqStatus');btn.disabled=true;st.textContent='Submitting…';try{if(!liveMode())throw new Error('Connect your organization before submitting a request.');const r=await api('/requests','POST',{name:$('#rqName').value,publisher:$('#rqPublisher').value,version:$('#rqVersion').value,website:$('#rqWebsite').value,downloadUrl:$('#rqUrl').value,architecture:$('#rqArch').value,notes:$('#rqNotes').value});const file=$('#rqFile').files[0];if(file){if(file.size>50*1024*1024)throw new Error('Installer files must be 50 MB or smaller.');const acct=PCA.getActiveAccount();const token=(await PCA.acquireTokenSilent({scopes:[API_SCOPE],account:acct})).accessToken;const up=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/requests/'+encodeURIComponent(r.request.id)+'/file',{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream','X-File-Name':encodeURIComponent(file.name)},body:file});const out=await up.json().catch(()=>({}));if(!up.ok)throw new Error(out.error||'Installer upload failed.');}f.reset();st.textContent='Request submitted. Your team will review it.';await loadMyRequests();}catch(err){st.textContent=err.message;}finally{btn.disabled=false;}});
-if(CFG.apiBaseUrl){fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/site-content').then(r=>r.ok?r.json():null).then(d=>{if(d){if(d.announcement){const n=$('#siteAnnouncement');n.textContent=d.announcement;n.hidden=false;}if(d.heroTitle)$('#heroTitle').textContent=d.heroTitle;if(d.heroSubtitle)$('#heroSubtitle').textContent=d.heroSubtitle;if(d.supportEmail){const a=$('#siteSupportLink');a.href='mailto:'+d.supportEmail;a.textContent='Contact support';a.hidden=false;}SITE_THEME=d.defaultTheme||'';applyTheme();applySiteIcon(d.siteIconUrl);}}).catch(()=>{});}
+if(CFG.apiBaseUrl){fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/site-content').then(r=>r.ok?r.json():null).then(d=>{if(d){if(d.announcement){const n=$('#siteAnnouncement');n.textContent=d.announcement;n.hidden=false;}if(d.heroTitle)$('#heroTitle').textContent=d.heroTitle;if(d.heroSubtitle)$('#heroSubtitle').textContent=d.heroSubtitle;if(d.supportEmail){const a=$('#siteSupportLink');a.href='mailto:'+d.supportEmail;a.textContent='Contact support';a.hidden=false;}}}).catch(()=>{});}
 $('#salesForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,st=$('#salesStatus'),btn=f.querySelector('[type=submit]');st.textContent='Sending…';btn.disabled=true;try{if(!CFG.apiBaseUrl)throw new Error('Sales enquiries are not configured on this site yet.');const data=Object.fromEntries(new FormData(f).entries());data.consent=f.elements.consent.checked;const res=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/sales/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const out=await res.json().catch(()=>({}));if(!res.ok)throw new Error(out.error||'Could not send your enquiry.');f.reset();st.textContent='Thank you. Your enquiry has been received.';}catch(err){st.textContent=err.message;}finally{btn.disabled=false;}});
 
 initAuth().catch(()=>{}).finally(()=>{ route(); loadFromServer(); });

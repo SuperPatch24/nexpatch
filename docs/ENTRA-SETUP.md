@@ -25,12 +25,14 @@ Open **API permissions**.
 - Keep **Microsoft Graph → Delegated → User.Read** (added by default). This is all sign-in needs.
 - For the coming backend, add **Microsoft Graph → Application** permissions:
   - `DeviceManagementApps.ReadWrite.All`
-  - `DeviceManagementConfiguration.ReadWrite.All`
+  - `DeviceManagementConfiguration.Read.All`
   - `DeviceManagementManagedDevices.Read.All`
   - `Group.Read.All`
 
   Add these now in your test tenant so you can test approval end to end.
   Before inviting real clients, review the list: clients see every permission on the approval screen.
+
+  App Control and Automation permissions are **not** added to this app. They live in their own app registrations so customers approve only what they use. See `PERMISSION-SETS.md`.
 
 Do **not** create a client secret for the website. The site never needs one.
 

@@ -6,6 +6,7 @@ import { publishApp, publishStoreApp } from '../lib/publisher.js';
 import { randomUUID } from 'node:crypto';
 import { planStatus } from '../lib/plan.js';
 import { featureOn, featureMessage } from '../lib/tenantsettings.js';
+import { stuckKind, stuckMessage } from '../lib/jobhealth.js';
 
 const queue = output.storageQueue({ queueName: 'publish-jobs', connection: 'AzureWebJobsStorage' });
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
@@ -17,6 +18,7 @@ app.http('publishStart', {
     const t = await getTenant(user.tenantId);
     if (!t || t.status !== 'active') throw new HttpError(409, 'Connect your organization on the Connect page before publishing.');
     if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to keep publishing apps.');
+    if (!featureOn(t, 'apps')) throw new HttpError(403, featureMessage('apps'));
     if (!featureOn(t, 'packaging')) throw new HttpError(403, featureMessage('packaging'));
     const { app: a, options } = await readJson(req);
     const source = a?.source === 'msstore' ? 'msstore' : 'winget';
@@ -48,7 +50,7 @@ app.http('publishStart', {
 
 // GET /api/publish – recent publishing jobs. GET /api/publish/{id} – one job with its log.
 const shape = (j, withLog) => ({ id: j.rowKey, status: j.status, appName: j.appName, operationType: j.operationType || 'deployment', displayName: jobDisplayName(j), version: j.version || null, summary: j.summary || '', appId: j.appId || null,
-  createdBy: j.createdBy, createdAt: j.createdAt, finishedAt: j.finishedAt || null, error: j.error || '', step: j.step || '', ...(withLog ? { log: JSON.parse(j.log || '[]') } : {}) });
+  createdBy: j.createdBy, createdAt: j.createdAt, stuck: stuckKind(j), stuckMessage: stuckMessage(stuckKind(j)), finishedAt: j.finishedAt || null, error: j.error || '', step: j.step || '', ...(withLog ? { log: JSON.parse(j.log || '[]') } : {}) });
 app.http('publishList', {
   methods: ['GET'], authLevel: 'anonymous', route: 'publish',
   handler: withUser(async (_req, _ctx, user) => ({ jobs: (await listJobs(user.tenantId, 30)).map(j => shape(j, false)) }), 'viewer')

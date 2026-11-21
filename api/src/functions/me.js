@@ -3,7 +3,8 @@ import { withUser } from '../lib/http.js';
 import { getTenant } from '../lib/store.js';
 import { isPlatformAdmin, platformRole } from '../lib/platform.js';
 import { planStatus } from '../lib/plan.js';
-import { legalStatus } from '../lib/legal.js';
+import { featureMap } from '../lib/tenantsettings.js';
+import { legalStatus, DOC_URLS } from '../lib/legal.js';
 
 // GET /api/me – who is signed in, their role, and whether their organization is connected.
 app.http('me', {
@@ -12,8 +13,7 @@ app.http('me', {
   route: 'me',
   handler: withUser(async (_req, _ctx, user) => {
     const t = await getTenant(user.tenantId);
-    // What the person still has to accept; the app shows the "Before you continue" box when needed.
-    const legal = user.role ? await legalStatus(user, user.role).catch(() => null) : null;
+    const legal = user.role ? { ...(await legalStatus(user, user.role)), urls: DOC_URLS } : null;
     return {
       legal,
       user: { tenantId: user.tenantId, userId: user.userId, name: user.name, email: user.email },
@@ -23,6 +23,7 @@ app.http('me', {
       platformAdmin: isPlatformAdmin(user),
       platformRole: platformRole(user),
       plan: t && t.status === 'active' ? planStatus(t) : null,
+      features: t ? featureMap(t) : null,
       tenant: t ? { tenantId: t.rowKey, status: t.status, activatedAt: t.activatedAt, lastSyncAt: t.lastSyncAt || null, lastSyncCount: t.lastSyncCount || 0, lastSyncError: t.lastSyncError || '' } : null
     };
   }, 'any')

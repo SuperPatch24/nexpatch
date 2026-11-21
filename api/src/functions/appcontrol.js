@@ -5,7 +5,9 @@ import { withUser, HttpError, readJson, json } from '../lib/http.js';
 import { getTenant, saveTenant, listActiveTenants, getRow, putRow, deleteRow, listRows, audit } from '../lib/store.js';
 import { normalize, storeEvents, pollDefender, buildSupplemental } from '../lib/appcontrol.js';
 import { installerFor, UNINSTALLER } from '../lib/collector.js';
-import { graph } from '../lib/graph.js';
+import { graphAs } from '../lib/graph.js';
+const graph = graphAs('appcontrol');
+import { GUID as GUID_STRICT, LIMITS, newSecret, hashSecret, secretMatches, keyExpiry, keyExpired, rateCheck } from '../lib/agentauth.js';
 
 const GUID = /^\{?[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\}?$/;
 const sha = v => createHash('sha256').update(v).digest();
@@ -14,14 +16,24 @@ async function activeTenant(tid) {
   if (!t || t.status !== 'active') throw new HttpError(409, 'Connect your organization on the Connect page first.');
   return t;
 }
-const settingsOf = t => ({ source: t.acSource || '', basePolicyId: t.acBasePolicyId || '', hasKey: !!t.acKeyHash, keyCreatedAt: t.acKeyCreatedAt || null,
+const settingsOf = t => ({ source: t.acSource || '', basePolicyId: t.acBasePolicyId || '', hasKey: !!t.acKeyHash, keyCreatedAt: t.acKeyCreatedAt || null, keyExpiresAt: t.acKeyExpiresAt || null,
   lastPollAt: t.acLastPollAt || null, lastIngestAt: t.acLastIngestAt || null, lastError: t.acLastError || '', policyVersion: Number(t.acPolicyVersion || 1) });
 
 app.http('acSettingsGet', { methods: ['GET'], authLevel: 'anonymous', route: 'appcontrol/settings',
   handler: withUser(async (_r, _c, user) => {
     const t = await activeTenant(user.tenantId);
-    const devices = (await listRows('AcDevices', user.tenantId)).filter(d => Date.now() - Date.parse(d.lastSeen) < 24 * 3600 * 1000).length;
-    return { ...settingsOf(t), devicesLast24h: devices };
+    const rows = (await listRows('AcDevices', user.tenantId)).filter(d => d.tokenHash && d.status !== 'revoked');
+    const devices = rows.filter(d => Date.now() - Date.parse(d.lastSeen) < 24 * 3600 * 1000).length;
+    const online = rows.filter(d => Date.now() - Date.parse(d.lastSeen) < 10 * 60 * 1000).length;
+    return { ...settingsOf(t), devicesLast24h: devices, devicesOnline: online };
+  }, 'viewer') });
+
+// Cheap check the page makes every few seconds; it loads the full event list only when something new arrived.
+app.http('acPulse', { methods: ['GET'], authLevel: 'anonymous', route: 'appcontrol/pulse',
+  handler: withUser(async (_r, _c, user) => {
+    const t = await activeTenant(user.tenantId);
+    const rows = (await listRows('AcDevices', user.tenantId)).filter(d => d.tokenHash && d.status !== 'revoked');
+    return { lastIngestAt: t.acLastIngestAt || null, lastEventAt: t.acLastEventAt || null, devicesOnline: rows.filter(d => Date.now() - Date.parse(d.lastSeen) < 10 * 60 * 1000).length };
   }, 'viewer') });
 
 app.http('acSettingsPut', { methods: ['PUT'], authLevel: 'anonymous', route: 'appcontrol/settings',
@@ -44,40 +56,100 @@ app.http('acKey', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontro
   handler: withUser(async (req, _c, user) => {
     await activeTenant(user.tenantId);
     const key = randomBytes(32).toString('base64url');
-    await saveTenant(user.tenantId, { acKeyHash: sha(key).toString('hex'), acKeyCreatedAt: new Date().toISOString() });
-    await audit(user.tenantId, user.email || user.userId, 'created collector key', 'Previous key, if any, stopped working');
-    const endpoint = new URL('/api/appcontrol/ingest', req.url).toString();
-    return { key, installer: installerFor(user.tenantId, key, endpoint), uninstaller: UNINSTALLER };
+    await saveTenant(user.tenantId, { acKeyHash: sha(key).toString('hex'), acKeyCreatedAt: new Date().toISOString(), acKeyExpiresAt: keyExpiry() });
+    await audit(user.tenantId, user.email || user.userId, 'created agent enrollment key', 'Valid for 30 days. Devices that already enrolled keep working; revoke them one by one on the App Control page.');
+    const base = new URL('/api/appcontrol/', req.url).toString();
+    return { key, expiresAt: keyExpiry(), installer: installerFor(user.tenantId, key, base), uninstaller: UNINSTALLER };
   }, 'admin') });
 
-// Collector devices send events here (no user sign-in; authenticated by the organization's key).
-app.http('acIngest', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontrol/ingest',
+const authFail = (status, msg, extra) => json(status, { error: msg }, extra);
+const rowKeyOf = id => String(id).toLowerCase();
+
+// A device registers once with the organization's enrollment key and receives its own token.
+app.http('acEnroll', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontrol/enroll',
   handler: async (req, context) => {
     try {
       const tid = req.headers.get('x-nexpatch-tenant') || '', key = req.headers.get('x-nexpatch-key') || '';
-      if (!GUID.test(tid) || !key) return json(401, { error: 'Missing tenant or key.' });
+      if (!GUID.test(tid) || !key) return authFail(401, 'Missing tenant or key.');
       const t = await getTenant(tid);
-      if (!t || t.status !== 'active' || !t.acKeyHash) return json(401, { error: 'Unknown organization or key.' });
-      const given = sha(key), expected = Buffer.from(t.acKeyHash, "hex");
-      if (expected.length !== given.length || !timingSafeEqual(expected, given)) return json(401, { error: 'Unknown organization or key.' });
-      if (t.acSource !== 'collector') return json(409, { error: 'This organization uses Microsoft Defender for App Control events.' });
-      const declaredLength = Number(req.headers.get('content-length') || 0);
-      if (declaredLength > 1024 * 1024) return json(413, { error: 'Send at most 1 MB per call.' });
+      if (!t || t.status !== 'active' || !secretMatches(t.acKeyHash, key)) return authFail(401, 'Unknown organization or key.');
+      if (t.acSource !== 'collector') return authFail(409, 'This organization uses Microsoft Defender for App Control events.');
+      if (keyExpired(t)) return authFail(403, 'The enrollment key has expired. Create a new installer on the App Control page.');
       const text = await req.text();
-      if (text.length > 1024 * 1024) return json(413, { error: 'Send at most 1 MB per call.' });
-      let body; try { body = JSON.parse(text); } catch { return json(400, { error: 'Body must be JSON.' }); }
+      if (text.length > 4096) return authFail(413, 'Request too large.');
+      let body; try { body = JSON.parse(text); } catch { return authFail(400, 'Body must be JSON.'); }
+      const id = String(body.deviceId || '').trim();
+      if (!GUID_STRICT.test(id)) return authFail(400, 'Send the Intune device ID.');
+      // Tenant-wide limit on enrollments, so a leaked key can't be used to register devices in bulk
+      const now = new Date();
+      const tw = rateCheck({ enrollWindowStart: t.acEnrollWindowStart, enrollCount: t.acEnrollCount }, now, 0, 'enroll', { ...LIMITS, enrollsPerHour: LIMITS.tenantEnrollsPerHour });
+      if (!tw.ok) return authFail(429, 'Too many enrollments. Try again later.', { headers: { 'retry-after': String(tw.retryAfter) } });
+      await saveTenant(tid, { acEnrollWindowStart: tw.patch.enrollWindowStart, acEnrollCount: tw.patch.enrollCount });
+      // The device must be one of this organization's Intune devices
+      const known = await getRow('DeviceInventory', tid, id) || await getRow('DeviceInventory', tid, id.toUpperCase());
+      if (!known) return authFail(403, 'This device isn’t in your Intune device list yet. It will retry.');
+      const rk = rowKeyOf(id), existing = await getRow('AcDevices', tid, rk);
+      if (existing?.status === 'revoked') return authFail(403, 'An admin revoked this device.');
+      const dr = rateCheck(existing || {}, now, 0, 'enroll');
+      if (!dr.ok) return authFail(429, 'Too many enrollments for this device.', { headers: { 'retry-after': String(dr.retryAfter) } });
+      const token = newSecret();
+      await putRow('AcDevices', tid, rk, { name: String(known.name || body.name || '').slice(0, 100), status: 'active', tokenHash: hashSecret(token), enrolledAt: now.toISOString(), lastSeen: existing?.lastSeen || now.toISOString(), ...dr.patch });
+      await audit(tid, `device ${known.name || id}`, 'enrolled App Control agent', id);
+      return json(200, { deviceId: id, token });
+    } catch (err) { context.error('Enroll failed', err); return json(500, { error: 'Could not enroll the device.' }); }
+  } });
+
+// Enrolled devices send events here with their own token (no user sign-in).
+app.http('acIngest', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontrol/ingest',
+  handler: async (req, context) => {
+    try {
+      const tid = req.headers.get('x-nexpatch-tenant') || '', id = req.headers.get('x-nexpatch-device') || '', token = req.headers.get('x-nexpatch-token') || '';
+      if (!GUID.test(tid) || !GUID_STRICT.test(id) || !token) return authFail(401, 'Missing credentials.');
+      const t = await getTenant(tid);
+      if (!t || t.status !== 'active') return authFail(401, 'Unknown organization.');
+      const row = await getRow('AcDevices', tid, rowKeyOf(id));
+      if (!row || !secretMatches(row.tokenHash, token)) return authFail(401, 'Unknown device or token.');
+      if (row.status === 'revoked') return authFail(403, 'An admin revoked this device.');
+      if (t.acSource !== 'collector') return authFail(409, 'This organization uses Microsoft Defender for App Control events.');
+      const declaredLength = Number(req.headers.get('content-length') || 0);
+      if (declaredLength > 1024 * 1024) return authFail(413, 'Send at most 1 MB per call.');
+      const text = await req.text();
+      if (text.length > 1024 * 1024) return authFail(413, 'Send at most 1 MB per call.');
+      let body; try { body = JSON.parse(text); } catch { return authFail(400, 'Body must be JSON.'); }
       const list = Array.isArray(body.events) ? body.events.slice(0, 500) : [];
-      const device = String(body.device || '').slice(0, 100);
+      const now = new Date();
+      const rc = rateCheck(row, now, list.length);
+      if (!rc.ok) return authFail(429, 'This device is sending too much. It will retry later.', { headers: { 'retry-after': String(rc.retryAfter) } });
+      // The device name comes from the Intune record, not from the request
+      const device = String(row.name || '').slice(0, 100);
       const events = list.map(e => normalize(e || {}, device)).filter(Boolean);
       const stored = events.length ? await storeEvents(tid, events) : 0;
-      if (device) await putRow('AcDevices', tid, createHash('sha1').update(device.toLowerCase()).digest('hex'), { name: device, lastSeen: new Date().toISOString() });
-      await saveTenant(tid, { acLastIngestAt: new Date().toISOString() });
+      const stamp = now.toISOString();
+      await putRow('AcDevices', tid, rowKeyOf(id), { lastSeen: stamp, agent: String(body.agent || '').slice(0, 20), ...(events.length ? { lastEventAt: stamp } : {}), ...rc.patch });
+      await saveTenant(tid, { acLastIngestAt: stamp, ...(events.length ? { acLastEventAt: stamp } : {}) });
       return json(200, { received: events.length, apps: stored });
-    } catch (err) {
-      context.error('Ingest failed', err);
-      return json(500, { error: 'Could not store the events.' });
-    }
+    } catch (err) { context.error('Ingest failed', err); return json(500, { error: 'Could not store the events.' }); }
   } });
+
+app.http('acDevices', { methods: ['GET'], authLevel: 'anonymous', route: 'appcontrol/devices',
+  handler: withUser(async (_r, _c, user) => {
+    await activeTenant(user.tenantId);
+    const rows = (await listRows('AcDevices', user.tenantId)).filter(d => d.tokenHash);
+    return { devices: rows.map(d => ({ id: d.rowKey, name: d.name || '', status: d.status || 'active', agent: d.agent || '', enrolledAt: d.enrolledAt || null, lastSeen: d.lastSeen || null,
+      online: Date.now() - Date.parse(d.lastSeen || 0) < 10 * 60 * 1000 })).sort((a, b) => String(b.lastSeen).localeCompare(String(a.lastSeen))) };
+  }, 'viewer') });
+
+app.http('acDeviceAccess', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontrol/devices/access',
+  handler: withUser(async (req, _c, user) => {
+    await activeTenant(user.tenantId);
+    const { id, action } = await readJson(req);
+    if (!GUID_STRICT.test(String(id || '')) || !['revoke', 'restore'].includes(action)) throw new HttpError(400, 'Choose a device and revoke or restore.');
+    const row = await getRow('AcDevices', user.tenantId, rowKeyOf(id));
+    if (!row || !row.tokenHash) throw new HttpError(404, 'That device hasn’t enrolled.');
+    await putRow('AcDevices', user.tenantId, rowKeyOf(id), { status: action === 'revoke' ? 'revoked' : 'active', statusBy: user.email || user.userId, statusAt: new Date().toISOString() });
+    await audit(user.tenantId, user.email || user.userId, action === 'revoke' ? 'revoked App Control agent' : 'restored App Control agent', row.name || id);
+    return { id, status: action === 'revoke' ? 'revoked' : 'active' };
+  }, 'admin') });
 
 app.http('acCheck', { methods: ['POST'], authLevel: 'anonymous', route: 'appcontrol/check',
   handler: withUser(async (_r, _c, user) => {

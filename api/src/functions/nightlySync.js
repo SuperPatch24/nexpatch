@@ -11,7 +11,7 @@ app.timer('nightlySync', {
   handler: async (_timer, context) => {
     const tenants = await listActiveTenants();
     context.log(`Nightly sync for ${tenants.length} tenant(s)`);
-    for (const t of tenants.filter(x => planStatus(x).active && accessOf(x) === 'active' && featureOn(x, 'nightlySync'))) {
+    for (const t of tenants.filter(x => planStatus(x).active && accessOf(x) === 'active' && featureOn(x, 'apps') && featureOn(x, 'nightlySync'))) {
       try {
         const r = await syncInventory(t.rowKey, 'nightly');
         context.log(`Tenant ${t.rowKey}: ${r.count} app versions`);

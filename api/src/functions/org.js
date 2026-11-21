@@ -2,7 +2,8 @@ import { app } from '@azure/functions';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
 import { withUser, HttpError, readJson } from '../lib/http.js';
-import { getTenant, getRow, putRow, audit } from '../lib/store.js';
+import { getTenant, getRow, putRow, audit, listRows } from '../lib/store.js';
+import { TIERS, limitsFor, countThisMonth, planRequestOf } from '../lib/plans.js';
 import { planStatus } from '../lib/plan.js';
 import { SYNC_SCHEDULE, MAX_LOGO_BYTES, nextDailyRun, sniffImage, cleanProfile } from '../lib/org.js';
 
@@ -41,7 +42,14 @@ app.http('orgGet', { methods: ['GET'], authLevel: 'anonymous', route: 'org', han
   if (!t) throw new HttpError(404, 'Your organization isn’t connected yet.');
   const profile = await getRow('OrgProfiles', user.tenantId, 'profile');
   const plan = planStatus(t);
+  const lim = limitsFor(t), fin = n => (Number.isFinite(n) ? n : null);
+  const [drafts, reqs, inv] = await Promise.all([listRows('PackageDrafts', user.tenantId, 2000), listRows('AppRequests', user.tenantId, 2000), listRows('Inventory', user.tenantId, 20000)]);
+  const devicesSeen = inv.reduce((m, x) => Math.max(m, Number(x.deviceCount) || 0), 0);
   return {
+    entitlements: { tier: t.tier || '', tierLabel: t.tier ? TIERS[t.tier]?.label || t.tier : '', limitsFrom: lim.tier, billing: t.billing || '', appControl: t.appControl === true, interestTier: t.interestTier || '',
+      limits: { devices: fin(lim.devices), customApps: fin(lim.customApps), packageRequests: fin(lim.packageRequests) },
+      usage: { devicesSeen, customApps: countThisMonth(drafts), packageRequests: countThisMonth(reqs) } },
+    planRequest: planRequestOf(t),
     companyName: profile?.companyName || '',
     updatedAt: profile?.updatedAt || null,
     tenantId: t.rowKey,

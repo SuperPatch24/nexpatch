@@ -2,15 +2,16 @@ import { app } from '@azure/functions';
 import { withUser, HttpError, readJson } from '../lib/http.js';
 import { getRow, putRow, deleteRow, listRows, listAllTenants, saveTenant, getTenant, getJob, audit } from '../lib/store.js';
 import { planStatus, TRIAL_DAYS } from '../lib/plan.js';
-import { isTier, TIERS } from '../lib/plans.js';
+import { isTier, TIERS, planRequestOf, CLEAR_PLAN_REQUEST } from '../lib/plans.js';
 import { platformRole } from '../lib/platform.js';
 import { latestWingetVersion } from '../lib/winget.js';
 import { findApps, verifyStore, verifyWinget } from '../lib/appfinder.js';
 import { cleanVersionSource } from '../lib/versionwatch.js';
-import { ACCESS, FEATURES, accessOf, featureOn, overrideNumber, parseDomains } from '../lib/tenantsettings.js';
+import { ACCESS, FEATURES, accessOf, featureOn, featureFields, overrideNumber, parseDomains } from '../lib/tenantsettings.js';
+import { grantedRoles } from '../lib/graph.js';
+import { BUNDLE_IDS, bundleStatus } from '../lib/bundles.js';
 import { clearAccessCache } from '../lib/access.js';
-import { cleanTenantPolicy } from '../lib/sessionpolicy.js';
-import { THEMES, ICONS, cleanTheme, cleanIcon, iconUrl } from '../lib/appearance.js';
+import { TENANT_ID, cleanPrivateApp } from '../lib/privatecatalog.js';
 
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
 const STORE_ID = /^[A-Z0-9]{8,16}$/i;
@@ -28,7 +29,12 @@ function requirePlatform(user, roles = ['superadmin']) { const role = platformRo
 
 // GET /api/catalog – the shared app catalog every organization sees (enabled apps only).
 app.http('catalogList', { methods: ['GET'], authLevel: 'anonymous', route: 'catalog',
-  handler: withUser(async () => ({ apps: (await listRows('Catalog', GLOBAL)).map(shape).filter(a => a.enabled) }), 'any') });
+  handler: withUser(async (_r, _c, user) => {
+    const shared = (await listRows('Catalog', GLOBAL)).map(shape).filter(a => a.enabled);
+    // Apps added for this company only come from its own partition and are never listed for anyone else
+    const own = TENANT_ID.test(String(user.tenantId || '')) ? (await listRows('Catalog', user.tenantId, 1000)).map(r => ({ ...shape(r), private: true })).filter(a => a.enabled) : [];
+    return { apps: [...shared, ...own] };
+  }, 'any') });
 
 // Platform administration
 app.http('platformCatalogList', { methods: ['GET'], authLevel: 'anonymous', route: 'platform/catalog',
@@ -132,7 +138,7 @@ app.http('platformTenants', { methods: ['GET'], authLevel: 'anonymous', route: '
         members: members.filter(m => m.kind === 'member').length, invites: members.filter(m => m.kind === 'invite').length,
         appVersions: inventory.length, devicesSeen: inventory.reduce((m, r) => Math.max(m, r.deviceCount || 0), 0),
         publishes30d: recent.length, failed30d: recent.filter(j => j.status === 'failed').length, acApps: acEvents.length,
-        plan: planStatus(t), planNote: t.planNote || '', tier: t.tier || '', billing: t.billing || '', appControl: t.appControl === true, interestTier: t.interestTier || '',
+        plan: planStatus(t), planNote: t.planNote || '', tier: t.tier || '', billing: t.billing || '', appControl: t.appControl === true, interestTier: t.interestTier || '', planRequest: planRequestOf(t),
         ...tenantSettings(t) });
     }
     return { tenants: rows.sort((a, b) => String(b.activatedAt).localeCompare(String(a.activatedAt))) };
@@ -150,7 +156,7 @@ app.http('platformTenantPlan', { methods: ['PUT'], authLevel: 'anonymous', route
     if (action === 'activate') {
       if (!isTier(tier)) throw new HttpError(400, 'Choose a plan: Starter, Pro, Pro Plus or Enterprise.');
       if (billing === 'annual' && !TIERS[tier].annual) throw new HttpError(400, `${TIERS[tier].label} is billed monthly only.`);
-      Object.assign(fields, { plan: 'active', tier, billing: billing === 'annual' ? 'annual' : 'monthly', appControl: appControl === true });
+      Object.assign(fields, { plan: 'active', tier, billing: billing === 'annual' ? 'annual' : 'monthly', appControl: appControl === true }, CLEAR_PLAN_REQUEST, appControl === true ? { feat_appControl: 'on' } : {});
       if (paidUntil !== undefined) fields.paidUntil = cleanDate(paidUntil);
     }
     else if (action === 'extend') { const base = Math.max(Date.now(), Date.parse(t.trialEndsAt || 0) || 0); fields.plan = 'trial'; fields.trialEndsAt = new Date(base + (Math.min(Math.max(+days || 14, 1), 365)) * 864e5).toISOString(); }
@@ -170,7 +176,6 @@ function tenantSettings(t) {
   return { label: t.label || '', billingContact: t.billingContact || '', paidUntil: t.paidUntil || '', allowedDomains: t.allowedDomains || '',
     accessStatus: accessOf(t), accessReason: t.accessReason || '', accessChangedAt: t.accessChangedAt || null, accessChangedBy: t.accessChangedBy || '',
     limitDevices: t.limitDevices ?? '', limitCustomApps: t.limitCustomApps ?? '', limitPackageRequests: t.limitPackageRequests ?? '', features,
-    sessionMaxHours: t.sessionMaxHours ?? '', sessionIdleMinutes: t.sessionIdleMinutes ?? '', mfaMode: t.mfaMode || 'default',
     subscriptionEnded, revokeDue: subscriptionEnded && accessOf(t) === 'active' };
 }
 const cleanDate = v => { if (!v) return ''; const d = new Date(v); if (isNaN(d)) throw new HttpError(400, 'Enter a valid date.'); return d.toISOString().slice(0, 10); };
@@ -210,15 +215,38 @@ app.http('platformTenantSettings', { methods: ['PUT'], authLevel: 'anonymous', r
       if (src !== '' && src != null && n == null) throw new HttpError(400, 'Limits must be whole numbers, or blank to use the plan limit.');
       fields[k] = n == null ? '' : n;
     }
-    for (const k of Object.keys(FEATURES)) fields['feat_' + k] = b.features && b.features[k] === false ? 'off' : 'on';
-    // Session rules: blank = use the platform default. Only sent by Admin Center versions that show them.
-    if ('sessionMaxHours' in b || 'sessionIdleMinutes' in b || 'mfaMode' in b) {
-      try { Object.assign(fields, cleanTenantPolicy(b)); } catch (e) { throw new HttpError(400, e.message); }
-    }
+    Object.assign(fields, featureFields(b.features));   // only the switches that were sent change
     await saveTenant(tid, fields);
     clearAccessCache(tid);
     await audit(tid, `NexpatchOnline (${user.email || user.userId})`, 'changed organization settings', Object.keys(FEATURES).filter(k => fields['feat_' + k] === 'off').map(k => FEATURES[k] + ' off').join(', ') || 'settings updated');
     return { tenantId: tid, ...tenantSettings({ ...t, ...fields }) };
+  }, 'any') });
+
+// Grant or revoke one organization's access to products and functions (Apps and patching, App Control, Automation...).
+app.http('platformTenantFeatures', { methods: ['PUT'], authLevel: 'anonymous', route: 'platform/tenants/{id}/features',
+  handler: withUser(async (req, _c, user) => {
+    requirePlatform(user);
+    const tid = String(req.params.id || '');
+    const t = await getTenant(tid);
+    if (!t) throw new HttpError(404, 'Organization not found.');
+    const b = await readJson(req);
+    const fields = featureFields(b.features);
+    if (!Object.keys(fields).length) throw new HttpError(400, 'Choose what to grant or revoke.');
+    await saveTenant(tid, fields);
+    clearAccessCache(tid);
+    const changes = Object.entries(fields).filter(([k, v]) => (t[k] !== 'off') !== (v !== 'off')).map(([k, v]) => `${v === 'on' ? 'granted' : 'revoked'} ${FEATURES[k.slice(5)]}`);
+    if (changes.length) await audit(tid, `NexpatchOnline (${user.email || user.userId})`, 'changed access to features', changes.join(', ') + (b.reason ? ` (${cleanText(b.reason, 120)})` : ''));
+    return { tenantId: tid, features: tenantSettings({ ...t, ...fields }).features };
+  }, 'any') });
+
+// Which Microsoft permission sets an organization has approved (read from Microsoft).
+app.http('platformTenantPermissions', { methods: ['GET'], authLevel: 'anonymous', route: 'platform/tenants/{id}/permissions',
+  handler: withUser(async (req, _c, user) => {
+    requirePlatform(user, ['superadmin', 'support']);
+    const tid = String(req.params.id || '');
+    const t = await getTenant(tid);
+    if (!t) throw new HttpError(404, 'Organization not found.');
+    return { bundles: await Promise.all(BUNDLE_IDS.map(async id => bundleStatus(id, await grantedRoles(tid, id), t))) };
   }, 'any') });
 
 // Publishing jobs across every organization, newest first.
@@ -248,16 +276,47 @@ app.http('platformSalesLeads', { methods: ['GET'], authLevel: 'anonymous', route
 
 // Global website settings are editable only by platform administrators.
 app.http('platformSiteContentGet', { methods:['GET'], authLevel:'anonymous', route:'platform/site-content', handler:withUser(async(_req,_ctx,user)=>{
-  requirePlatform(user); const r=await getRow('SiteContent',GLOBAL,'website'); return {announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||'',defaultTheme:cleanTheme(r?.defaultTheme),siteIcon:cleanIcon(r?.siteIcon),themes:THEMES,icons:ICONS,updatedAt:r?.updatedAt||null};
+  requirePlatform(user); const r=await getRow('SiteContent',GLOBAL,'website'); return {announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||'',updatedAt:r?.updatedAt||null};
 },'any') });
 app.http('platformSiteContentSave', { methods:['PUT'], authLevel:'anonymous', route:'platform/site-content', handler:withUser(async(req,_ctx,user)=>{
   requirePlatform(user); const b=await readJson(req); const fields={announcement:String(b.announcement||'').trim().slice(0,500),supportEmail:String(b.supportEmail||'').trim().slice(0,254),heroTitle:String(b.heroTitle||'').trim().slice(0,180),heroSubtitle:String(b.heroSubtitle||'').trim().slice(0,500),updatedAt:new Date().toISOString(),updatedBy:user.email||user.userId};
-  if('defaultTheme' in b){ if(b.defaultTheme && !cleanTheme(b.defaultTheme)) throw new HttpError(400,'Choose one of the available themes.'); fields.defaultTheme=cleanTheme(b.defaultTheme); }
-  if('siteIcon' in b){ if(b.siteIcon && cleanIcon(b.siteIcon)!==b.siteIcon) throw new HttpError(400,'Choose one of the available icons.'); fields.siteIcon=cleanIcon(b.siteIcon); }
   if(fields.supportEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.supportEmail)) throw new HttpError(400,'Enter a valid support email address.');
   await putRow('SiteContent',GLOBAL,'website',fields,'Merge'); return {saved:true,...fields};
 },'any') });
 app.http('publicSiteContent', { methods:['GET'], authLevel:'anonymous', route:'site-content', handler:async()=>{
-  try { const r=await getRow('SiteContent',GLOBAL,'website'); return {status:200,jsonBody:{announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||'',defaultTheme:cleanTheme(r?.defaultTheme),siteIcon:cleanIcon(r?.siteIcon),siteIconUrl:iconUrl(r?.siteIcon)}}; }
-  catch { return {status:200,jsonBody:{announcement:'',supportEmail:'',defaultTheme:'',siteIcon:'classic',siteIconUrl:'/favicon.svg'}}; }
+  try { const r=await getRow('SiteContent',GLOBAL,'website'); return {status:200,jsonBody:{announcement:r?.announcement||'',supportEmail:r?.supportEmail||'',heroTitle:r?.heroTitle||'',heroSubtitle:r?.heroSubtitle||''}}; }
+  catch { return {status:200,jsonBody:{announcement:'',supportEmail:''}}; }
 } });
+
+// Company-only apps: added for one company (usually from its application request) and shown only to that company.
+const PRIVATE_ROLES = ['superadmin', 'catalog', 'support'];
+app.http('privateCatalogList', { methods: ['GET'], authLevel: 'anonymous', route: 'platform/private-catalog',
+  handler: withUser(async (_r, _c, user) => {
+    requirePlatform(user, PRIVATE_ROLES);
+    const out = [];
+    for (const t of await listAllTenants()) for (const r of await listRows('Catalog', t.rowKey, 1000)) out.push({ ...shape(r), tenantId: t.rowKey, company: t.companyName || t.name || '' });
+    return { apps: out.sort((a, b) => a.name.localeCompare(b.name)) };
+  }, 'any') });
+
+app.http('privateCatalogPut', { methods: ['PUT'], authLevel: 'anonymous', route: 'platform/private-catalog/{tenantId}',
+  handler: withUser(async (req, _c, user) => {
+    requirePlatform(user, PRIVATE_ROLES);
+    const tid = String(req.params.tenantId || '');
+    if (!TENANT_ID.test(tid)) throw new HttpError(400, 'Choose the company this app is for.');
+    if (!(await getTenant(tid))) throw new HttpError(404, 'That company isn\u2019t on the platform.');
+    const c = cleanPrivateApp(await readJson(req)); if (c.error) throw new HttpError(400, c.error);
+    if (c.value.winget) { const v = await latestWingetVersion(c.value.winget).catch(() => null); if (!v) throw new HttpError(400, 'That WinGet ID wasn\u2019t found. Check it, or leave it empty for an app you packaged yourself.'); }
+    await putRow('Catalog', tid, c.id, { ...c.value, updatedBy: user.email || user.userId, updatedAt: new Date().toISOString() }, 'Replace');
+    await audit(tid, user.email || user.userId, 'catalog.added-private', c.value.name);
+    return { ...shape(await getRow('Catalog', tid, c.id)), tenantId: tid };
+  }, 'any') });
+
+app.http('privateCatalogDelete', { methods: ['DELETE'], authLevel: 'anonymous', route: 'platform/private-catalog/{tenantId}/{id}',
+  handler: withUser(async (req, _c, user) => {
+    requirePlatform(user, PRIVATE_ROLES);
+    const tid = String(req.params.tenantId || ''), id = String(req.params.id || '');
+    if (!TENANT_ID.test(tid) || !/^p-[a-z0-9-]{2,80}$/.test(id)) throw new HttpError(400, 'Choose a company app to remove.');
+    await deleteRow('Catalog', tid, id);
+    await audit(tid, user.email || user.userId, 'catalog.removed-private', id);
+    return { removed: true };
+  }, 'any') });

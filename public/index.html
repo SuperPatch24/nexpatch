@@ -41,6 +41,8 @@ a{color:var(--teal)}
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 
 .shell{display:grid;grid-template-columns:232px 1fr;min-height:100%}
+/* products the platform operator has switched off for this company */
+body[data-off~=appControl] .nav-group[data-group=appcontrol],body[data-off~=automation] .nav a[data-view=automation],body[data-off~=apps] .nav a[data-view=catalog],body[data-off~=apps] .nav a[data-view=discovery],body[data-off~=apps] .nav a[data-view=deployments],body[data-off~=deviceReports] .nav a[data-view=devices]{display:none}
 .nav{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent;position:sticky;top:env(safe-area-inset-top,0px);align-self:start;height:calc(100vh - env(safe-area-inset-top,0px));padding:24px 14px;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:4px}
 .brand{display:flex;align-items:center;gap:10px;padding:0 10px 22px;font-weight:700;font-size:1.15rem}
 .brand svg{flex:none}
@@ -651,6 +653,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     </div>
     <a href="#overview" data-view="overview">Overview</a>
     <a href="#devices" data-view="devices">Device insights</a>
+    <a href="#automation" data-view="automation">Automation</a>
     <div class="nav-group" data-group="apps"><button type="button" class="nav-h" aria-expanded="true" aria-controls="ng-apps">Apps</button><div class="nav-items" id="ng-apps">
     <a href="#catalog" data-view="catalog">Catalog <span class="count" id="navCount"></span></a>
     <a href="#discovery" data-view="discovery">Discovery</a>
@@ -917,6 +920,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <!-- APP CONTROL -->
     <section class="view" id="view-app-control" aria-labelledby="acTitle">
       <h1 id="acTitle">App Control</h1>
+      <div id="acPermNote"></div>
       <p class="lede">Only approved apps run. Build the base policy, watch what App Control blocks, allow what people need through a supplemental policy, and report on it.</p>
       <nav class="actabs" aria-label="App Control">
         <a href="#app-control" data-actab="activity">Activity</a>
@@ -1148,6 +1152,29 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <!-- REMEDIATION SCRIPTS -->
     <section class="view" id="view-remediation" aria-labelledby="remTitle"><h1 id="remTitle">Remediation scripts</h1><p class="lede">Customer-facing library of approved remediation guidance. Scripts are read-only here; no script is executed or assigned automatically.</p><div class="panel"><div class="panel-head"><h2>Available scripts</h2><button class="btn small" id="remPortalRefresh" type="button">Refresh</button></div><div id="remPortalList" class="todo"><li class="small">Loading approved scripts…</li></div><p class="small">Only scripts that pass platform review and customer authorization should appear here. Execution, assignment and per-device result reporting are not enabled in this release.</p></div></section>
 
+    <section class="view" id="view-automation" aria-labelledby="autoTitle">
+      <h1 id="autoTitle">Automation</h1>
+      <p class="lede">Rules that run for you every few minutes. Today: put devices into an Entra group a set time after they enroll, so Intune policies and apps can be assigned to that group.</p>
+      <div id="autoNote"></div>
+      <div id="autoPermNote"></div>
+      <div id="autoBody">
+        <div class="panel">
+          <div class="panel-head"><h2>Rules</h2><button class="btn primary small" type="button" id="autoNew">New rule</button></div>
+          <div class="table-wrap"><table class="compact"><thead><tr><th>Rule</th><th>Group</th><th>Last check</th><th></th></tr></thead><tbody id="autoBodyRows"></tbody></table></div>
+          <p class="small" id="autoMsg" role="status"></p>
+        </div>
+        <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>How it works</h2></div>
+          <ul class="small" style="margin:0;padding-left:18px;line-height:1.6">
+            <li>Entra dynamic groups can’t wait a set time after enrollment. NexpatchOnline does the waiting: it checks your devices on the schedule you choose and adds the ones that are ready to an <b>assigned security group</b>.</li>
+            <li>Devices are only ever <b>added</b>. A device you remove from the group by hand is not added again.</li>
+            <li>By default a rule only looks at devices that enroll <b>after</b> the rule is created, so turning it on never sweeps in your existing fleet.</li>
+            <li>Use <b>Preview</b> to see exactly which devices a rule would add before you let it run.</li>
+            <li>It needs the Microsoft Graph application permissions <b>Device.Read.All</b> and <b>GroupMember.ReadWrite.All</b> (plus <b>Group.Create</b> if NexpatchOnline should create the group). Add them to the app registration and approve NexpatchOnline again on the Connect page.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <section class="view" id="view-organization" aria-labelledby="orgTitle">
       <h1 id="orgTitle">Company profile</h1>
       <p class="lede">Your company details, where your data is stored, your subscription, and when NexpatchOnline last synced with your Intune tenant.</p>
@@ -1165,7 +1192,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
           </fieldset></form>
           <div>
             <div class="panel"><div class="panel-head"><h2>Data store location</h2></div><dl class="pk-review" id="orgData"></dl></div>
-            <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Subscription</h2></div><dl class="pk-review" id="orgSub"></dl></div>
+            <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Subscription</h2><button class="btn small primary" type="button" id="orgChangePlan" hidden>Change plan</button></div><dl class="pk-review" id="orgSub"></dl><div id="orgPlanReq" class="small" style="margin-top:12px"></div></div>
           </div>
         </div>
         <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Update sync</h2><button class="btn small" type="button" id="orgSyncNow">Sync now</button></div><dl class="pk-review" id="orgSync"></dl><p class="small" id="orgSyncMsg" role="status"></p></div>
@@ -1221,6 +1248,11 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <div class="panel-head"><div><h2>Approve NexpatchOnline for your organization</h2><p class="small" style="margin:0">An administrator who can grant tenant-wide consent approves once. You can remove NexpatchOnline at any time in Entra ID under Enterprise applications.</p></div><span class="chip" id="consentState"></span></div>
         <div id="consentMsg"></div>
         <button class="btn primary" type="button" id="consentBtn">Approve for my organization</button>
+        <p class="small" style="margin:10px 0 0">This approval covers <b>apps and patching</b> only: discovering apps, publishing and updating them in Intune, device counts and group lookups. App Control and Automation are separate, optional approvals below.</p>
+      </div>
+      <div class="panel" style="margin-bottom:20px" id="addonPanel" hidden>
+        <div class="panel-head"><div><h2>Optional add-ons</h2><p class="small" style="margin:0">Approve only what you use. Each add-on is approved on its own, and you can leave one out without affecting the rest.</p></div></div>
+        <div id="addonList"></div>
       </div>
       <div class="grid2" style="margin-top:0">
         <div class="panel">
@@ -1252,7 +1284,7 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
         <textarea id="invImport" style="margin-top:12px" placeholder='[{"displayName":"Google Chrome","version":"141.0.7390.123","deviceCount":120}, …]'></textarea>
         <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="invImportBtn">Import inventory</button><button class="btn ghost" type="button" id="resetBtn">Reset to sample data</button></div>
       </div></div>
-      <div id="connectPermissionsPanel" hidden class="panel"><h2>Required permissions checklist</h2><p class="small">Review each permission with your Entra administrator. The checkboxes are a manual checklist, not a live consent verification.</p><div class="grid2"><div><h3>Core read access</h3><label><input type="checkbox"> DeviceManagementManagedDevices.Read.All — managed device inventory</label><label><input type="checkbox"> DeviceManagementApps.Read.All — app inventory and app records</label><label><input type="checkbox"> Group.Read.All — deployment group lookup</label><label><input type="checkbox"> User.Read — signed-in user profile</label></div><div><h3>Feature-specific write access</h3><label><input type="checkbox"> DeviceManagementApps.ReadWrite.All — create/update apps</label><label><input type="checkbox"> DeviceManagementConfiguration.ReadWrite.All — policy management features</label><label><input type="checkbox"> DeviceManagementRBAC.Read.All — Intune role review</label><label><input type="checkbox"> Additional App Control / Defender permissions — only when enabled</label></div></div><p class="small">The precise permission type (delegated or application), endpoint requirements and admin-consent need must be checked against the current release matrix and Entra consent dialog. Do not grant optional write access pre-emptively.</p></div>
+      <div id="connectPermissionsPanel" hidden class="panel"><h2>Required permissions checklist</h2><p class="small">Review each permission with your Entra administrator. Permissions are approved in sets, and only <b>Apps and patching</b> is required. The checkboxes are a manual checklist; the Connect page shows what Microsoft has actually approved.</p><div class="grid2"><div><h3>Apps and patching (required)</h3><label><input type="checkbox"> DeviceManagementApps.ReadWrite.All — create and update apps</label><label><input type="checkbox"> DeviceManagementManagedDevices.Read.All — managed device inventory</label><label><input type="checkbox"> DeviceManagementConfiguration.Read.All — assignment filters</label><label><input type="checkbox"> Group.Read.All — deployment group lookup</label></div><div><h3>App Control (optional)</h3><label><input type="checkbox"> DeviceManagementConfiguration.ReadWrite.All — create and assign App Control policies</label><label><input type="checkbox"> ThreatHunting.Read.All — Defender App Control events</label><label><input type="checkbox"> Group.Read.All — group lookup</label><h3 style="margin-top:14px">Automation (optional)</h3><label><input type="checkbox"> Device.Read.All — find enrolled devices in Entra</label><label><input type="checkbox"> GroupMember.ReadWrite.All — add devices to groups</label><label><input type="checkbox"> Group.Create — only if NexpatchOnline should create groups</label></div></div><p class="small">Do not grant optional write access pre-emptively. Remove an add-on at any time in Entra ID under Enterprise applications.</p></div>
     </section>
   </main>
 </div>
@@ -1423,6 +1455,51 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
     <p id="plMsg" class="small" style="margin:8px 0 0"></p>
   </div>
   <div class="dlg-foot"><button class="btn" type="button" id="plCheck">Check winget</button><button class="btn primary" type="button" id="plSave">Save</button></div>
+</dialog>
+
+<dialog id="planReqDlg" aria-labelledby="planReqTitle">
+  <div class="dlg-head"><h2 id="planReqTitle">Change your plan</h2><button class="btn ghost" type="button" id="planReqClose">Close</button></div>
+  <div class="dlg-body">
+    <p class="small" id="planReqNow"></p>
+    <label class="field"><span>Plan</span><select id="planReqTier"></select></label>
+    <label class="field"><span>Platform license billing</span><select id="planReqBilling"><option value="monthly">Monthly</option><option value="annual">Annual (save 15%)</option></select></label>
+    <div class="check"><input type="checkbox" id="planReqAC"><label for="planReqAC"><b>App Control add-on</b> (priced per device)</label></div>
+    <p class="small" style="margin:-4px 0 8px">App Control uses its own Microsoft permissions. If you add it, an administrator approves them separately on the Connect page. Without it you only approve the permissions for apps and patching.</p>
+    <dl class="pk-review" id="planReqEst" style="margin-top:12px"></dl>
+    <label class="field"><span>Note for NexpatchOnline (optional)</span><input type="text" id="planReqNote" maxlength="300"></label>
+    <p class="small">This sends your request to NexpatchOnline. Nothing is charged here: we confirm the plan with you and activate it, and your limits change when we do.</p>
+    <p id="planReqMsg" class="small" role="alert" style="color:var(--red);margin:8px 0 0"></p>
+  </div>
+  <div class="dlg-foot"><button class="btn primary" type="button" id="planReqSend">Request this plan</button></div>
+</dialog>
+
+<dialog id="autoDlg" aria-labelledby="autoDlgTitle">
+  <div class="dlg-head"><h2 id="autoDlgTitle">New rule</h2><button class="btn ghost" type="button" id="autoDlgClose">Close</button></div>
+  <div class="dlg-body">
+    <label class="field"><span>Rule name</span><input id="autoName" maxlength="80" placeholder="Pilot ring after 2 hours" style="width:100%"></label>
+    <div class="grid2">
+      <label class="field"><span>Wait after enrollment</span><span style="display:flex;gap:8px"><input id="autoDelay" type="number" min="0" step="1" value="2" style="width:90px"><select id="autoDelayUnit"><option value="1">minutes</option><option value="60" selected>hours</option><option value="1440">days</option></select></span></label>
+      <label class="field"><span>Check every</span><select id="autoEvery"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">hour</option><option value="120">2 hours</option><option value="240">4 hours</option><option value="720">12 hours</option><option value="1440">day</option></select></label>
+      <label class="field"><span>Device type</span><select id="autoOs"><option value="all">All devices</option><option value="Windows">Windows</option><option value="iOS">iOS and iPadOS</option><option value="macOS">macOS</option><option value="Android">Android</option></select></label>
+      <label class="field"><span>Ownership</span><select id="autoOwner"><option value="all">Company and personal</option><option value="company">Company-owned only</option><option value="personal">Personal only</option></select></label>
+    </div>
+    <label class="field"><span>Which devices</span><select id="autoScope"><option value="new">Only devices that enroll after this rule is created</option><option value="all">Also devices that already enrolled</option></select></label>
+    <fieldset style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 14px"><legend class="small"><b>Group</b></legend>
+      <div class="check" style="border:0;padding:4px 0"><input type="radio" name="autoGroupMode" id="autoGmNew" value="new" checked><label for="autoGmNew">Create a new security group</label></div>
+      <input id="autoGroupNew" maxlength="120" placeholder="Group name, for example Pilot devices" style="margin:2px 0 8px;width:100%">
+      <div class="check" style="border:0;padding:4px 0"><input type="radio" name="autoGroupMode" id="autoGmOld" value="old"><label for="autoGmOld">Use an existing assigned security group</label></div>
+      <input id="autoGroupSearch" placeholder="Type 2 or more letters to search" style="margin:2px 0 6px;width:100%" disabled>
+      <select id="autoGroupSel" style="width:100%" disabled><option value="">Search for a group first</option></select>
+    </fieldset>
+    <p class="small" id="autoPreviewText" style="background:var(--sunk);border-radius:8px;padding:10px 12px"></p>
+    <p id="autoDlgMsg" class="small" role="alert" style="color:var(--red);margin:8px 0 0"></p>
+  </div>
+  <div class="dlg-foot"><button class="btn primary" type="button" id="autoDlgSave">Save rule</button></div>
+</dialog>
+
+<dialog id="autoHistDlg" aria-labelledby="autoHistTitle">
+  <div class="dlg-head"><h2 id="autoHistTitle">Recent activity</h2><button class="btn ghost" type="button" id="autoHistClose">Close</button></div>
+  <div class="dlg-body"><div class="table-wrap"><table class="compact"><thead><tr><th>Device</th><th>When</th><th>Result</th></tr></thead><tbody id="autoHistRows"></tbody></table></div></div>
 </dialog>
 
 <dialog id="planDlg" aria-labelledby="planDlgTitle">
@@ -1976,7 +2053,7 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','devices','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation','notifications','organization'];
+const VIEWS=['overview','devices','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation','notifications','organization','automation'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
@@ -1992,7 +2069,7 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   applyNavGroups(); render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog'){ renderCatalog(); loadLastUpdated(); } if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports'){ renderReports(); loadDeviceReports(); loadIos(); } if(v==='devices') loadDeviceReports(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='organization') loadOrg(); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog'){ renderCatalog(); loadLastUpdated(); } if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports'){ renderReports(); loadDeviceReports(); loadIos(); } if(v==='devices') loadDeviceReports(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='organization') loadOrg(); if(v==='automation'){ loadAutomation(); permNotice('automation','#autoPermNote'); } if(v==='app-control') permNotice('appcontrol','#acPermNote'); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Admin'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
@@ -2006,7 +2083,7 @@ function renderPlanBanner(){
   b.innerHTML = pl.active ? '<span><b>Free trial:</b> '+pl.daysLeft+' day'+(pl.daysLeft===1?'':'s')+' left'+(pl.trialEndsAt?', until '+new Date(pl.trialEndsAt).toLocaleDateString():'')+'.</span><span>'+contact+'</span>'
     : '<span><b>Your free trial has ended.</b> Publishing and inventory sync are paused; everything else stays available.</span><span>'+contact+'</span>';
 }
-function applyRole(){ renderPlanBanner();
+function applyRole(){ renderPlanBanner(); { const f=(liveMode()&&SERVER.me&&SERVER.me.features)||{}; document.body.dataset.off=Object.keys(f).filter(k=>f[k]===false).join(' '); }
   const r=currentRole(); document.body.dataset.role=r;
   const none=r==='none'; $('#noAccess').hidden=!none;
   if(none) $('#noAccessText').textContent=(liveMode()&&SERVER.me.accessStatus==='revoked'&&SERVER.me.accessMessage)?SERVER.me.accessMessage:'You\u2019re signed in as '+(SESSION&&SESSION.email||'')+', but nobody has added you to NexpatchOnline for your organization.';
@@ -2038,8 +2115,9 @@ function sessionFromAccount(a){ return {email:a.username, name:a.name || nameFro
 function handleConsentResponse(){
   const q=new URLSearchParams(location.search);
   if(location.pathname.replace(/[/]+$/,'')!=='/consent' && !q.has('admin_consent')) return;
-  let expected=null; try{ expected=sessionStorage.getItem('nexpatch-consent-state'); sessionStorage.removeItem('nexpatch-consent-state'); }catch(e){}
+  let expected=null,bundle='core'; try{ expected=sessionStorage.getItem('nexpatch-consent-state'); sessionStorage.removeItem('nexpatch-consent-state'); bundle=sessionStorage.getItem('nexpatch-consent-bundle')||'core'; sessionStorage.removeItem('nexpatch-consent-bundle'); }catch(e){}
   if(!q.get('state') || q.get('state')!==expected) CONSENT_MSG={ok:false,text:'The approval response didn\u2019t match this browser session, so it was ignored. Please try again.'};
+  else if(q.get('admin_consent')==='True' && bundle!=='core'){ CONSENT_MSG={ok:true,text:'The '+(bundle==='appcontrol'?'App Control':'Automation')+' permissions were approved. It can take a minute before they show as approved below.'}; PERMS=null; }
   else if(q.get('admin_consent')==='True'){ if(q.get('tenant')) S.settings.tenant=q.get('tenant'); S.settings.consentAt=new Date().toISOString(); save(); SERVER.pendingActivate=API_ON; CONSENT_MSG={ok:true,text: API_ON ? 'Your organization approved NexpatchOnline. Finishing the connection…' : 'Your organization approved NexpatchOnline.'}; }
   else if(q.get('error')==='access_denied') CONSENT_MSG={ok:false,text:'Approval was cancelled or declined.'};
   else CONSENT_MSG={ok:false,text:'Approval didn\u2019t complete. '+String(q.get('error_description')||q.get('error')||'').split('\n')[0].slice(0,200)};
@@ -2091,7 +2169,7 @@ async function mergeSharedCatalog(){
       let app=S.apps.find(a=>a.sharedId===g.id || (g.source==='msstore' ? (a.source==='msstore' && a.storeProductId && a.storeProductId===g.storeProductId) : (a.winget && a.winget.toLowerCase()===String(g.winget||'').toLowerCase())));
       const fields={sharedId:g.id,name:g.name,vendor:g.vendor||g.name,winget:g.winget||'',source:g.source||'winget',
         storeProductId:g.storeProductId||'',appStoreUrl:g.appStoreUrl||'',storeType:g.storeType||'',verificationStatus:g.verificationStatus||'candidate',deployable:!!g.deployable,
-        reg:g.reg||g.name,procs:g.procs?g.procs.split(',').map(x=>x.trim()).filter(Boolean):[],exe:g.exe||'',shared:true,latestChangedAt:g.latestChangedAt||null};
+        private:!!g.private,reg:g.reg||g.name,procs:g.procs?g.procs.split(',').map(x=>x.trim()).filter(Boolean):[],exe:g.exe||'',shared:true,latestChangedAt:g.latestChangedAt||null};
       if(app){Object.assign(app,fields);if(g.latestVersion)app.latest=g.latestVersion;return;}
       app=Object.assign({id:'g-'+g.id,latest:g.latestVersion||'',fleet:[0,0,0,0],cves:0},fields);
       S.apps.push(app); fleetFromInventory(app); added++; });
@@ -2241,7 +2319,7 @@ function renderCatalog(){
     const sourceLabel=a.source==='msstore'?'Microsoft Store':'WinGet';
     const versionLabel=a.source==='msstore'?(storeReady?'Intune / Store managed':'Awaiting Store ID verification'):(a.latest||'Checked at publish');
     const packageLabel=a.source==='msstore'?(a.storeProductId||'No product ID yet'):(a.winget||'');
-    return '<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span><span class="sub">'+sourceLabel+(a.source==='msstore'?' · '+(storeReady?'Verified':'Candidate'):'')+'</span></td>'+
+    return '<tr><td><b>'+esc(a.name)+'</b><span class="sub">'+esc(a.vendor)+'</span><span class="sub">'+sourceLabel+(a.source==='msstore'?' · '+(storeReady?'Verified':'Candidate'):'')+(a.private?' · Only your company':'')+'</span></td>'+
     '<td>'+esc(versionLabel)+'<span class="sub">'+esc(packageLabel)+'</span>'+(a.latestChangedAt&&Date.now()-Date.parse(a.latestChangedAt)<14*864e5?'<span class="sub">New version found '+esc(new Date(a.latestChangedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'}))+'</span>':'')+'</td>'+lastUpdatedCell(a)+
     '<td>'+bar(a,true)+'<span class="sub">'+t+' installs, '+behind+' behind'+(a.fleet[3]?', '+a.fleet[3]+' vulnerable':'')+'</span></td>'+
     '<td><span class="pill '+(a.source==='msstore'&&!storeReady?'p-neutral':st.cls)+'">'+(a.source==='msstore'&&!storeReady?'Needs verification':st.t)+'</span>'+(a.cves?'<span class="sub">'+a.cves+' CVE'+(a.cves>1?'s':'')+' fixed in latest</span>':'')+'</td>'+
@@ -2466,7 +2544,7 @@ async function renderJobs(quiet){
   try{ const r=await api('/publish'); JOBS=r.jobs;
     r.jobs.filter(jobBusy).forEach(j=>{ if(!WATCH.has(j.id)){ const app=S.apps.find(a=>a.name===j.appName)||{name:j.appName,id:''}; watchJob(j.id, app, Object.assign(defaultCfg(app), (S.pubPrefs||{})[app.id]||{})); } });
     $('#jobsBody').innerHTML = r.jobs.length ? r.jobs.map(j=>{ const L=JOB_LABEL[j.status]||[j.status,'p-neutral'];
-      return '<tr><td><b>'+esc(j.displayName||j.appName)+'</b>'+(j.version?'<span class="sub">'+esc(j.version)+'</span>':'')+'</td><td><span class="pill '+L[1]+'">'+(jobBusy(j)?'<span class="spin"></span>':'')+L[0]+'</span>'+(jobBusy(j)&&j.step?'<span class="sub">'+esc(j.step)+'</span>':'')+(j.error?'<span class="sub" style="color:var(--red)">'+esc(j.error)+'</span>':'')+'</td><td>'+esc(j.summary||'')+'</td><td>'+esc(j.createdBy||'')+'</td><td>'+new Date(j.createdAt).toLocaleString()+'</td><td><button class="btn small ghost" type="button" data-job="'+esc(j.id)+'">View log</button></td></tr>'; }).join('')
+      return '<tr><td><b>'+esc(j.displayName||j.appName)+'</b>'+(j.version?'<span class="sub">'+esc(j.version)+'</span>':'')+'</td><td><span class="pill '+L[1]+'">'+(jobBusy(j)?'<span class="spin"></span>':'')+L[0]+'</span>'+(jobBusy(j)&&j.step?'<span class="sub">'+esc(j.step)+'</span>':'')+(j.error?'<span class="sub" style="color:var(--red)">'+esc(j.error)+'</span>':'')+(j.stuck?'<span class="sub" style="color:var(--red);font-weight:700">\u26a0 '+esc(j.stuckMessage||'This job looks stuck.')+'</span>':'')+'</td><td>'+esc(j.summary||'')+'</td><td>'+esc(j.createdBy||'')+'</td><td>'+new Date(j.createdAt).toLocaleString()+'</td><td><button class="btn small ghost" type="button" data-job="'+esc(j.id)+'">View log</button></td></tr>'; }).join('')
       : '<tr><td colspan="6" class="empty">Nothing published from NexpatchOnline yet. Open an app in the catalog and choose Publish to Intune.</td></tr>';
   }catch(e){ $('#jobsBody').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; }
 }
@@ -2978,6 +3056,76 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-trial]');i
 let _interest=null;function takeInterestOnce(){if(_interest===null)_interest=takeInterest();return _interest}
 function takeInterest(){try{const v=JSON.parse(localStorage.getItem('nexpatch.interest')||'null');localStorage.removeItem('nexpatch.interest');return v&&PLANS.tiers[v.tier]?{interestTier:v.tier,interestAppControl:!!v.appControl}:{}}catch(e){return{}}}
 renderPlanCards();
+
+/* ---------- Change plan (company side): sends a request, the operator activates it ---------- */
+let ORG_D=null;
+function planReqSync(){const t=PLANS.tiers[$('#planReqTier').value];const ann=$('#planReqBilling').querySelector('[value=annual]');ann.disabled=!!t&&!t.annual;if(t&&!t.annual)$('#planReqBilling').value='monthly';
+ const dev=(ORG_D&&ORG_D.entitlements&&ORG_D.entitlements.usage&&ORG_D.entitlements.usage.devicesSeen)||0;
+ if(!t){orgRows($('#planReqEst'),[['Price','Custom: we will contact you']]);return}
+ const e=planEstimate($('#planReqTier').value,dev,$('#planReqBilling').value,$('#planReqAC').checked);
+ orgRows($('#planReqEst'),[['Platform license',money(e.platform)+' / month'],['Devices (about '+dev.toLocaleString()+')',t.perDevice?money(e.usage)+' / month':'Included'],...($('#planReqAC').checked?[['App Control',money2(e.appc)+' / month']]:[]),['Estimated total',money2(e.total)+' / month'],...(e.over?[['Heads up','This plan covers up to '+t.maxDevices.toLocaleString()+' devices']]:[])]);}
+function drawPlanReq(d){const el=$('#orgPlanReq'),admin=['admin','owner'].includes(currentRole());$('#orgChangePlan').hidden=!admin;el.textContent='';
+ const r=d.planRequest;if(!r)return;
+ const b=document.createElement('b');b.textContent='Plan change requested: ';el.append(b,document.createTextNode(r.tierLabel+', '+r.billing+(r.appControl?', with App Control':'')+'. NexpatchOnline will confirm it with you. '));
+ if(admin){const c=document.createElement('button');c.className='btn small ghost';c.type='button';c.textContent='Cancel request';c.addEventListener('click',async()=>{try{await api('/org/plan-request','DELETE');toast('Request cancelled');loadOrg()}catch(e){toast(e.message)}});el.append(c)}}
+$('#orgChangePlan').addEventListener('click',()=>{const d=ORG_D||{},s=d.subscription||{},en=d.entitlements||{};
+ $('#planReqNow').textContent='Now: '+(s.plan==='active'?(en.tierLabel||'Active subscription'):s.plan==='trial'?'Free trial':'No active plan')+'.';
+ $('#planReqTier').innerHTML=['starter','pro','proplus'].map(i=>'<option value="'+i+'">'+PLANS.tiers[i].label+' — up to '+PLANS.tiers[i].maxDevices.toLocaleString()+' devices</option>').join('')+'<option value="enterprise">Enterprise — custom</option>';
+ $('#planReqTier').value=(d.planRequest&&d.planRequest.tier)||en.tier||en.interestTier||'pro';$('#planReqBilling').value=(d.planRequest&&d.planRequest.billing)||en.billing||'monthly';$('#planReqAC').checked=d.planRequest?d.planRequest.appControl:!!en.appControl;$('#planReqNote').value='';$('#planReqMsg').textContent='';planReqSync();$('#planReqDlg').showModal()});
+['planReqTier','planReqBilling','planReqAC'].forEach(id=>$('#'+id).addEventListener('change',planReqSync));$('#planReqClose').addEventListener('click',()=>$('#planReqDlg').close());
+$('#planReqSend').addEventListener('click',async()=>{$('#planReqMsg').textContent='';try{await api('/org/plan-request','POST',{tier:$('#planReqTier').value,billing:$('#planReqBilling').value,appControl:$('#planReqAC').checked,note:$('#planReqNote').value});$('#planReqDlg').close();toast('Request sent');loadOrg()}catch(err){$('#planReqMsg').textContent=err.message}});
+
+/* ---------- Automation ---------- */
+const AUTO={rules:[],editing:'',max:10};
+const durText=m=>{m=Number(m)||0;if(m===0)return'right away';const u=m%1440===0?[m/1440,'day']:m%60===0?[m/60,'hour']:[m,'minute'];return u[0]+' '+u[1]+(u[0]===1?'':'s')};
+const everyText=m=>m===60?'hour':m===1440?'day':m%60===0?(m/60)+' hours':m+' minutes';
+function autoSentence(r){const who=(r.ownership==='company'?'company-owned ':r.ownership==='personal'?'personal ':'')+(r.os==='all'?'devices':r.os+' devices');
+ return 'Every '+everyText(r.intervalMinutes)+', add '+who+' to “'+(r.groupName||'the new group')+'” '+(r.delayMinutes?durText(r.delayMinutes)+' after they enroll':'as soon as they enroll')+'. '+(r.scope==='all'?'Includes devices that already enrolled.':'Only devices that enroll after the rule was created.')}
+function autoFormRule(){return{name:$('#autoName').value.trim(),delayMinutes:Math.floor(Number($('#autoDelay').value||0)*Number($('#autoDelayUnit').value)),intervalMinutes:Number($('#autoEvery').value),os:$('#autoOs').value,ownership:$('#autoOwner').value,scope:$('#autoScope').value}}
+function autoPreview(){const r=autoFormRule();const useNew=$('#autoGmNew').checked;const gn=useNew?($('#autoGroupNew').value.trim()||'your new group'):($('#autoGroupSel').selectedOptions[0]?$('#autoGroupSel').selectedOptions[0].dataset.name||'':'');$('#autoPreviewText').textContent=autoSentence({...r,groupName:gn||'the chosen group'})}
+async function loadAutomation(){const body=$('#autoBody'),note=$('#autoNote');note.innerHTML='';
+ if(!liveMode()){body.hidden=true;note.innerHTML='<div class="panel"><p>Automation is available once your organization is connected to NexpatchOnline.</p></div>';return}
+ body.hidden=false;const admin=['admin','owner'].includes(currentRole());$('#autoNew').hidden=!admin;
+ try{const d=await api('/automation/rules');AUTO.rules=d.rules;AUTO.max=d.limits.maxRules;
+  if(!d.enabled){body.hidden=true;note.innerHTML='<div class="panel"><p>Automation is turned off for your organization. Contact NexpatchOnline to enable it.</p></div>';return}
+  drawAutomation(admin)}catch(e){body.hidden=true;note.innerHTML='<div class="panel"><p>'+esc(e.message)+'</p></div>'}}
+function drawAutomation(admin){const tb=$('#autoBodyRows');tb.textContent='';
+ if(!AUTO.rules.length){tb.innerHTML='<tr><td colspan="4" class="empty">No rules yet.'+(admin?' Choose <b>New rule</b> to add devices to a group a while after they enroll.':'')+'</td></tr>';return}
+ for(const r of AUTO.rules){const tr=document.createElement('tr');
+  const c1=document.createElement('td'),n=document.createElement('b'),pill=document.createElement('span'),sub=document.createElement('span');n.textContent=r.name;pill.className='pill '+(r.enabled?'p-cur':'p-neutral');pill.textContent=r.enabled?'On':'Off';pill.style.marginLeft='8px';sub.className='sub';sub.textContent=autoSentence(r);c1.append(n,pill,sub);
+  const c2=document.createElement('td');c2.textContent=r.groupName||'—';if(r.groupCreated){const s=document.createElement('span');s.className='sub';s.textContent='Created by NexpatchOnline';c2.append(s)}
+  const c3=document.createElement('td');if(r.lastRunAt){c3.append(document.createTextNode(orgDT(r.lastRunAt)));const s=document.createElement('span');s.className='sub';if(r.lastError){s.style.color='var(--red)';s.textContent=r.lastError}else s.textContent=r.lastSummary+(r.totalAdded?' · '+r.totalAdded+' added in total':'');c3.append(s)}else c3.textContent=r.enabled?'Waiting for the next check (within 15 minutes)':'Not yet';
+  const c4=document.createElement('td');c4.style.whiteSpace='nowrap';
+  const mk=(t,a,cls)=>{const b=document.createElement('button');b.type='button';b.className='btn small '+(cls||'');b.textContent=t;b.dataset.aact=a;b.dataset.aid=r.id;b.style.marginRight='4px';return b};
+  c4.append(mk('Preview','preview'),...(admin?[mk('Run now','run'),mk(r.enabled?'Turn off':'Turn on','toggle'),mk('Edit','edit')]:[]),mk('Activity','hist'),...(admin?[mk('Delete','del','ghost')]:[]));
+  tr.append(c1,c2,c3,c4);tb.append(tr)}}
+$('#autoBodyRows').addEventListener('click',async e=>{const b=e.target.closest('[data-aact]');if(!b)return;const r=AUTO.rules.find(x=>x.id===b.dataset.aid);if(!r)return;const act=b.dataset.aact,msg=$('#autoMsg');msg.textContent='';
+ try{
+  if(act==='edit')return openAutoDlg(r);
+  if(act==='hist'){const d=await api('/automation/rules/'+r.id+'/history');$('#autoHistTitle').textContent='Recent activity: '+r.name;$('#autoHistRows').innerHTML=d.history.length?d.history.map(h=>'<tr><td>'+esc(h.name||h.deviceId)+'</td><td>'+esc(orgDT(h.at))+'</td><td>'+esc(h.result)+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">Nothing yet.</td></tr>';$('#autoHistDlg').showModal();return}
+  if(act==='toggle'){await api('/automation/rules/'+r.id,'PUT',{enabled:!r.enabled});toast(r.enabled?'Rule turned off':'Rule turned on');return loadAutomation()}
+  if(act==='del'){if(!confirm('Delete “'+r.name+'”? Devices already in the group stay there.'))return;await api('/automation/rules/'+r.id,'DELETE');toast('Rule deleted');return loadAutomation()}
+  b.disabled=true;msg.textContent=act==='preview'?'Checking your devices…':'Running…';
+  const d=await api('/automation/rules/'+r.id+'/run','POST',{dryRun:act==='preview'});
+  msg.textContent=(act==='preview'?'Preview: ':'Done: ')+d.summary+(act==='preview'&&d.wouldAdd&&d.wouldAdd.length?' Devices: '+d.wouldAdd.slice(0,10).map(x=>x.name||x.id).join(', ')+(d.wouldAdd.length>10?' and '+(d.wouldAdd.length-10)+' more':'')+'.':'');
+  if(act==='run')loadAutomation()
+ }catch(err){msg.textContent=err.message}finally{b.disabled=false}});
+function openAutoDlg(r){AUTO.editing=r?r.id:'';$('#autoDlgTitle').textContent=r?'Edit rule':'New rule';$('#autoDlgMsg').textContent='';
+ $('#autoName').value=r?r.name:'';const m=r?r.delayMinutes:120,u=m&&m%1440===0?1440:m&&m%60===0?60:m?1:60;$('#autoDelayUnit').value=u;$('#autoDelay').value=m/u;
+ $('#autoEvery').value=r?r.intervalMinutes:15;$('#autoOs').value=r?r.os:'all';$('#autoOwner').value=r?r.ownership:'all';$('#autoScope').value=r?r.scope:'new';
+ $('#autoGroupNew').value='';$('#autoGroupSearch').value='';$('#autoGroupSel').innerHTML=r?'<option value="'+esc(r.groupId)+'" data-name="'+esc(r.groupName)+'">'+esc(r.groupName)+' (current)</option>':'<option value="">Search for a group first</option>';
+ const old=!!r;$('#autoGmOld').checked=old;$('#autoGmNew').checked=!old;autoGroupMode();autoPreview();$('#autoDlg').showModal()}
+function autoGroupMode(){const old=$('#autoGmOld').checked;$('#autoGroupNew').disabled=old;$('#autoGroupSearch').disabled=!old;$('#autoGroupSel').disabled=!old}
+['autoGmNew','autoGmOld'].forEach(id=>$('#'+id).addEventListener('change',()=>{autoGroupMode();autoPreview()}));
+['autoName','autoDelay','autoDelayUnit','autoEvery','autoOs','autoOwner','autoScope','autoGroupNew','autoGroupSel'].forEach(id=>{$('#'+id).addEventListener('input',autoPreview);$('#'+id).addEventListener('change',autoPreview)});
+let autoGT;$('#autoGroupSearch').addEventListener('input',()=>{clearTimeout(autoGT);autoGT=setTimeout(async()=>{const q=$('#autoGroupSearch').value.trim();if(q.length<2)return;try{const d=await api('/groups?search='+encodeURIComponent(q));const ok=d.groups.filter(g=>g.kind==='Security');$('#autoGroupSel').innerHTML=ok.map(g=>'<option value="'+esc(g.id)+'" data-name="'+esc(g.name)+'">'+esc(g.name)+'</option>').join('')||'<option value="">No assigned security groups found</option>';autoPreview()}catch(e){$('#autoDlgMsg').textContent=e.message}},350)});
+$('#autoNew').addEventListener('click',()=>{if(AUTO.max&&AUTO.rules.length>=AUTO.max){$('#autoMsg').textContent='You can have up to '+AUTO.max+' rules. Delete one you no longer use.';return}openAutoDlg(null)});
+$('#autoDlgClose').addEventListener('click',()=>$('#autoDlg').close());$('#autoHistClose').addEventListener('click',()=>$('#autoHistDlg').close());
+$('#autoDlgSave').addEventListener('click',async()=>{const body=autoFormRule();$('#autoDlgMsg').textContent='';
+ if($('#autoGmNew').checked){const n=$('#autoGroupNew').value.trim();if(AUTO.editing&&!n){/* keep the current group */}else body.createGroup=n}
+ else{const g=$('#autoGroupSel').value;if(!g){$('#autoDlgMsg').textContent='Search for a group and choose one.';return}body.groupId=g}
+ const b=$('#autoDlgSave');b.disabled=true;try{await api(AUTO.editing?'/automation/rules/'+AUTO.editing:'/automation/rules',AUTO.editing?'PUT':'POST',body);$('#autoDlg').close();toast('Rule saved');loadAutomation()}catch(err){$('#autoDlgMsg').textContent=err.message}finally{b.disabled=false}});
+
 /* ---------- Company profile ---------- */
 const orgDT=iso=>iso?new Date(iso).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}):'Never';
 const orgD=iso=>iso?new Date(iso).toLocaleDateString(undefined,{dateStyle:'medium'}):'\u2014';
@@ -2989,6 +3137,7 @@ async function loadOrg(){const note=$('#orgNote'),body=$('#orgBody');note.innerH
  try{const [d,lg]=await Promise.all([api('/org'),api('/org/logo').catch(()=>({logo:null}))]);
   $('#orgName').value=d.companyName||'';orgShowLogo(lg.logo);
   const loc=d.dataLocation;orgRows($('#orgData'),[['Region',loc.value||'Not specified yet'],['What is stored there','Your inventory, publishing history, settings and notices'],['Set by',loc.source==='configured'?'NexpatchOnline':loc.source==='azure-region'?'The Azure region of the NexpatchOnline service':'Ask your NexpatchOnline contact']]);
+  ORG_D=d;drawPlanReq(d);
   const s=d.subscription,planName=s.plan==='active'?'Active subscription':s.plan==='trial'?'Free trial':s.plan==='expired'?'Expired':s.plan;
   const en=d.entitlements||{},lim=en.limits||{},us=en.usage||{},cap=n=>n==null?'Unlimited':n.toLocaleString(),tierName=en.tierLabel||(s.plan==='trial'?'Pro limits during the trial':'Not set'),use=(k,l)=>us[k]+' of '+cap(l[k])+(l[k]!=null&&us[k]>=l[k]?' (limit reached)':'');
   orgRows($('#orgSub'),[['Plan',planName+(en.tierLabel?' \u00b7 '+en.tierLabel:'')],['Status',s.active?'Active':'Not active'],...(s.plan==='active'?[['Billing',en.billing==='annual'?'Annual platform license':en.billing==='monthly'?'Monthly':'\u2014'],['App Control add-on',en.appControl?'Included':'Not added']]:[]),...(s.plan==='trial'&&en.interestTier?[['Plan you were looking at',(PLANS.tiers[en.interestTier]||{}).label||en.interestTier]]:[]),['Plan limits',tierName],['Devices seen (approx.)',use('devicesSeen',{devicesSeen:lim.devices})],['Custom app builds this month',use('customApps',lim)],['App package requests this month',use('packageRequests',lim)],...(s.plan==='trial'?[['Trial started',orgD(s.trialStartedAt)],['Trial ends',orgD(s.trialEndsAt)+(s.daysLeft!=null?' ('+s.daysLeft+' day'+(s.daysLeft===1?'':'s')+' left)':'')]]:[]),...(s.plan==='active'?[['Subscribed since',orgD(s.activatedAt)]]:[]),['Connected to Intune',orgD(d.connectedAt)],['Tenant ID',d.tenantId]]);
@@ -3235,7 +3384,7 @@ function drawPlatTenants(){
   const t=PLAT.tenants||[];
   $('#platTenBody').innerHTML = t.length ? t.map(x=>{ const pl=x.plan||{plan:'trial'}; const P=PLAN_PILL[pl.plan]||[pl.plan,'p-neutral'];
     return '<tr><td><code style="font-size:.8rem">'+esc(x.tenantId)+'</code><span class="sub">Connected by '+esc(x.activatedBy||'?')+(x.activatedAt?' on '+new Date(x.activatedAt).toLocaleDateString():'')+'</span></td>'+
-      '<td><span class="pill '+P[1]+'">'+P[0]+'</span><span class="sub">'+(pl.plan==='trial'?pl.daysLeft+' days left'+(x.interestTier?' \u00b7 interested in '+esc((PLANS.tiers[x.interestTier]||{}).label||x.interestTier):''):pl.plan==='active'?esc(((PLANS.tiers[x.tier]||{}).label||(x.tier==='enterprise'?'Enterprise':'No tier set'))+(x.billing?' \u00b7 '+x.billing:'')+(x.appControl?' \u00b7 App Control':'')+(x.planNote?' \u00b7 '+x.planNote:'')):pl.trialEndsAt?'Ended '+new Date(pl.trialEndsAt).toLocaleDateString():'')+'</span></td>'+
+      '<td><span class="pill '+P[1]+'">'+P[0]+'</span>'+(x.planRequest?'<span class="sub" style="color:var(--blue)"><b>Asked for '+esc(x.planRequest.tierLabel)+' \u00b7 '+esc(x.planRequest.billing)+(x.planRequest.appControl?' \u00b7 App Control':'')+'</b>'+(x.planRequest.note?' \u00b7 '+esc(x.planRequest.note):'')+'</span>':'')+'<span class="sub">'+(pl.plan==='trial'?pl.daysLeft+' days left'+(x.interestTier?' \u00b7 interested in '+esc((PLANS.tiers[x.interestTier]||{}).label||x.interestTier):''):pl.plan==='active'?esc(((PLANS.tiers[x.tier]||{}).label||(x.tier==='enterprise'?'Enterprise':'No tier set'))+(x.billing?' \u00b7 '+x.billing:'')+(x.appControl?' \u00b7 App Control':'')+(x.planNote?' \u00b7 '+x.planNote:'')):pl.trialEndsAt?'Ended '+new Date(pl.trialEndsAt).toLocaleDateString():'')+'</span></td>'+
       '<td>'+x.members+(x.invites?'<span class="sub">'+x.invites+' invited</span>':'')+'</td>'+
       '<td>'+x.publishes30d+' publish'+(x.publishes30d===1?'':'es')+(x.failed30d?' \u00b7 <span style="color:var(--red)">'+x.failed30d+' failed</span>':'')+'<span class="sub">'+x.appVersions+' app versions \u00b7 up to '+x.devicesSeen+' devices \u00b7 App Control: '+(x.acSource==='defender'?'Defender':x.acSource==='collector'?'Collector':'off')+(x.acApps?' ('+x.acApps+' apps)':'')+'</span></td>'+
       '<td>'+(x.lastSyncAt?new Date(x.lastSyncAt).toLocaleString():'Never')+(x.lastSyncError?'<span class="sub" style="color:var(--red)">'+esc(x.lastSyncError)+'</span>':'')+'</td>'+
@@ -3244,7 +3393,7 @@ function drawPlatTenants(){
 }
 let PLAN_DLG_TENANT='';
 function openPlanDlg(sel){PLAN_DLG_TENANT=sel.dataset.plan;sel.value='';const x=(PLAT.tenants||[]).find(t=>t.tenantId===PLAN_DLG_TENANT)||{};$('#planDlgOrg').textContent='Organization '+PLAN_DLG_TENANT+(x.interestTier?' (looked at '+((PLANS.tiers[x.interestTier]||{}).label||x.interestTier)+' when starting the trial)':'');
- $('#planDlgTier').value=x.tier||x.interestTier||'pro';$('#planDlgBilling').value=x.billing||'monthly';$('#planDlgAC').checked=!!x.appControl;$('#planDlgNote').value='';$('#planDlgMsg').textContent='';planDlgSync();$('#planDlg').showModal()}
+ const rq=x.planRequest;$('#planDlgTier').value=(rq&&rq.tier)||x.tier||x.interestTier||'pro';$('#planDlgBilling').value=(rq&&rq.billing)||x.billing||'monthly';$('#planDlgAC').checked=rq?rq.appControl:!!x.appControl;$('#planDlgNote').value='';$('#planDlgMsg').textContent='';planDlgSync();$('#planDlg').showModal()}
 function planDlgSync(){const t=PLANS.tiers[$('#planDlgTier').value];const ann=$('#planDlgBilling').querySelector('[value=annual]');ann.disabled=!!t&&!t.annual;if(t&&!t.annual)$('#planDlgBilling').value='monthly'}
 $('#planDlgTier').addEventListener('change',planDlgSync);$('#planDlgClose').addEventListener('click',()=>$('#planDlg').close());
 $('#planDlgSave').addEventListener('click',async()=>{try{await api('/platform/tenants/'+encodeURIComponent(PLAN_DLG_TENANT)+'/plan','PUT',{action:'activate',tier:$('#planDlgTier').value,billing:$('#planDlgBilling').value,appControl:$('#planDlgAC').checked,note:$('#planDlgNote').value});$('#planDlg').close();toast('Plan updated');renderPlatform()}catch(err){$('#planDlgMsg').textContent=err.message}});
@@ -3290,10 +3439,32 @@ $('#platImport').addEventListener('click', async ()=>{
   toast(n+' apps added to the shared catalog'); renderPlatform(); });
 
 /* ---------- Connect ---------- */
+/* ---------- Permission sets: core is required, App Control and Automation are approved on their own ---------- */
+let PERMS=null,PERMS_AT=0;
+async function loadPerms(force){if(!force&&PERMS&&Date.now()-PERMS_AT<20000)return PERMS;PERMS=(await api('/tenant/permissions')).bundles;PERMS_AT=Date.now();return PERMS}
+function startAddonConsent(id,clientId){if(!clientId){toast('This add-on isn’t set up on this site yet.');return}
+ const state=(crypto.getRandomValues(new Uint32Array(4))).join('');try{sessionStorage.setItem('nexpatch-consent-state',state);sessionStorage.setItem('nexpatch-consent-bundle',id)}catch(e){}
+ const tenant=(SESSION&&SESSION.tenantId)||'organizations';
+ location.href='https://login.microsoftonline.com/'+encodeURIComponent(tenant)+'/v2.0/adminconsent?client_id='+encodeURIComponent(clientId)+'&scope='+encodeURIComponent('https://graph.microsoft.com/.default')+'&redirect_uri='+encodeURIComponent(CONSENT_URI)+'&state='+state}
+async function renderAddons(){const panel=$('#addonPanel');if(!(API_ON&&SESSION&&!SESSION.demo&&SERVER.me&&SERVER.me.tenant&&SERVER.me.tenant.status==='active')){panel.hidden=true;return}
+ let list;try{list=(await loadPerms(true)).filter(b=>b.optional)}catch(e){panel.hidden=false;$('#addonList').textContent=e.message;return}
+ panel.hidden=false;const el=$('#addonList');el.textContent='';const admin=['admin','owner'].includes(currentRole());
+ for(const b of list){const row=document.createElement('div');row.className='check';row.style.cssText='align-items:flex-start;justify-content:space-between;gap:14px';
+  const l=document.createElement('div'),h=document.createElement('b'),st=document.createElement('span'),u=document.createElement('p'),pm=document.createElement('p');
+  h.textContent=b.label;st.className='pill '+(b.consented?'p-cur':b.needed?'p-vuln':'p-neutral');st.style.marginLeft='8px';st.textContent=b.consented?'Approved':b.needed?'Needed for your plan':'Not approved';
+  u.className='small';u.style.margin='4px 0 0';u.textContent=b.uses+(b.needed&&!b.consented?' Your plan includes it, so it needs this approval.':!b.needed&&!b.consented?' Leave it off if you don’t use it.':'');
+  pm.className='small';pm.style.margin='4px 0 0';pm.textContent='Permissions: '+b.permissions.join(', ')+(b.optionalPermissions.length?' (and '+b.optionalPermissions.join(', ')+' to create groups)':'');
+  if(b.consented&&b.optionalMissing.length)pm.textContent+=' · Group creation is not approved.';
+  l.append(h,st,u,pm);row.append(l);
+  if(admin){const btn=document.createElement('button');btn.type='button';btn.className='btn small'+(b.consented?'':' primary');btn.textContent=b.consented?'Approve again':'Approve '+b.label;btn.style.flex='none';btn.addEventListener('click',()=>startAddonConsent(b.id,b.clientId));row.append(btn)}
+  el.append(row)}}
+async function permNotice(id,sel){const el=$(sel);if(!el)return;el.innerHTML='';if(!(API_ON&&SESSION&&!SESSION.demo&&SERVER.me&&SERVER.me.tenant&&SERVER.me.tenant.status==='active'))return;
+ try{const b=(await loadPerms()).find(x=>x.id===id);if(!b||b.consented)return;const d=document.createElement('div');d.className='note';d.append(document.createTextNode(b.label+' permissions haven’t been approved for your organization yet, so this page can’t read or change anything in Microsoft yet. '));const a=document.createElement('a');a.href='#connect';a.dataset.view='connect';a.textContent='Approve them on the Connect page';d.append(a,document.createTextNode('.'));el.append(d)}catch(e){}}
 function renderConnect(){
   $('#consentState').innerHTML = S.settings.consentAt ? '<i class="dot" style="background:var(--green)"></i>Approved '+fmtDate(new Date(S.settings.consentAt)) : '<i class="dot" style="background:var(--amber)"></i>Not approved yet';
   $('#consentMsg').innerHTML = CONSENT_MSG ? '<div class="note'+(CONSENT_MSG.ok?' info':'')+'">'+esc(CONSENT_MSG.text)+'</div>' : (!CFG.clientId ? '<div class="note">Add your app’s client ID to config.js to turn on approval.</div>' : ''); CONSENT_MSG=null;
   $('#consentBtn').disabled=!CFG.clientId; $('#consentBtn').textContent = S.settings.consentAt ? 'Approve again' : 'Approve for my organization';
+  renderAddons();
   const t = SERVER.me && SERVER.me.tenant; const live = API_ON && SESSION && !SESSION.demo;
   if(live && t && t.status==='active') $('#consentState').innerHTML='<i class="dot" style="background:var(--green)"></i>Connected';
   $('#syncBox').innerHTML = !live ? '' : (t && t.status==='active')

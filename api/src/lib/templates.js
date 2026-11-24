@@ -69,6 +69,51 @@ function Install-AppInstaller {
     } catch { Write-Output "Installing the App Installer release package didn't work: $_" }
 }
 
+# winget can fail to start (0xC000007B / 0xC0000135) when the Visual C++ runtime or the App Installer files are missing, damaged or the wrong kind.
+# That is fixed on the device, then winget is tried again, so the install does not need a person to step in.
+$LoaderErrors = @(-1073741701, -1073741515)
+function Install-VCRuntime {
+    Write-Output 'winget could not start because a runtime file is missing or damaged. Installing the Microsoft Visual C++ runtime...'
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $ProgressPreference = 'SilentlyContinue'
+        $vcArch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'x64' }
+        $vcFile = Join-Path $env:TEMP ("vc_redist.$vcArch.exe")
+        Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.$vcArch.exe" -OutFile $vcFile -UseBasicParsing
+        $vc = Start-Process -FilePath $vcFile -ArgumentList '/install', '/quiet', '/norestart' -Wait -PassThru
+        Write-Output "Visual C++ runtime installer finished with exit code $($vc.ExitCode)"
+        Remove-Item -Path $vcFile -Force -ErrorAction SilentlyContinue
+    } catch { Write-Output "Installing the Visual C++ runtime didn't work: $_" }
+}
+function Repair-AppInstaller {
+    Write-Output 'Repairing App Installer (winget)...'
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        if (-not (Get-PackageProvider -ListAvailable -Name NuGet -ErrorAction SilentlyContinue)) { Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope AllUsers | Out-Null }
+        if (-not (Get-Module -ListAvailable -Name Microsoft.WinGet.Client)) { Install-Module -Name Microsoft.WinGet.Client -Repository PSGallery -Scope AllUsers -Force -AllowClobber | Out-Null }
+        Import-Module Microsoft.WinGet.Client -Force
+        Repair-WinGetPackageManager -AllUsers -Force -Latest | Out-Null
+    } catch { Write-Output "Repairing App Installer didn't work: $_" }
+}
+# Runs winget and leaves its exit code in $script:WingetExit.
+function Invoke-Winget([string[]]$WingetArgs) {
+    & $script:Winget.FullName @WingetArgs | Out-Host
+    $script:WingetExit = $LASTEXITCODE
+    if ($LoaderErrors -contains $script:WingetExit) {
+        Write-Output "winget could not start (exit code $($script:WingetExit)). Repairing and trying again."
+        Install-VCRuntime | Out-Host
+        & $script:Winget.FullName @WingetArgs | Out-Host
+        $script:WingetExit = $LASTEXITCODE
+    }
+    if ($LoaderErrors -contains $script:WingetExit) {
+        Repair-AppInstaller | Out-Host
+        $found = Find-Winget
+        if ($found) { $script:Winget = $found; Set-Location -Path $found.DirectoryName }
+        & $script:Winget.FullName @WingetArgs | Out-Host
+        $script:WingetExit = $LASTEXITCODE
+    }
+}
+
 $exit = 0
 try {
     $Winget = Find-Winget
@@ -92,13 +137,13 @@ try {
 
     $common = @('--id', $Id, '--exact', '--source', 'winget', '--silent', '--scope', 'machine', '--accept-source-agreements', '--disable-interactivity')
     if ($Uninstall) {
-        & $Winget.FullName uninstall @common
-        $exit = $LASTEXITCODE
+        Invoke-Winget (@('uninstall') + $common)
+        $exit = $script:WingetExit
         if ($exit -eq -1978335212) { $exit = 0 }   # not installed
     } else {
         Invoke-Embedded $PreScript 'pre-install'
-        & $Winget.FullName __ACTION__ @common --accept-package-agreements
-        $exit = $LASTEXITCODE
+        Invoke-Winget (@('__ACTION__') + $common + '--accept-package-agreements')
+        $exit = $script:WingetExit
         Write-Output "winget finished with exit code $exit"
         if ($exit -eq -1978335189 -or $exit -eq -1978335135) { $exit = 0 }   # no newer version / already installed
         if ($exit -eq 0) { Invoke-Embedded $PostScript 'post-install' }

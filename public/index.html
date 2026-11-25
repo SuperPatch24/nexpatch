@@ -1308,7 +1308,7 @@ html.lp-rv .rv:nth-child(2){transition-delay:.08s}html.lp-rv .rv:nth-child(3){tr
           </fieldset></form>
           <div>
             <div class="panel"><div class="panel-head"><h2>Data store location</h2></div><dl class="pk-review" id="orgData"></dl></div>
-            <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Subscription</h2><button class="btn small primary" type="button" id="orgChangePlan" hidden>Change plan</button></div><dl class="pk-review" id="orgSub"></dl><div id="orgPlanReq" class="small" style="margin-top:12px"></div></div>
+            <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Subscription</h2><span class="row" style="gap:8px"><button class="btn small" type="button" id="orgBilling" hidden>Manage billing</button><button class="btn small primary" type="button" id="orgChangePlan" hidden>Change plan</button></span></div><dl class="pk-review" id="orgSub"></dl><div id="orgPlanReq" class="small" style="margin-top:12px"></div></div>
           </div>
         </div>
         <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Update sync</h2><button class="btn small" type="button" id="orgSyncNow">Sync now</button></div><dl class="pk-review" id="orgSync"></dl><p class="small" id="orgSyncMsg" role="status"></p></div>
@@ -1583,10 +1583,10 @@ html.lp-rv .rv:nth-child(2){transition-delay:.08s}html.lp-rv .rv:nth-child(3){tr
     <p class="small" style="margin:-4px 0 8px">App Control uses its own Microsoft permissions. If you add it, an administrator approves them separately on the Connect page. Without it you only approve the permissions for apps and patching.</p>
     <dl class="pk-review" id="planReqEst" style="margin-top:12px"></dl>
     <label class="field"><span>Note for NexpatchOnline (optional)</span><input type="text" id="planReqNote" maxlength="300"></label>
-    <p class="small">This sends your request to NexpatchOnline. Nothing is charged here: we confirm the plan with you and activate it, and your limits change when we do.</p>
+    <p class="small" id="planReqHow">This sends your request to NexpatchOnline. Nothing is charged here: we confirm the plan with you and activate it, and your limits change when we do.</p>
     <p id="planReqMsg" class="small" role="alert" style="color:var(--red);margin:8px 0 0"></p>
   </div>
-  <div class="dlg-foot"><button class="btn primary" type="button" id="planReqSend">Request this plan</button></div>
+  <div class="dlg-foot"><button class="btn primary" type="button" id="planReqPay" hidden>Pay by card</button><button class="btn" type="button" id="planReqSend">Request this plan</button></div>
 </dialog>
 
 <dialog id="autoDlg" aria-labelledby="autoDlgTitle">
@@ -2697,7 +2697,19 @@ $('#jobsBody').addEventListener('click', async e=>{ const b=e.target.closest('[d
   try{ const j=await api('/publish/'+encodeURIComponent(b.dataset.job)); showCode((j.displayName||j.appName)+' \u2013 publishing log', (JOB_LABEL[j.status]||[j.status])[0]+(j.error?': '+j.error:''), (j.log||[]).map(l=>new Date(l.at).toLocaleTimeString()+'  '+l.text).join('\n') || 'No log yet.'); }
   catch(err){ toast(err.message); } });
 function renderDeployments(){ renderJobs(); $('#depList').innerHTML = S.deployments.length ? S.deployments.map(depHTML).join('') + '<p class="small" style="margin-top:18px">NexpatchOnline tracks the schedule. Device-level install results are in Intune under Apps, Windows, then the app’s device install status.</p>' : '<div class="empty"><p>No updates published yet.</p><a class="btn primary" href="#catalog">Pick an app to publish</a></div>'; }
-$('#depList').addEventListener('click', e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; S.deployments=S.deployments.filter(d=>d.id!==b.dataset.rm); save(); renderDeployments(); toast('Deployment removed from NexpatchOnline'); });
+$('#depList').addEventListener('click', async e=>{ const b=e.target.closest('[data-rm]'); if(!b) return;
+  const d=S.deployments.find(x=>x.id===b.dataset.rm); if(!d) return;
+  const dropLocal=msg=>{ S.deployments=S.deployments.filter(x=>x.id!==d.id); save(); renderDeployments(); toast(msg); };
+  // Published from NexpatchOnline: the app also exists in Intune, so remove it there first
+  if(d.cloud && liveMode()){
+    if(!confirm('Remove from Intune?\n\n'+d.name+(d.version?' '+d.version:'')+' will be deleted from Intune together with its assignments. Devices that already installed it keep it. This can\u2019t be undone.')) return;
+    b.disabled=true; b.textContent='Removing\u2026';
+    try{ const r=await api('/publish/'+encodeURIComponent(d.id),'DELETE'); dropLocal(r&&r.message||'Removed.'); }
+    catch(err){ if(/wasn.t found/.test(err.message)) dropLocal('Removed from NexpatchOnline. The publishing record was already gone.'); else { toast(err.message); b.disabled=false; b.textContent='Remove'; } }
+    return;
+  }
+  dropLocal('Removed from NexpatchOnline only. This was recorded by hand, so nothing was changed in Intune.');
+});
 
 /* ---------- Documentation centre ---------- */
 const DOCS=[
@@ -3202,12 +3214,12 @@ renderPlanCards();
 
 /* ---------- Change plan (company side): sends a request, the operator activates it ---------- */
 let ORG_D=null;
-function planReqSync(){const t=PLANS.tiers[$('#planReqTier').value];const ann=$('#planReqBilling').querySelector('[value=annual]');ann.disabled=!!t&&!t.annual;if(t&&!t.annual)$('#planReqBilling').value='monthly';
+function planReqSync(){const B=(ORG_D&&ORG_D.billing)||{},canPay=!!B.enabled&&!B.subscribed&&$('#planReqTier').value!=='enterprise';$('#planReqPay').hidden=!canPay;$('#planReqSend').className=canPay?'btn':'btn primary';$('#planReqHow').textContent=canPay?'Pay by card on Stripe\u2019s secure page and your plan starts as soon as the payment goes through. Prices are in US dollars and the per-device part follows the devices you have. Or send a request and we will arrange it with you.':B.subscribed?'You already have a subscription. Send a request and we will change it for you. Use Manage billing for your card and invoices.':'This sends your request to NexpatchOnline. Nothing is charged here: we confirm the plan with you and activate it, and your limits change when we do.';const t=PLANS.tiers[$('#planReqTier').value];const ann=$('#planReqBilling').querySelector('[value=annual]');ann.disabled=!!t&&!t.annual;if(t&&!t.annual)$('#planReqBilling').value='monthly';
  const dev=(ORG_D&&ORG_D.entitlements&&ORG_D.entitlements.usage&&ORG_D.entitlements.usage.devicesSeen)||0;
  if(!t){orgRows($('#planReqEst'),[['Price','Custom: we will contact you']]);return}
  const e=planEstimate($('#planReqTier').value,dev,$('#planReqBilling').value,$('#planReqAC').checked);
  orgRows($('#planReqEst'),[['Platform license',money(e.platform)+' / month'],['Devices (about '+dev.toLocaleString()+')',t.perDevice?money(e.usage)+' / month':'Included'],...($('#planReqAC').checked?[['App Control',money2(e.appc)+' / month']]:[]),['Estimated total',money2(e.total)+' / month'],...(e.over?[['Heads up','This plan covers up to '+t.maxDevices.toLocaleString()+' devices']]:[])]);}
-function drawPlanReq(d){const el=$('#orgPlanReq'),admin=['admin','owner'].includes(currentRole());$('#orgChangePlan').hidden=!admin;el.textContent='';
+function drawPlanReq(d){const el=$('#orgPlanReq'),admin=['admin','owner'].includes(currentRole());$('#orgChangePlan').hidden=!admin;$('#orgBilling').hidden=!(admin&&d.billing&&d.billing.enabled&&d.billing.hasCustomer);el.textContent='';
  const r=d.planRequest;if(!r)return;
  const b=document.createElement('b');b.textContent='Plan change requested: ';el.append(b,document.createTextNode(r.tierLabel+', '+r.billing+(r.appControl?', with App Control':'')+'. NexpatchOnline will confirm it with you. '));
  if(admin){const c=document.createElement('button');c.className='btn small ghost';c.type='button';c.textContent='Cancel request';c.addEventListener('click',async()=>{try{await api('/org/plan-request','DELETE');toast('Request cancelled');loadOrg()}catch(e){toast(e.message)}});el.append(c)}}
@@ -3218,6 +3230,9 @@ $('#orgChangePlan').addEventListener('click',()=>{const d=ORG_D||{},s=d.subscrip
 ['planReqTier','planReqBilling','planReqAC'].forEach(id=>$('#'+id).addEventListener('change',planReqSync));$('#planReqClose').addEventListener('click',()=>$('#planReqDlg').close());
 $('#planReqSend').addEventListener('click',async()=>{$('#planReqMsg').textContent='';try{await api('/org/plan-request','POST',{tier:$('#planReqTier').value,billing:$('#planReqBilling').value,appControl:$('#planReqAC').checked,note:$('#planReqNote').value});$('#planReqDlg').close();toast('Request sent');loadOrg()}catch(err){$('#planReqMsg').textContent=err.message}});
 
+$('#planReqPay').addEventListener('click',async()=>{const b=$('#planReqPay');$('#planReqMsg').textContent='';b.disabled=true;try{const r=await api('/billing/checkout','POST',{tier:$('#planReqTier').value,billing:$('#planReqBilling').value,appControl:$('#planReqAC').checked});if(r&&r.url)location.href=r.url;else throw new Error('Payment page did not open. Try again.')}catch(err){$('#planReqMsg').textContent=err.message;b.disabled=false}});
+$('#orgBilling').addEventListener('click',async()=>{const b=$('#orgBilling');b.disabled=true;try{const r=await api('/billing/portal','POST');if(r&&r.url)location.href=r.url}catch(err){toast(err.message);b.disabled=false}});
+let BILLING_RET=(()=>{try{const v=new URLSearchParams(location.search).get('billing');if(v){history.replaceState(null,'','/'+location.hash)}return v||''}catch(e){return ''}})();
 /* ---------- Automation ---------- */
 const AUTO={rules:[],editing:'',max:10};
 const durText=m=>{m=Number(m)||0;if(m===0)return'right away';const u=m%1440===0?[m/1440,'day']:m%60===0?[m/60,'hour']:[m,'minute'];return u[0]+' '+u[1]+(u[0]===1?'':'s')};
@@ -3280,10 +3295,10 @@ async function loadOrg(){const note=$('#orgNote'),body=$('#orgBody');note.innerH
  try{const [d,lg]=await Promise.all([api('/org'),api('/org/logo').catch(()=>({logo:null}))]);
   $('#orgName').value=d.companyName||'';orgShowLogo(lg.logo);
   const loc=d.dataLocation;orgRows($('#orgData'),[['Region',loc.value||'Not specified yet'],['What is stored there','Your inventory, publishing history, settings and notices'],['Set by',loc.source==='configured'?'NexpatchOnline':loc.source==='azure-region'?'The Azure region of the NexpatchOnline service':'Ask your NexpatchOnline contact']]);
-  ORG_D=d;drawPlanReq(d);
+  ORG_D=d;drawPlanReq(d);if(BILLING_RET){const v=BILLING_RET;BILLING_RET='';toast(v==='success'?'Payment received. Your plan updates in a moment.':'Payment cancelled. You have not been charged.');if(v==='success')setTimeout(loadOrg,6000)}
   const s=d.subscription,planName=s.plan==='active'?'Active subscription':s.plan==='trial'?'Free trial':s.plan==='expired'?'Expired':s.plan;
   const en=d.entitlements||{},lim=en.limits||{},us=en.usage||{},cap=n=>n==null?'Unlimited':n.toLocaleString(),tierName=en.tierLabel||(s.plan==='trial'?'Pro limits during the trial':'Not set'),use=(k,l)=>us[k]+' of '+cap(l[k])+(l[k]!=null&&us[k]>=l[k]?' (limit reached)':'');
-  orgRows($('#orgSub'),[['Plan',planName+(en.tierLabel?' \u00b7 '+en.tierLabel:'')],['Status',s.active?'Active':'Not active'],...(s.plan==='active'?[['Billing',en.billing==='annual'?'Annual platform license':en.billing==='monthly'?'Monthly':'\u2014'],['App Control add-on',en.appControl?'Included':'Not added']]:[]),...(s.plan==='trial'&&en.interestTier?[['Plan you were looking at',(PLANS.tiers[en.interestTier]||{}).label||en.interestTier]]:[]),['Plan limits',tierName],['Devices seen (approx.)',use('devicesSeen',{devicesSeen:lim.devices})],['Custom app builds this month',use('customApps',lim)],['App package requests this month',use('packageRequests',lim)],...(s.plan==='trial'?[['Trial started',orgD(s.trialStartedAt)],['Trial ends',orgD(s.trialEndsAt)+(s.daysLeft!=null?' ('+s.daysLeft+' day'+(s.daysLeft===1?'':'s')+' left)':'')]]:[]),...(s.plan==='active'?[['Subscribed since',orgD(s.activatedAt)]]:[]),['Connected to Intune',orgD(d.connectedAt)],['Tenant ID',d.tenantId]]);
+  orgRows($('#orgSub'),[['Plan',planName+(en.tierLabel?' \u00b7 '+en.tierLabel:'')],['Status',s.active?'Active':'Not active'],...(s.plan==='active'?[['Billing',en.billing==='annual'?'Annual platform license':en.billing==='monthly'?'Monthly':'\u2014'],['App Control add-on',en.appControl?'Included':'Not added']]:[]),...(s.plan==='trial'&&en.interestTier?[['Plan you were looking at',(PLANS.tiers[en.interestTier]||{}).label||en.interestTier]]:[]),['Plan limits',tierName],['Devices seen (approx.)',use('devicesSeen',{devicesSeen:lim.devices})],['Custom app builds this month',use('customApps',lim)],['App package requests this month',use('packageRequests',lim)],...(s.plan==='trial'?[['Trial started',orgD(s.trialStartedAt)],['Trial ends',orgD(s.trialEndsAt)+(s.daysLeft!=null?' ('+s.daysLeft+' day'+(s.daysLeft===1?'':'s')+' left)':'')]]:[]),...(s.plan==='active'?[['Subscribed since',orgD(s.activatedAt)]]:[]),...(d.billing&&d.billing.subscribed&&d.billing.paidUntil?[[d.billing.cancelAtPeriodEnd?'Ends on':'Renews on',orgD(d.billing.paidUntil)]]:[]),...(d.billing&&d.billing.billingIssue?[['Payment','A payment failed. Update your card under Manage billing.']]:[]),['Connected to Intune',orgD(d.connectedAt)],['Tenant ID',d.tenantId]]);
   const y=d.sync,next=new Date(y.nextRunAt);
   orgRows($('#orgSync'),[['Last sync',orgDT(y.lastSyncAt)],['Result',y.lastSyncError?'Failed: '+y.lastSyncError:y.lastSyncAt?y.lastSyncCount+' app versions found':'No sync yet'],['Sync schedule',y.schedule+' (about '+next.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+' your time)'],['Next scheduled sync',y.scheduledSyncActive?orgDT(y.nextRunAt):'Paused: your subscription is not active'],['What it does','Reads installed apps from Intune and checks which have newer versions']]);
  }catch(e){note.innerHTML='<div class="panel"><p>'+esc(e.message)+'</p></div>';body.hidden=true}}

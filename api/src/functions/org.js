@@ -1,3 +1,4 @@
+import { billingSummary } from '../lib/billing.js';
 import { app } from '@azure/functions';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
@@ -50,6 +51,7 @@ app.http('orgGet', { methods: ['GET'], authLevel: 'anonymous', route: 'org', han
       limits: { devices: fin(lim.devices), customApps: fin(lim.customApps), packageRequests: fin(lim.packageRequests) },
       usage: { devicesSeen, customApps: countThisMonth(drafts), packageRequests: countThisMonth(reqs) } },
     planRequest: planRequestOf(t),
+    billing: billingSummary(t),
     companyName: profile?.companyName || '',
     updatedAt: profile?.updatedAt || null,
     tenantId: t.rowKey,

@@ -7,6 +7,8 @@ import { randomUUID } from 'node:crypto';
 import { planStatus } from '../lib/plan.js';
 import { featureOn, featureMessage } from '../lib/tenantsettings.js';
 import { stuckKind, stuckMessage } from '../lib/jobhealth.js';
+import { graph } from '../lib/graph.js';
+import { removeIntuneApp, REMOVAL_TEXT } from '../lib/removal.js';
 
 const queue = output.storageQueue({ queueName: 'publish-jobs', connection: 'AzureWebJobsStorage' });
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
@@ -49,7 +51,7 @@ app.http('publishStart', {
 });
 
 // GET /api/publish – recent publishing jobs. GET /api/publish/{id} – one job with its log.
-const shape = (j, withLog) => ({ id: j.rowKey, status: j.status, appName: j.appName, operationType: j.operationType || 'deployment', displayName: jobDisplayName(j), version: j.version || null, summary: j.summary || '', appId: j.appId || null,
+const shape = (j, withLog) => ({ id: j.rowKey, status: j.status, appName: j.appName, operationType: j.operationType || 'deployment', displayName: jobDisplayName(j), version: j.version || null, summary: j.summary || '', appId: j.appId || null, removedAt: j.removedAt || null,
   createdBy: j.createdBy, createdAt: j.createdAt, stuck: stuckKind(j), stuckMessage: stuckMessage(stuckKind(j)), finishedAt: j.finishedAt || null, error: j.error || '', step: j.step || '', ...(withLog ? { log: JSON.parse(j.log || '[]') } : {}) });
 app.http('publishList', {
   methods: ['GET'], authLevel: 'anonymous', route: 'publish',
@@ -61,7 +63,7 @@ app.http('publishSummary', {
   handler: withUser(async (_req, _ctx, user) => {
     const apps = {};
     for (const j of await listJobs(user.tenantId, 2000)) {
-      if (j.status !== 'succeeded' || !j.appName) continue;
+      if (j.status !== 'succeeded' || !j.appName || j.removedAt) continue;
       const at = j.finishedAt || j.createdAt;
       if (!apps[j.appName] || String(at) > String(apps[j.appName].at)) apps[j.appName] = { at, version: j.version || '', operationType: j.operationType || 'deployment' };
     }
@@ -101,4 +103,28 @@ app.storageQueue('publishWorker', {
       await audit(tenantId, job.createdBy, 'publish failed', `${job.appName}: ${err.message}`.slice(0, 300));
     }
   }
+});
+
+// DELETE /api/publish/{id} – removes a published deployment: deletes the app NexpatchOnline created in Intune (with its
+// assignments), then marks the job removed. Devices that already installed the app keep it; deleting an app in Intune
+// does not uninstall it.
+app.http('publishRemove', {
+  methods: ['DELETE'], authLevel: 'anonymous', route: 'publish/{id}',
+  handler: withUser(async (req, _ctx, user) => {
+    const j = await getJob(user.tenantId, req.params.id);
+    if (!j) throw new HttpError(404, 'That publishing job wasn\u2019t found.');
+    if (['queued', 'running'].includes(j.status)) throw new HttpError(409, 'This is still publishing. Wait for it to finish, then remove it.');
+    let r = { status: 'no-app' };
+    if (j.appId && !j.removedAt) {
+      r = await removeIntuneApp({ graph: (p, o) => graph(user.tenantId, p, o) }, j.appId).catch(err => { throw new HttpError(err.status && err.status < 500 ? err.status : 502, `Couldn\u2019t remove it from Intune: ${String(err.message).slice(0, 300)}`); });
+    }
+    const at = new Date().toISOString();
+    await saveJob(user.tenantId, j.rowKey, { removedAt: at, removedBy: user.email || user.userId, removal: r.status });
+    // Other jobs that ended on the same Intune app (a republish of the same version) are gone with it.
+    if (j.appId && (r.status === 'removed' || r.status === 'already-gone')) {
+      for (const o of await listJobs(user.tenantId, 2000)) if (o.rowKey !== j.rowKey && o.appId === j.appId && !o.removedAt) await saveJob(user.tenantId, o.rowKey, { removedAt: at, removedBy: user.email || user.userId, removal: r.status });
+    }
+    await audit(user.tenantId, user.email || user.userId, 'removed deployment', `${j.appName}${j.version ? ' ' + j.version : ''}: ${r.status}`);
+    return { status: r.status, message: REMOVAL_TEXT[r.status] };
+  }, 'admin')
 });

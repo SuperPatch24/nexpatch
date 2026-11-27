@@ -4,6 +4,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { withUser, HttpError, readJson, json } from '../lib/http.js';
 import { getTenant, saveTenant, listActiveTenants, getRow, putRow, deleteRow, listRows, audit } from '../lib/store.js';
 import { normalize, storeEvents, pollDefender, buildSupplemental } from '../lib/appcontrol.js';
+import { explainDefenderError } from '../lib/defender-errors.js';
 import { installerFor, UNINSTALLER } from '../lib/collector.js';
 import { graphAs } from '../lib/graph.js';
 const graph = graphAs('appcontrol');
@@ -157,9 +158,9 @@ app.http('acCheck', { methods: ['POST'], authLevel: 'anonymous', route: 'appcont
     if (t.acSource === 'defender') {
       try { const r = await pollDefender(user.tenantId, t); return { ok: true, message: `Connected to Microsoft Defender. ${r.rows} new events, ${r.stored} apps updated.` }; }
       catch (err) {
-        await saveTenant(user.tenantId, { acLastError: String(err.message).slice(0, 300) });
-        const hint = /403|permission/i.test(err.message) ? ' Approve NexpatchOnline again so it gets the ThreatHunting.Read.All permission, and check the tenant has advanced hunting.' : '';
-        return { ok: false, message: `Couldn\u2019t query Microsoft Defender: ${err.message}${hint}` };
+        const why = explainDefenderError(err.message);
+        await saveTenant(user.tenantId, { acLastError: why.message.slice(0, 300) });
+        return { ok: false, message: why.message, code: why.code, switchTo: why.needsCollector ? 'collector' : undefined };
       }
     }
     if (t.acSource === 'collector') return { ok: !!t.acLastIngestAt, message: t.acLastIngestAt ? `Last events received ${t.acLastIngestAt}.` : 'No devices have sent events yet. Deploy the installer script with Intune.' };
@@ -211,7 +212,7 @@ app.timer('appControlPoll', { schedule: '0 */15 * * * *',
   handler: async (_t, context) => {
     for (const t of (await listActiveTenants()).filter(x => x.acSource === 'defender')) {
       try { const r = await pollDefender(t.rowKey, t); context.log(`App Control poll ${t.rowKey}: ${r.rows} rows`); }
-      catch (err) { context.warn(`App Control poll ${t.rowKey} failed: ${err.message}`); await saveTenant(t.rowKey, { acLastError: String(err.message).slice(0, 300) }).catch(() => {}); }
+      catch (err) { context.warn(`App Control poll ${t.rowKey} failed: ${err.message}`); await saveTenant(t.rowKey, { acLastError: explainDefenderError(err.message).message.slice(0, 300) }).catch(() => {}); }
     }
   } });
 

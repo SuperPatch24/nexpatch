@@ -2,7 +2,7 @@ import { app } from '@azure/functions';
 import { randomUUID } from 'node:crypto';
 import { withUser, HttpError, readJson } from '../lib/http.js';
 import { getRow, putRow, listRows, audit, listActiveTenants, listMemberRows } from '../lib/store.js';
-import { emailIsConfigured, sendBrevoEmail, adminEmailRecipients } from '../lib/email.js';
+import { emailIsConfigured, sendEmail as sendBrevoEmail, emailSupportsScheduling, adminEmailRecipients } from '../lib/email.js';
 import { TEMPLATES, renderEmail, safeColor, safeUrl } from '../lib/email-templates.js';
 import { platformRole } from '../lib/platform.js';
 
@@ -91,7 +91,7 @@ async function resolveAudience(body, user) {
 
 app.http('platformEmailCompose', { methods: ['POST'], authLevel: 'anonymous', route: 'platform/email/send', handler: withUser(async (req, ctx, user) => {
   requireEmailAdmin(user);
-  if (!emailIsConfigured()) throw new HttpError(503, 'Brevo is not configured. Check the Azure Function App settings.');
+  if (!emailIsConfigured()) throw new HttpError(503, 'Email is not configured. Check the Azure Function App settings. See docs/EMAIL-SETUP.md.');
   const body = await readJson(req);
   const parts = mailParts(body);
   const subject = String(body.subject || '').trim().slice(0, 180);
@@ -101,6 +101,7 @@ app.http('platformEmailCompose', { methods: ['POST'], authLevel: 'anonymous', ro
   if ([...cc, ...bcc].some(a => !EMAIL_RE.test(a))) throw new HttpError(400, 'Every CC and BCC address must be valid.');
   let scheduledAt = '';
   if (body.scheduleAt) {
+    if (!emailSupportsScheduling()) throw new HttpError(400, 'Scheduled sending isn\u2019t available with this email service. Send now instead.');
     const when = Date.parse(body.scheduleAt);
     if (!Number.isFinite(when) || when < Date.now() + 60e3 || when > Date.now() + 72 * 3600e3) throw new HttpError(400, 'Schedule the email between 1 minute and 72 hours from now.');
     scheduledAt = new Date(when).toISOString();
@@ -119,6 +120,6 @@ app.http('platformEmailCompose', { methods: ['POST'], authLevel: 'anonymous', ro
     }));
   }
   await audit(GLOBAL, user.email || user.userId, 'email.sent', `${sent} sent, ${failed} failed; template ${parts.template}; subject ${subject}`);
-  if (!sent) throw new HttpError(502, 'Brevo did not accept the message. The failed attempts were recorded.');
+  if (!sent) throw new HttpError(502, 'The email service did not accept the message. The failed attempts were recorded.');
   return { sent, failed, total: audience.length, scheduledAt: scheduledAt || null };
 }, 'any') });

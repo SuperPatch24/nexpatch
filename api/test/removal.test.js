@@ -63,3 +63,11 @@ test('wiring: removing needs admin, is audited, and the page asks before removin
   const page = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
   assert.ok(page.includes("api('/publish/'+encodeURIComponent(") && page.includes('Remove from Intune'));
 });
+
+import { explainDefenderError } from '../src/lib/defender-errors.js';
+test('Defender errors are explained; a missing DeviceEvents table points to the agent', () => {
+  const e = explainDefenderError("Microsoft Graph returned an error (400): 'where' operator: Failed to resolve table or column expression named 'DeviceEvents'. Fix semantic errors in your query.");
+  assert.equal(e.code, 'no-defender-tables'); assert.equal(e.needsCollector, true); assert.match(e.message, /NexpatchOnline agent/); assert.doesNotMatch(e.message, /semantic errors/);
+  assert.equal(explainDefenderError('Microsoft Graph returned an error (403): Forbidden').code, 'permission');
+  assert.equal(explainDefenderError('timeout').code, 'other');
+});

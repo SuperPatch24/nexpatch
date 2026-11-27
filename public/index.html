@@ -2920,7 +2920,7 @@ $('#acLiveBody').addEventListener('click', async e=>{
 $('#acSourceSave').addEventListener('click', async ()=>{ const r=$('input[name=acsrc]:checked');
   try{ await api('/appcontrol/settings','PUT',{source:r?r.value:undefined, basePolicyId:$('#acBaseId').value.trim()}); toast('App Control settings saved'); renderACLive(); }catch(e){ toast(e.message); } });
 $('#acCheckBtn').addEventListener('click', async ()=>{ $('#acCheckBtn').disabled=true;
-  try{ const r=await api('/appcontrol/check','POST',{}); $('#acSourceNote').innerHTML='<div class="note'+(r.ok?' info':'')+'">'+esc(r.message)+'</div>'; if(r.ok) loadACEvents(); }catch(e){ toast(e.message); }
+  try{ const r=await api('/appcontrol/check','POST',{}); $('#acSourceNote').innerHTML='<div class="note'+(r.ok?' info':'')+'">'+esc(r.message)+'</div>'; if(r.ok) loadACEvents(); if(r.switchTo==='collector'){ const c=document.querySelector('input[name=acsrc][value=collector]'); if(c){ c.checked=true; $('#acSourceNote').innerHTML+='<div class="note info">The NexpatchOnline agent is selected below. Press Save to switch.</div>'; } } }catch(e){ toast(e.message); }
   $('#acCheckBtn').disabled=false; });
 $('#acKeyBtn').addEventListener('click', async ()=>{
   if(AC.settings&&AC.settings.hasKey && !confirm('A new installer replaces the old enrollment key. Devices that already enrolled keep working. Continue?')) return;

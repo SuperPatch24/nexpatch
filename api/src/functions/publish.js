@@ -9,6 +9,24 @@ import { featureOn, featureMessage } from '../lib/tenantsettings.js';
 import { stuckKind, stuckMessage } from '../lib/jobhealth.js';
 import { graph } from '../lib/graph.js';
 import { removeIntuneApp, REMOVAL_TEXT } from '../lib/removal.js';
+import { download } from '../lib/blobs.js';
+import { PKG_CONTAINER, cleanPackageSettings } from '../lib/pkgcatalog.js';
+import { UNINSTALL_BY_NAME } from '../lib/templates.js';
+import { publishingReport } from '../lib/pubreport.js';
+
+// A packaged catalog app: the catalog entry, its package and the confirmed settings. Read again when the job runs,
+// so a company always gets what is in the catalog now, never what its browser sent.
+async function loadPackage(catalogId) {
+  const entry = await getRow('Catalog', 'global', String(catalogId || ''));
+  if (!entry || entry.source !== 'package' || entry.enabled === false || !entry.packageId) throw new HttpError(409, 'This packaged app isn\u2019t available in the catalog.');
+  const pkg = await getRow('CatalogPackages', 'global', entry.packageId);
+  if (!pkg || pkg.status !== 'in-catalog') throw new HttpError(409, 'This packaged app is being updated. Try again shortly.');
+  const files = JSON.parse(pkg.files || '[]');
+  const c = cleanPackageSettings(JSON.parse(pkg.settings || '{}'), files);
+  if (c.error) throw new HttpError(409, `The package settings need fixing by NexpatchOnline: ${c.error}`);
+  return { entry, pkg, files, settings: c.settings };
+}
+const psq = v => String(v).replace(/'/g, "''");
 
 const queue = output.storageQueue({ queueName: 'publish-jobs', connection: 'AzureWebJobsStorage' });
 const WINGET_ID = /^[A-Za-z0-9][A-Za-z0-9.+_-]{1,100}$/;
@@ -23,7 +41,7 @@ app.http('publishStart', {
     if (!featureOn(t, 'apps')) throw new HttpError(403, featureMessage('apps'));
     if (!featureOn(t, 'packaging')) throw new HttpError(403, featureMessage('packaging'));
     const { app: a, options } = await readJson(req);
-    const source = a?.source === 'msstore' ? 'msstore' : 'winget';
+    const source = a?.source === 'msstore' ? 'msstore' : a?.source === 'package' ? 'package' : 'winget';
     if (!a || !a.name) throw new HttpError(400, 'The app name is required.');
     if (source === 'msstore') {
       const entry = await getRow('Catalog', 'global', String(a.catalogId || ''));
@@ -33,12 +51,15 @@ app.http('publishStart', {
       a.storeProductId = entry.storeProductId;
       a.appStoreUrl = entry.appStoreUrl;
       a.vendor = entry.vendor || a.vendor || '';
+    } else if (source === 'package') {
+      const { entry } = await loadPackage(a.catalogId);
+      a.reg = entry.reg || entry.name; a.vendor = entry.vendor || a.vendor || ''; a.name = entry.name;
     } else if (!WINGET_ID.test(a.winget || '') || !a.reg) {
       throw new HttpError(400, 'The app needs a valid WinGet ID and its name in Installed apps.');
     }
     if (!options || typeof options !== 'object') throw new HttpError(400, 'Deployment options are missing.');
     const jobId = randomUUID();
-    const operationType = source === 'winget' && options.updateOnly ? 'update' : 'deployment';
+    const operationType = source !== 'msstore' && options.updateOnly ? 'update' : 'deployment';
     await saveJob(user.tenantId, jobId, {
       status: 'queued', appName: a.name, wingetId: a.winget || '', source, operationType, summary: String(options.summary || '').slice(0, 200),
       createdBy: user.email || user.userId, createdAt: new Date().toISOString(), log: JSON.stringify([]),
@@ -93,6 +114,17 @@ app.storageQueue('publishWorker', {
     await saveJob(tenantId, jobId, { status: 'running', startedAt: new Date().toISOString() });
     try {
       const { app: a, options } = JSON.parse(job.request);
+      if (a.source === 'package') {
+        const p = await loadPackage(a.catalogId);
+        a.name = p.entry.name; a.reg = p.entry.reg || p.entry.name; a.vendor = p.entry.vendor || '';
+        a.pkg = p.settings;
+        a.loadFiles = async () => {
+          const out = {};
+          for (const f of p.files) out[f.name] = await download(PKG_CONTAINER, `${p.pkg.rowKey}/${f.name}`);
+          if (/Uninstall-App\.ps1/i.test(p.settings.uninstall)) out['Uninstall-App.ps1'] = '\ufeff' + UNINSTALL_BY_NAME.replace('__NAME__', psq(p.settings.uninstallName || p.settings.name));
+          return out;
+        };
+      }
       const result = a.source === 'msstore' ? await publishStoreApp(tenantId, a, options, text => { log(text); }) : await publishApp(tenantId, a, options, text => { log(text); });
       await log('Done');
       await saveJob(tenantId, jobId, { status: 'succeeded', appId: result.appId, version: result.version, finishedAt: new Date().toISOString() });
@@ -127,4 +159,13 @@ app.http('publishRemove', {
     await audit(user.tenantId, user.email || user.userId, 'removed deployment', `${j.appName}${j.version ? ' ' + j.version : ''}: ${r.status}`);
     return { status: r.status, message: REMOVAL_TEXT[r.status] };
   }, 'admin')
+});
+
+// GET /api/reports/publishing?days=90 – how publishing went per app, the common errors and recent failures.
+app.http('publishingReport', {
+  methods: ['GET'], authLevel: 'anonymous', route: 'reports/publishing',
+  handler: withUser(async (req, _ctx, user) => {
+    const days = Math.min(365, Math.max(7, Number(req.query.get('days')) || 90));
+    return { ...publishingReport(await listJobs(user.tenantId, 5000), { days }), generatedAt: new Date().toISOString() };
+  }, 'viewer')
 });

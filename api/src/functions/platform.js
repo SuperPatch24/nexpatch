@@ -20,10 +20,10 @@ const STORE_ID = /^[A-Z0-9]{8,16}$/i;
 const ID = /^[a-z0-9-]{2,80}$/;
 const GLOBAL = 'global';
 const shape = r => ({ id: r.rowKey, name: r.name, vendor: r.vendor || '', winget: r.winget || '', reg: r.reg || r.name, procs: r.procs || '', exe: r.exe || '',
-  category: r.category || '', source: r.source === 'msstore' ? 'msstore' : 'winget',
+  category: r.category || '', source: r.source === 'msstore' ? 'msstore' : r.source === 'package' ? 'package' : 'winget', packageId: r.packageId || '', packageVersion: r.packageVersion || '',
   storeProductId: r.storeProductId || '', appStoreUrl: r.appStoreUrl || '', storeType: r.storeType || '',
   verificationStatus: r.verificationStatus || (r.source === 'msstore' ? 'candidate' : 'verified'),
-  deployable: r.source === 'msstore' ? !!(r.storeProductId && r.appStoreUrl && r.verificationStatus === 'verified') : !!r.winget,
+  deployable: r.source === 'msstore' ? !!(r.storeProductId && r.appStoreUrl && r.verificationStatus === 'verified') : r.source === 'package' ? !!r.packageId : !!r.winget,
   enabled: r.enabled !== false, updatedBy: r.updatedBy || '', updatedAt: r.updatedAt || null,
   versionSource: r.versionSource || 'auto', versionRepo: r.versionRepo || '', versionFeed: r.versionFeed || '', versionPattern: r.versionPattern || '',
   latestVersion: r.latestVersion || '', latestCheckedAt: r.latestCheckedAt || null, latestChangedAt: r.latestChangedAt || null, previousVersion: r.previousVersion || '', latestError: r.latestError || '' });
@@ -48,13 +48,17 @@ app.http('platformCatalogSave', { methods: ['PUT'], authLevel: 'anonymous', rout
     const id = String(req.params.id || '').toLowerCase();
     if (!ID.test(id)) throw new HttpError(400, 'The app ID can only use lowercase letters, numbers and dashes.');
     const b = await readJson(req);
-    const name = String(b.name || '').trim().slice(0, 120), source = b.source === 'msstore' ? 'msstore' : 'winget';
+    const prev = (await getRow('Catalog', GLOBAL, id)) || {};
+    // Packages made in the packager stay packages; their files and version are changed only by the packager.
+    const isPackage = prev.source === 'package';
+    const name = String(b.name || '').trim().slice(0, 120), source = isPackage ? 'package' : b.source === 'msstore' ? 'msstore' : 'winget';
     const winget = String(b.winget || '').trim();
     const storeProductId = String(b.storeProductId || '').trim().toUpperCase();
     const vendor = String(b.vendor || '').trim().slice(0, 120);
     let appStoreUrl = String(b.appStoreUrl || '').trim();
     const verificationStatus = source === 'msstore' && b.storeVerified === true && STORE_ID.test(storeProductId) ? 'verified' : (source === 'msstore' ? 'candidate' : 'verified');
     if (!name) throw new HttpError(400, 'Enter the app name.');
+    if (b.source === 'package' && !isPackage) throw new HttpError(400, 'Create packaged apps with Package an installer.');
     if (source === 'winget' && !WINGET_ID.test(winget)) throw new HttpError(400, 'Enter a valid WinGet ID, for example Google.Chrome.');
     if (source === 'msstore' && storeProductId && !STORE_ID.test(storeProductId)) throw new HttpError(400, 'Enter a valid Microsoft Store product ID.');
     if (source === 'msstore' && storeProductId && !appStoreUrl) appStoreUrl = `https://apps.microsoft.com/detail/${storeProductId}`;
@@ -65,14 +69,14 @@ app.http('platformCatalogSave', { methods: ['PUT'], authLevel: 'anonymous', rout
     if (source === 'msstore' && b.storeVerified === true && (!storeProductId || !appStoreUrl || !vendor)) throw new HttpError(400, 'A verified Store entry needs a product ID, Microsoft Store URL and verified publisher.');
     if (source === 'msstore' && storeProductId && appStoreUrl && !appStoreUrl.toUpperCase().includes(storeProductId)) throw new HttpError(400, 'The Store URL must contain the same Product ID entered above.');
     const vs = cleanVersionSource(b); if (vs.error) throw new HttpError(400, vs.error);
-    const prev = (await getRow('Catalog', GLOBAL, id)) || {};
     await putRow('Catalog', GLOBAL, id, {
       ...vs.value, latestVersion: prev.latestVersion || '', latestCheckedAt: prev.latestCheckedAt || '', latestChangedAt: prev.latestChangedAt || '', previousVersion: prev.previousVersion || '', latestError: prev.latestError || '',
       name, source, winget: source === 'winget' ? winget : '', storeProductId, appStoreUrl,
       storeType: String(b.storeType || '').slice(0, 40), verificationStatus,
       vendor, reg: String(b.reg || name).slice(0, 200),
       procs: String(b.procs || '').slice(0, 300), exe: String(b.exe || '').slice(0, 400), category: String(b.category || '').slice(0, 60),
-      enabled: b.enabled !== false, updatedBy: user.email || user.userId, updatedAt: new Date().toISOString()
+      enabled: b.enabled !== false, updatedBy: user.email || user.userId, updatedAt: new Date().toISOString(),
+      ...(isPackage ? { packageId: prev.packageId || '', packageVersion: prev.packageVersion || '', latestVersion: prev.latestVersion || prev.packageVersion || '', versionSource: 'none', reg: String(b.reg || prev.reg || name).slice(0, 200) } : {})
     }, 'Replace');
     return shape(await getRow('Catalog', GLOBAL, id));
   }, 'any') });

@@ -5,6 +5,7 @@ import { withUser, HttpError, readJson, json } from '../lib/http.js';
 import { getTenant, saveTenant, listActiveTenants, getRow, putRow, deleteRow, listRows, audit } from '../lib/store.js';
 import { normalize, storeEvents, pollDefender, buildSupplemental } from '../lib/appcontrol.js';
 import { explainDefenderError } from '../lib/defender-errors.js';
+import { normalizeGroupInputs } from '../lib/acgroups.js';
 import { installerFor, UNINSTALLER } from '../lib/collector.js';
 import { graphAs } from '../lib/graph.js';
 const graph = graphAs('appcontrol');
@@ -221,18 +222,25 @@ import { buildBasePolicy } from '../lib/basepolicy.js';
 import { planStatus } from '../lib/plan.js';
 import { deployAcPolicy } from '../lib/acdeploy.js';
 
-async function resolveGroupIds(tid, names) {
-  const ids = [];
-  for (const n of names || []) {
-    const v = String(n).trim();
-    if (!v) continue;
-    if (/^\{?[0-9a-f-]{36}\}?$/i.test(v)) { ids.push(v.replace(/[{}]/g, '')); continue; }
-    const q = encodeURIComponent(`displayName eq '${v.replace(/'/g, "''")}'`);
-    const found = ((await graph(tid, `/v1.0/groups?$filter=${q}&$select=id`)).value || [])[0];
-    if (found) ids.push(found.id); else throw new HttpError(409, `No group named "${v}" was found.`);
+// Turns ids and names into real Entra groups ({ id, name }). Unknown ones stop the deploy with a clear message.
+async function resolveGroups(tid, list) {
+  const out = [];
+  for (const g of normalizeGroupInputs(list)) {
+    if (g.id) {
+      const found = await graph(tid, `/v1.0/groups/${g.id}?$select=id,displayName`).catch(e => { if (/\(404\)/.test(String(e.message))) return null; throw e; });
+      if (!found) throw new HttpError(409, `No Entra group with ID ${g.id} was found.`);
+      out.push({ id: found.id, name: found.displayName || found.id });
+    } else {
+      const q = encodeURIComponent(`displayName eq '${g.name.replace(/'/g, "''")}'`);
+      const found = ((await graph(tid, `/v1.0/groups?$filter=${q}&$select=id,displayName`)).value || []);
+      if (!found.length) throw new HttpError(409, `No Entra group named "${g.name}" was found. Pick it from the list as you type.`);
+      if (found.length > 1) throw new HttpError(409, `More than one group is named "${g.name}". Pick the right one from the list as you type.`);
+      out.push({ id: found[0].id, name: found[0].displayName });
+    }
   }
-  return ids;
+  return out;
 }
+const savedGroups = cfg => (Array.isArray(cfg?.groups) ? cfg.groups : []).map(g => typeof g === 'object' ? g : { id: g, name: g });
 
 // GET /api/appcontrol/base – the saved base-policy settings for this organization.
 app.http('acBaseGet', { methods: ['GET'], authLevel: 'anonymous', route: 'appcontrol/base',
@@ -248,8 +256,9 @@ app.http('acBaseDeploy', { methods: ['POST'], authLevel: 'anonymous', route: 'ap
     if (!planStatus(t).active) throw new HttpError(402, 'Your free trial has ended. Subscribe to deploy App Control policies.');
     if (!featureOn(t, 'appControl')) throw new HttpError(403, featureMessage('appControl'));
     const cfg = await readJson(req);
-    const groups = Array.isArray(cfg.groups) ? cfg.groups : [];
-    const groupIds = await resolveGroupIds(user.tenantId, groups);
+    const groups = await resolveGroups(user.tenantId, cfg.groups);
+    if (!groups.length && !cfg.allDevices && cfg.noAssignment !== true) throw new HttpError(400, 'Choose at least one group (or All devices) to deploy to. Without one, the policy reaches no device.');
+    const groupIds = groups.map(g => g.id);
     // Keep the same policy ID across updates, and bump the version each deploy.
     const version = `10.0.0.${Number(t.acBaseVersion || 0) + 1}`;
     let built;
@@ -262,10 +271,10 @@ app.http('acBaseDeploy', { methods: ['POST'], authLevel: 'anonymous', route: 'ap
     const { xml, policyId } = built;
     const log = [];
     await deployAcPolicy(user.tenantId, { name: cfg.name || 'NexpatchOnline base policy', xml, kind: 'base', groupIds, allDevices: !!cfg.allDevices, log: m => log.push(m) });
-    await saveTenant(user.tenantId, { acBasePolicyId: policyId, acBaseConfig: JSON.stringify({ base: cfg.base, mode: cfg.mode, managedInstaller: cfg.managedInstaller !== false, isg: !!cfg.isg, name: cfg.name, groups, allDevices: !!cfg.allDevices, pathRules: Array.isArray(cfg.pathRules) ? cfg.pathRules : [] }),
+    await saveTenant(user.tenantId, { acBasePolicyId: policyId, acBaseConfig: JSON.stringify({ base: cfg.base, mode: cfg.mode, managedInstaller: cfg.managedInstaller !== false, isg: !!cfg.isg, enforceScripts: cfg.enforceScripts !== false, name: cfg.name, groups, allDevices: !!cfg.allDevices, pathRules: Array.isArray(cfg.pathRules) ? cfg.pathRules : [] }),
       acBaseVersion: Number(t.acBaseVersion || 0) + 1, acBaseMode: cfg.mode, acBaseDeployedAt: new Date().toISOString() });
-    await audit(user.tenantId, user.email || user.userId, 'deployed base policy', `${cfg.mode} mode`);
-    return { basePolicyId: policyId, mode: cfg.mode, log };
+    await audit(user.tenantId, user.email || user.userId, 'deployed base policy', `${cfg.mode} mode to ${groups.map(g => g.name).join(', ') || ''}${cfg.allDevices ? (groups.length ? ', ' : '') + 'All devices' : ''}`);
+    return { basePolicyId: policyId, mode: cfg.mode, groups, allDevices: !!cfg.allDevices, log };
   }, 'admin') });
 
 // POST /api/appcontrol/supplemental/deploy – push the current allow decisions to Intune as a supplemental policy.
@@ -278,11 +287,12 @@ app.http('acSuppDeploy', { methods: ['POST'], authLevel: 'anonymous', route: 'ap
     const { xml } = await buildSupplemental(user.tenantId, t);
     const cfg = t.acBaseConfig ? JSON.parse(t.acBaseConfig) : {};
     const body = await readJson(req).catch(() => ({}));
-    const groups = Array.isArray(body.groups) && body.groups.length ? body.groups : (cfg.groups || []);
-    const groupIds = await resolveGroupIds(user.tenantId, groups);
+    const groups = await resolveGroups(user.tenantId, Array.isArray(body.groups) && body.groups.length ? body.groups : savedGroups(cfg));
+    const allDevices = body.allDevices ?? !!cfg.allDevices;
+    if (!groups.length && !allDevices) throw new HttpError(400, 'The base policy has no groups to follow. Deploy the base policy to a group first.');
     const log = [];
-    await deployAcPolicy(user.tenantId, { name: 'NexpatchOnline allowed apps', xml, kind: 'supplemental', groupIds, allDevices: body.allDevices ?? cfg.allDevices, log: m => log.push(m) });
+    await deployAcPolicy(user.tenantId, { name: 'NexpatchOnline allowed apps', xml, kind: 'supplemental', groupIds: groups.map(g => g.id), allDevices, log: m => log.push(m) });
     await saveTenant(user.tenantId, { acSuppDeployedAt: new Date().toISOString() });
-    await audit(user.tenantId, user.email || user.userId, 'deployed supplemental policy', '');
-    return { log };
+    await audit(user.tenantId, user.email || user.userId, 'deployed supplemental policy', groups.map(g => g.name).join(', ') + (allDevices ? (groups.length ? ', ' : '') + 'All devices' : ''));
+    return { log, groups, allDevices };
   }, 'admin') });

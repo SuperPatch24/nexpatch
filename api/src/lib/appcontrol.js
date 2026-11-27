@@ -59,6 +59,8 @@ let sig = DeviceEvents
 ci | join kind=leftouter sig on DeviceId, ReportId
 | take 20000`;
 
+export { explainDefenderError } from './defender-errors.js';
+
 // Defender's FolderPath sometimes already ends with the file name
 function joinPath(folder, file) {
   const f = String(folder || ''), n = String(file || '');

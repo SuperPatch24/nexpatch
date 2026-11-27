@@ -153,6 +153,8 @@ try {
     Write-Output $_.ScriptStackTrace
     $exit = 1
 }
+# One fixed line the NexpatchOnline agent reads to report this result.
+Write-Output ('NEXPATCH-RESULT action={0} exit={1} at={2}' -f $(if ($Uninstall) { 'uninstall' } else { '__ACTION__' }), $exit, (Get-Date).ToUniversalTime().ToString('o'))
 Stop-Transcript | Out-Null
 exit $exit`;
 
@@ -168,3 +170,35 @@ exit 0`;
 export const REQUIREMENT = String.raw`$Keys = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*', 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
 if (Get-ItemProperty -Path $Keys -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '__NAME__*' }) { 'Installed' } else { 'NotInstalled' }`;
 
+
+// Uninstalls an app found by its name in Installed apps, with the silent switches chosen in the packager.
+// Used for EXE installers, whose uninstall command lives in the registry, not in the package.
+export const UNINSTALL_BY_NAME = String.raw`param([string]$Switches = '')
+$Name = '__NAME__'
+$LogDir = Join-Path $env:ProgramData 'NexpatchOnline\Logs'
+New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+Start-Transcript -Path (Join-Path $LogDir ('Uninstall-' + ($Name -replace '[^A-Za-z0-9._-]', '_') + '.log')) -Append | Out-Null
+$exit = 0
+try {
+    $Keys = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*', 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    $Apps = @(Get-ItemProperty -Path $Keys -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like $Name })
+    if (-not $Apps) { Write-Output "$Name is not installed."; }
+    foreach ($App in $Apps) {
+        if ($App.UninstallString -match 'MsiExec(\.exe)?\s+/[IX]\s*(\{[0-9A-Fa-f-]{36}\})') {
+            Write-Output "Removing $($App.DisplayName) with Windows Installer"
+            $p = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', $Matches[2], '/qn', '/norestart') -Wait -PassThru
+        } else {
+            $cmd = if ($App.QuietUninstallString) { $App.QuietUninstallString } else { $App.UninstallString }
+            if (-not $cmd) { continue }
+            if ($cmd -match '^\s*"([^"]+)"\s*(.*)$') { $exe = $Matches[1]; $rest = $Matches[2] } elseif ($cmd -match '^\s*(\S+\.exe)\s*(.*)$') { $exe = $Matches[1]; $rest = $Matches[2] } else { $exe = $cmd; $rest = '' }
+            $argList = if ($App.QuietUninstallString) { $rest } else { ($rest + ' ' + $Switches).Trim() }
+            Write-Output "Removing $($App.DisplayName): $exe $argList"
+            if ($argList) { $p = Start-Process -FilePath $exe -ArgumentList $argList -Wait -PassThru } else { $p = Start-Process -FilePath $exe -Wait -PassThru }
+        }
+        Write-Output "Exit code $($p.ExitCode)"
+        if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010 -and $p.ExitCode -ne 1641) { $exit = $p.ExitCode }
+    }
+} catch { Write-Output "Error: $_"; $exit = 1 }
+Write-Output ('NEXPATCH-RESULT action=uninstall exit={0} at={1}' -f $exit, (Get-Date).ToUniversalTime().ToString('o'))
+Stop-Transcript | Out-Null
+exit $exit`;

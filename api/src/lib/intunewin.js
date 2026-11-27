@@ -1,14 +1,17 @@
 // Builds encrypted Win32 app content the same way Microsoft's IntuneWinAppUtil does:
 // zip the source files, encrypt with AES-256-CBC, sign with HMAC-SHA256.
 import { createCipheriv, createHmac, createHash, randomBytes } from 'node:crypto';
-import { deflateRawSync } from 'node:zlib';
+import { deflateRawSync, crc32 as zcrc32 } from 'node:zlib';
 
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
   for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
   return t;
 })();
-function crc32(buf) { let c = 0xFFFFFFFF; for (const b of buf) c = CRC_TABLE[(c ^ b) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function crc32(buf) {
+  if (typeof zcrc32 === 'function') return zcrc32(buf) >>> 0;   // Node 22: native and fast for large installers
+  let c = 0xFFFFFFFF; for (const b of buf) c = CRC_TABLE[(c ^ b) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0;
+}
 
 // Minimal ZIP writer (deflate), enough for a few small files.
 export function zip(files) {

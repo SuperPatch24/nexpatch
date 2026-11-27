@@ -5,6 +5,7 @@ import { updateAppName, isUpdateAppName } from './naming.js';
 import { latestWingetVersion } from './winget.js';
 import { buildContent } from './intunewin.js';
 import { WRAPPER, DETECT, REQUIREMENT } from './templates.js';
+import { packageWin32Fields } from './pkgcatalog.js';
 
 const B = '/beta/deviceAppManagement/mobileApps';
 const OS = { W10_1607: '1607', W10_1809: '1809', W10_1909: '1909', W10_21H2: 'Windows10_21H2', W10_22H2: 'Windows10_22H2', W11_21H2: 'Windows11_21H2', W11_22H2: 'Windows11_22H2' };
@@ -66,11 +67,14 @@ function buildAssignments(o) {
   }));
 }
 
-async function uploadContent(tid, appId, content, log) {
+// Uploads encrypted Win32 content to Intune. Large packages go up in 6 MB blocks, as Intune recommends.
+export const BLOCK_SIZE = 6 * 1024 * 1024;
+export const blockIds = n => Array.from({ length: n }, (_, i) => Buffer.from(String(i).padStart(6, '0')).toString('base64'));
+export async function uploadContent(tid, appId, content, log, fileName = 'Install-Update.intunewin') {
   const cv = await graph(tid, `${B}/${appId}/microsoft.graph.win32LobApp/contentVersions`, { method: 'POST', body: '{}' });
   const filesUri = `${B}/${appId}/microsoft.graph.win32LobApp/contentVersions/${cv.id}/files`;
   const file = await graph(tid, filesUri, { method: 'POST', body: JSON.stringify({
-    '@odata.type': '#microsoft.graph.mobileAppContentFile', name: 'Install-Update.intunewin', size: content.size, sizeEncrypted: content.encrypted.length, manifest: null, isDependency: false }) });
+    '@odata.type': '#microsoft.graph.mobileAppContentFile', name: fileName, size: content.size, sizeEncrypted: content.encrypted.length, manifest: null, isDependency: false }) });
   const fileUri = `${filesUri}/${file.id}`;
   const waitFor = async stage => {
     for (let i = 0; i < 90; i++) {
@@ -82,19 +86,26 @@ async function uploadContent(tid, appId, content, log) {
     throw new Error(`Intune took too long (${stage}).`);
   };
   const ready = await waitFor('azureStorageUriRequest');
-  await log('Uploading the package');
-  const blockId = Buffer.from('0000').toString('base64');
-  let res = await fetch(`${ready.azureStorageUri}&comp=block&blockid=${encodeURIComponent(blockId)}`, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob' }, body: content.encrypted });
-  if (!res.ok) throw new Error(`Uploading the package failed (${res.status}).`);
-  res = await fetch(`${ready.azureStorageUri}&comp=blocklist`, { method: 'PUT', headers: { 'Content-Type': 'application/xml' },
-    body: `<?xml version="1.0" encoding="utf-8"?><BlockList><Latest>${blockId}</Latest></BlockList>` });
+  const total = content.encrypted.length, n = Math.max(1, Math.ceil(total / BLOCK_SIZE)), ids = blockIds(n);
+  await log(n > 1 ? `Uploading the package (${Math.round(total / 1048576)} MB in ${n} parts)` : 'Uploading the package');
+  for (let i = 0; i < n; i++) {
+    const part = content.encrypted.subarray(i * BLOCK_SIZE, Math.min(total, (i + 1) * BLOCK_SIZE));
+    let res;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      res = await fetch(`${ready.azureStorageUri}&comp=block&blockid=${encodeURIComponent(ids[i])}`, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob' }, body: part }).catch(() => null);
+      if (res?.ok) break;
+      await sleep(2000 * (attempt + 1));
+    }
+    if (!res?.ok) throw new Error(`Uploading part ${i + 1} of ${n} failed (${res?.status || 'network'}).`);
+  }
+  const res = await fetch(`${ready.azureStorageUri}&comp=blocklist`, { method: 'PUT', headers: { 'Content-Type': 'application/xml' },
+    body: `<?xml version="1.0" encoding="utf-8"?><BlockList>${ids.map(id => `<Latest>${id}</Latest>`).join('')}</BlockList>` });
   if (!res.ok) throw new Error(`Finishing the upload failed (${res.status}).`);
   await graph(tid, `${fileUri}/commit`, { method: 'POST', body: JSON.stringify({ fileEncryptionInfo: content.encryptionInfo }) });
   await log('Waiting for Intune to process the package');
   await waitFor('commitFile');
   await graph(tid, `${B}/${appId}`, { method: 'PATCH', body: JSON.stringify({ '@odata.type': '#microsoft.graph.win32LobApp', committedContentVersion: cv.id }) });
 }
-
 
 export async function publishStoreApp(tid, app, o, log) {
   const productId = String(app.storeProductId || '').trim().toUpperCase();
@@ -169,8 +180,9 @@ export async function publishApp(tid, app, o, log) {
     version = target.displayVersion;
     await log(`Using ${app.name} ${version}, already in Intune`);
   } else {
-    await log('Checking winget for the latest version');
-    version = await latestWingetVersion(app.winget);
+    const pkg = app.source === 'package' ? app.pkg : null;
+    if (pkg) { version = pkg.version; await log(`Using the NexpatchOnline package for ${app.name} ${version}`); }
+    else { await log('Checking winget for the latest version'); version = await latestWingetVersion(app.winget); }
     const same = existing.find(a => a.displayVersion === version && (o.updateOnly ? isUpdateAppName(a.displayName, app.name) : a.displayName === app.name));
     if (same) {
       target = same;
@@ -180,8 +192,10 @@ export async function publishApp(tid, app, o, log) {
       const procs = (o.procs || []).filter(Boolean).map(p => `'${psq(p)}'`).join(',');
       const wrapper = WRAPPER.replace('__ID__', app.winget).replace('__NAME__', psq(app.name)).replace('__PROCS__', procs)
         .replace('__CONFLICT__', o.conflict || 'Close').replace('__MINUTES__', String(+o.confMin || 10))
-        .replace('__PRE64__', b64(o.pre)).replace('__POST64__', b64(o.post)).replace('__ACTION__', o.updateOnly ? 'upgrade' : 'install');
-      const content = buildContent({ 'Install-Update.ps1': '\ufeff' + wrapper });
+        .replace('__PRE64__', b64(o.pre)).replace('__POST64__', b64(o.post)).replaceAll('__ACTION__', o.updateOnly ? 'upgrade' : 'install');
+      let content;
+      if (pkg) { await log('Fetching the installer files'); content = buildContent(await app.loadFiles()); }
+      else content = buildContent({ 'Install-Update.ps1': '\ufeff' + wrapper });
 
       let detection;
       if (o.detect === 'file' && o.detectFile) {
@@ -220,11 +234,19 @@ export async function publishApp(tid, app, o, log) {
       if (+o.cpuMhz > 0) body.minimumCpuSpeedInMHz = +o.cpuMhz;
       if (requirementRules.length) body.requirementRules = requirementRules;
       if (o.allowUninst) body.allowAvailableUninstall = true;
+      if (pkg) {
+        // A packaged installer: its own commands and detection, chosen and checked in the Admin Center packager.
+        Object.assign(body, packageWin32Fields(pkg, { detectScript: (name, ver) => DETECT.replace('__NAME__', name).replace('__VER__', ver) }));
+        body.description = o.updateOnly ? `Update for ${app.name} to ${version}. Installs only on devices that already have ${app.name}. Packaged by NexpatchOnline.` : `${app.name} ${version}, packaged by NexpatchOnline.`;
+        body.installExperience = { ...body.installExperience, deviceRestartBehavior: o.restart || pkg.restart, maxRunTimeInMinutes: +o.maxTime || pkg.maxRunTime };
+        if (!o.arch) body.allowedArchitectures = ARCH[pkg.arch] || 'x64';
+        if (o.detect === 'file' || o.detect === 'script') body.detectionRules = [detection];
+      }
 
       await log('Creating the app in Intune');
       target = await graph(tid, B, { method: 'POST', body: JSON.stringify(body) });
       try {
-        await uploadContent(tid, target.id, content, log);
+        await uploadContent(tid, target.id, content, log, pkg ? 'NexpatchOnlinePackage.intunewin' : 'Install-Update.intunewin');
       } catch (err) {
         await graph(tid, `${B}/${target.id}`, { method: 'DELETE' }).catch(() => {});
         throw err;

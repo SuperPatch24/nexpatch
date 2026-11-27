@@ -1,6 +1,7 @@
 // Deploys App Control policies to Intune as configuration (settings catalog) policies via Microsoft Graph.
 // Base and supplemental use the same App Control settings-catalog shape, just a different template reference.
 import { graphAs } from './graph.js';
+import { checkAssignments } from './acgroups.js';
 const graph = graphAs('appcontrol');
 
 const CP = '/beta/deviceManagement/configurationPolicies';
@@ -66,11 +67,19 @@ export async function deployAcPolicy(tid, { name, xml, kind, groupIds = [], allD
     log(`Created the ${kind} policy in Intune`);
   }
 
-  // Assignments (replace the whole set)
+  // Assignments (replace the whole set), then read them back so a dropped group is never reported as deployed.
   const assignments = [];
   if (allDevices) assignments.push({ target: { '@odata.type': '#microsoft.graph.allDevicesAssignmentTarget' } });
   for (const g of groupIds) assignments.push({ target: { '@odata.type': '#microsoft.graph.groupAssignmentTarget', groupId: g } });
   await graph(tid, `${CP}('${policyId}')/assign`, { method: 'POST', body: JSON.stringify({ assignments }) });
-  log(assignments.length ? `Assigned to ${assignments.length} target${assignments.length > 1 ? 's' : ''}` : 'Saved with no assignment yet');
+  const saved = (await graph(tid, `${CP}('${policyId}')/assignments`).catch(() => ({ value: null })))?.value;
+  if (Array.isArray(saved)) {
+    const c = checkAssignments({ groupIds, allDevices }, saved);
+    if (!c.ok) {
+      const e = new Error(`Intune saved the policy, but ${c.missing.length ? `${c.missing.length} group${c.missing.length > 1 ? 's were' : ' was'} not assigned` : 'the All devices assignment was not saved'}. Try Deploy again; if it repeats, check the group still exists.`);
+      e.status = 502; throw e;
+    }
+    log(c.count ? `Intune confirms ${c.count} assignment${c.count > 1 ? 's' : ''}${allDevices ? ' (including All devices)' : ''}` : 'Saved with no assignment');
+  } else log(assignments.length ? `Assigned to ${assignments.length} target${assignments.length > 1 ? 's' : ''}` : 'Saved with no assignment yet');
   return { policyId, created: !existing };
 }

@@ -1,0 +1,34 @@
+# Checks the device agent: tests pass, and the exe the API ships is exactly what this source builds.
+name: Agent
+
+on:
+  push:
+    paths: ['agent/**', 'api/assets/agent/**', 'api/src/lib/agentrelease.js', '.github/workflows/agent.yml']
+  pull_request:
+    paths: ['agent/**', 'api/assets/agent/**', 'api/src/lib/agentrelease.js']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+      - name: Vet and test
+        working-directory: agent
+        run: |
+          go vet ./...
+          GOOS=windows GOARCH=amd64 go vet ./...
+          go test ./...
+      - name: Rebuild and compare with the shipped exe
+        run: |
+          cp api/assets/agent/nexpatch-agent.exe /tmp/shipped.exe
+          cp api/src/lib/agentrelease.js /tmp/shipped-release.js
+          agent/build.sh
+          cmp /tmp/shipped.exe api/assets/agent/nexpatch-agent.exe || { echo "The shipped agent does not match the source. Run agent/build.sh and commit both files."; exit 1; }
+          cmp /tmp/shipped-release.js api/src/lib/agentrelease.js || { echo "agentrelease.js is out of date. Run agent/build.sh."; exit 1; }

@@ -161,6 +161,38 @@ dialog{border:none;border-radius:14px;padding:0;width:min(760px,96vw);max-height
 dialog::backdrop{background:rgba(12,20,28,.55)}
 .dlg-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:1}
 .dlg-body{padding:20px 22px;overflow:auto;max-height:calc(92vh - 140px)}
+.exec-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.ex{--c-cur:var(--green);--c-beh:var(--amber);--c-vul:var(--red);--c-crit:#7A1A12;--c-high:var(--red);--c-med:var(--amber);--c-low:#6B7799}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .ex{--c-crit:#D9604C;--c-low:#8C97B8} }
+:root[data-theme="dark"] .ex{--c-crit:#D9604C;--c-low:#8C97B8}
+.ex-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;border-bottom:3px solid var(--teal);padding-bottom:12px;margin-bottom:18px}
+.ex-head h2{margin:0;font-size:1.5rem}.ex-head p{margin:2px 0 0;color:var(--muted)}
+.ex-lede{font-size:1.02rem;line-height:1.55;margin:0 0 18px;max-width:75ch}
+.ex-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:18px;background:var(--surface)}
+.ex-kpis div{padding:14px 16px;border-right:1px solid var(--line);border-top:4px solid var(--k,var(--teal))}.ex-kpis div:last-child{border-right:0}
+.ex-kpis b{display:block;font-size:1.9rem;line-height:1.1;color:var(--k,var(--ink))}.ex-kpis span{font-size:.82rem;color:var(--muted)}
+.ex-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:16px;margin-bottom:16px}
+.ex-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--surface);min-width:0}
+.ex-card h3{margin:0 0 2px;font-size:1rem}.ex-card .small{margin:0 0 10px}
+.ex-hbars{display:grid;gap:8px}.ex-hrow{display:grid;grid-template-columns:minmax(70px,30%) 1fr auto;gap:10px;align-items:center;font-size:.86rem}
+.ex-hlab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ex-htrack{display:flex;height:14px;border-radius:4px;background:var(--sunk,#F7F8FC);overflow:hidden}
+.ex-htrack i{display:block;height:100%}.ex-hrow b{font-size:.82rem;min-width:2.5ch;text-align:right}
+.ex-cols{display:flex;gap:8px;align-items:stretch;height:190px;padding-top:4px}.ex-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.ex-col b{font-size:.8rem}.ex-ctrack{flex:1;width:min(44px,70%);display:flex;flex-direction:column;justify-content:flex-end;background:var(--sunk,#F7F8FC);border-radius:4px 4px 0 0;overflow:hidden}
+.ex-ctrack i{display:block;width:100%}.ex-clab{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.ex-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.82rem;margin-top:8px}.ex-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.ex-table{width:100%;min-width:0;border-collapse:collapse;font-size:.86rem;table-layout:auto}.ex-table th{text-align:left;font-size:.75rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);padding:6px 6px}
+.ex-table td{border-bottom:1px solid var(--line);padding:7px 6px;vertical-align:top}.ex-table tr:last-child td{border-bottom:0}
+.ex-sev{display:inline-block;padding:1px 7px;border-radius:999px;font-size:.72rem;font-weight:700;color:#fff}
+.ex-foot{font-size:.8rem;color:var(--muted);margin-top:8px}
+@media (max-width:820px){ .ex-grid{grid-template-columns:1fr} .ex-kpis{grid-template-columns:repeat(2,1fr)} .ex-kpis div:nth-child(2){border-right:0} .ex-kpis div:nth-child(-n+2){border-bottom:1px solid var(--line)} }
+.fix-choice{border:0;padding:0;margin:16px 0 0}.fix-choice legend{font-weight:700;margin-bottom:6px}
+.fix-choice label{display:block;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;cursor:pointer}
+.fix-choice label:has(input:checked){border-color:var(--teal);background:var(--teal-soft)}
+.fix-choice small{display:block;color:var(--muted);margin:2px 0 0 24px}
+.fix-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:4px}
+.fix-sum div{padding:10px 12px;border-right:1px solid var(--line)}.fix-sum div:last-child{border-right:0}
+.fix-sum b{display:block;font-size:1.3rem}.fix-sum span{font-size:.8rem;color:var(--muted)}
 .dlg-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid var(--line)}
 .ring-grid{display:grid;grid-template-columns:1.1fr 1.6fr .7fr;gap:8px;align-items:center}
 .ring-grid .h{font-size:.8rem;color:var(--muted);font-weight:700}
@@ -368,6 +400,11 @@ body[data-role=none] .view, body[data-role=none] .nav a{display:none!important}
 .asg .grid-f{margin-top:6px}
 .asg .field{margin-bottom:10px}
 .asg.excl{border-style:dashed}
+.asg.k-update{border-left:4px solid var(--teal)}.asg.k-install{border-left:4px solid var(--green)}
+.asg-tag{font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;background:var(--teal-soft);color:var(--teal);vertical-align:1px}
+.asg.k-install .asg-tag{background:var(--green-soft);color:var(--green)}
+.asg-kind{grid-column:1/-1}
+.note.ok-note{background:var(--teal-soft)}
 .seg2{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);margin:4px 0 6px}
 .seg2 label{padding:8px 14px;cursor:pointer;font-weight:700;font-size:.9rem}
 .seg2 input{position:absolute;opacity:0;pointer-events:none}
@@ -998,12 +1035,17 @@ td,th,.sub,code{overflow-wrap:break-word}
       <p class="lede">How current your apps are, what was updated, what is still unpatched, Microsoft 365 Apps and iOS apps. Copy any table straight into Excel, or copy a written summary for an email. Looking for device health or Patch Tuesday compliance? Open <a href="#devices">Device insights</a>.</p>
       <div class="row" style="margin-bottom:20px"><button class="btn primary" type="button" id="repSummaryBtn">Copy summary for email</button><button class="btn" type="button" id="repSnapBtn">Record today’s snapshot</button><span class="small" id="repSource"></span></div>
       <div class="repbar" role="tablist" aria-label="App reports" id="repTabs">
-        <button type="button" role="tab" data-reptab="apps" aria-selected="true">Apps</button>
+        <button type="button" role="tab" data-reptab="exec" aria-selected="true">Summary</button>
+        <button type="button" role="tab" data-reptab="apps" aria-selected="false">Apps</button>
         <button type="button" role="tab" data-reptab="updates" aria-selected="false">App updates</button>
         <button type="button" role="tab" data-reptab="unpatched" aria-selected="false">Unpatched apps</button>
         <button type="button" role="tab" data-reptab="m365" aria-selected="false">Microsoft 365 Apps</button>
         <button type="button" role="tab" data-reptab="ios" aria-selected="false">iOS apps</button>
         <button type="button" role="tab" data-reptab="publishing" aria-selected="false">Publishing</button>
+      </div>
+      <div data-reppanel="exec">
+        <div class="exec-bar"><p class="small" style="margin:0">One page for managers, customers and auditors: compliance, risk and what was done about it.</p><div class="row" style="gap:8px"><button class="btn primary" type="button" id="execDownload">Download report</button><button class="btn" type="button" id="execPrint">Print or save as PDF</button></div></div>
+        <div id="execBody"><p class="empty">Building the summary…</p></div>
       </div>
       <div data-reppanel="publishing" hidden>
         <div class="row" style="margin-bottom:12px;gap:8px;align-items:center"><label class="small" for="pubRepDays">Period</label><select id="pubRepDays"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="365">Last year</option></select><button class="btn small" type="button" id="pubRepCsv">Download CSV</button><a class="small" href="#agent" data-view="agent">Device-level install results are on the Device agent page</a></div>
@@ -1737,6 +1779,19 @@ td,th,.sub,code{overflow-wrap:break-word}
   <div class="dlg-foot"><button class="btn" type="button" id="plCheck">Check winget</button><button class="btn primary" type="button" id="plSave">Save</button></div>
 </dialog>
 
+<dialog id="fixDlg" aria-labelledby="fixTitle" style="width:min(560px,96vw)">
+  <div class="dlg-head"><h2 id="fixTitle">Update</h2><button class="btn ghost" type="button" id="fixClose">Close</button></div>
+  <div class="dlg-body">
+    <div id="fixWhat"></div>
+    <fieldset class="fix-choice"><legend>Who gets it</legend>
+      <label><input type="radio" name="fixWho" value="now" checked> <b>Every device that has the app, now</b><small>Best for known exploited flaws. It installs only where the app already is.</small></label>
+      <label id="fixRingsOpt"><input type="radio" name="fixWho" value="rings"> <b>Through my rollout rings</b><small id="fixRingsTxt"></small></label>
+    </fieldset>
+    <label class="field" id="fixDeadlineWrap"><span>Install by</span><select id="fixDeadline"><option value="0">As soon as possible</option><option value="24">Within 24 hours</option><option value="72">Within 3 days</option><option value="168">Within 7 days</option></select></label>
+    <p class="small" style="margin:12px 0 0">Uses your saved settings for this app (notifications, restarts, what to do if it is running). To change them, use Publish on the Apps page instead.</p>
+  </div>
+  <div class="dlg-foot"><button class="btn" type="button" id="fixCancel">Cancel</button><button class="btn primary" type="button" id="fixGo">Publish the update</button></div>
+</dialog>
 <dialog id="planReqDlg" aria-labelledby="planReqTitle">
   <div class="dlg-head"><h2 id="planReqTitle">Change your plan</h2><button class="btn ghost" type="button" id="planReqClose">Close</button></div>
   <div class="dlg-body">
@@ -2254,7 +2309,7 @@ function psOptions(c, withProcs){
   add('Featured',psBool(c.featured)); add('AllowAvailableUninstall',psBool(c.allowUninst)); add('InformationURL',psq(c.infoUrl)); add('Notes',psq(c.notes));
   return '@{\n'+L.join('\n')+'\n}';
 }
-function newAssignment(intent){ return {intent:intent||'required', target:'group', group:'', mode:'include', start:'', deadline:'', filter:'', filterMode:'Include'}; }
+function newAssignment(intent, kind){ return {intent:intent||'required', kind:kind||'update', target:'group', group:'', mode:'include', start:'', deadline:'', filter:'', filterMode:'Include'}; }
 function defaultCfg(app){
   return {updateOnly:app.source==='msstore'?false:true, method:'groups', assignments:[newAssignment('required')],
     rings:JSON.parse(JSON.stringify(S.settings.rings)), ringIntent:'required', exclude:'', filter:'', filterMode:'Include', grace:S.settings.grace,
@@ -2267,12 +2322,24 @@ function defaultCfg(app){
 // Settings saved by the earlier dialog used a single "mode"; translate them.
 function migrateCfg(c){
   if(c && c.mode && !c.method){ c.updateOnly=c.mode==='UpdateOnly'; c.method='rings'; c.ringIntent=c.mode==='Available'?'available':c.mode==='Uninstall'?'uninstall':'required'; delete c.mode; }
+  if(c && Array.isArray(c.assignments)) c.assignments.forEach(a=>{ if(a.mode!=='exclude' && a.kind!=='update' && a.kind!=='install') a.kind=c.updateOnly===false?'install':'update'; });
   return c;
 }
 function cfgSummary(c){
+  if(c.method==='groups' && asgKinds(c).length>1) return ['update','install'].map(k=>(k==='update'?'Update only: ':'Install: ')+[...new Set(c.assignments.filter(a=>a.mode!=='exclude'&&a.kind===k).map(a=>INTENT_LABEL[a.intent]))].join(' + ')).join(' \u00b7 ');
   const list = c.method==='rings' ? c.rings.filter(r=>r.group).map(()=>c.ringIntent) : c.assignments.filter(a=>a.mode!=='exclude').map(a=>a.intent);
   const kinds=[...new Set(list)].map(k=>({required:'Required',available:'Available',uninstall:'Uninstall'}[k]));
   return (c.updateOnly?'Update only \u00b7 ':'')+(kinds.join(' + ')||'Not assigned')+(c.method==='rings'?' \u00b7 rings':'');
+}
+// Deployment type per assignment. Update-only and install apps are separate apps in Intune (an update-only app has a
+// requirement rule "already installed"), so a mix becomes two apps published together.
+function asgKinds(c){ return [...new Set((c.assignments||[]).filter(a=>a.mode!=='exclude').map(a=>a.kind||'update'))]; }
+function isStoreApp(){ return !!(current && current.source==='msstore'); }
+function splitDeployments(c){
+  if(c.method!=='groups' || isStoreApp()) return [c];
+  const inc=c.assignments.filter(a=>a.mode!=='exclude'), exc=c.assignments.filter(a=>a.mode==='exclude'), kinds=asgKinds(c);
+  if(kinds.length<2) return [Object.assign({},c,{updateOnly:kinds.length?kinds[0]==='update':c.updateOnly})];
+  return ['update','install'].map(k=>tidyCfg(Object.assign(JSON.parse(JSON.stringify(c)),{updateOnly:k==='update', assignments:inc.filter(a=>a.kind===k).concat(exc)})));
 }
 function publishScript(app, c){
   return psHeader('publish ' + app.name + ' to Intune (' + cfgSummary(c) + ')', false) + psCore() +
@@ -2674,7 +2741,8 @@ function renderAsg(){
   $('#dAsgList').innerHTML = ASG.map((x,i)=>{
     const g = x.target==='group' || x.mode==='exclude';
     const avail = x.intent==='available';
-    return '<div class="asg'+(x.mode==='exclude'?' excl':'')+'" data-ai="'+i+'"><div class="asg-head"><b>'+(x.mode==='exclude'?'Exclusion':'Assignment')+' '+(i+1)+'</b><button class="btn small ghost" type="button" data-arm="'+i+'" aria-label="Remove assignment '+(i+1)+'">Remove</button></div><div class="grid-f">'+
+    const kindSel = x.mode==='exclude' || isStoreApp() ? '' : '<label class="field asg-kind"><span>Deployment</span><select data-af="kind"><option value="update"'+(x.kind!=='install'?' selected':'')+'>Update only: devices that already have the app</option><option value="install"'+(x.kind==='install'?' selected':'')+'>Install: new and existing devices</option></select></label>';
+    return '<div class="asg'+(x.mode==='exclude'?' excl':'')+(x.mode!=='exclude'&&!isStoreApp()?' k-'+(x.kind==='install'?'install':'update'):'')+'" data-ai="'+i+'"><div class="asg-head"><b>'+(x.mode==='exclude'?'Exclusion':'Assignment')+' '+(i+1)+(x.mode==='exclude'||isStoreApp()?'':' <span class="asg-tag">'+(x.kind==='install'?'Install':'Update only')+'</span>')+'</b><button class="btn small ghost" type="button" data-arm="'+i+'" aria-label="Remove assignment '+(i+1)+'">Remove</button></div><div class="grid-f">'+kindSel+
       '<label class="field"><span>Intent</span><select data-af="intent">'+[['required','Required'],['available','Available'],['uninstall','Uninstall']].map(o=>'<option value="'+o[0]+'"'+(x.intent===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></label>'+
       '<label class="field"><span>Include or exclude</span><select data-af="mode"><option value="include"'+(x.mode==='include'?' selected':'')+'>Include</option><option value="exclude"'+(x.mode==='exclude'?' selected':'')+'>Exclude</option></select></label>'+
       '<label class="field"><span>Target</span><select data-af="target"'+(x.mode==='exclude'?' disabled':'')+'><option value="group"'+(x.target==='group'?' selected':'')+'>A group</option><option value="allDevices"'+(x.target==='allDevices'?' selected':'')+'>All devices</option><option value="allUsers"'+(x.target==='allUsers'?' selected':'')+'>All users</option></select></label>'+
@@ -2707,7 +2775,8 @@ function setCfg(c){
 }
 function dlgCfg(){
   const lines=v=>v.split('\n').map(x=>x.trim()).filter(Boolean);
-  return {updateOnly:$('#dUpdateOnly').checked, method:($('input[name=dasgm]:checked')||{}).value||'groups', assignments:JSON.parse(JSON.stringify(ASG)),
+  const method=($('input[name=dasgm]:checked')||{}).value||'groups', kinds=asgKinds({assignments:ASG});
+  return {updateOnly:method==='groups'&&kinds.length?kinds.includes('update'):$('#dUpdateOnly').checked, method, assignments:JSON.parse(JSON.stringify(ASG)),
     rings:readRings('dr'), ringIntent:$('#dRingIntent').value, exclude:$('#dExclude').value.trim(), filter:$('#dFilter').value.trim(), filterMode:$('#dFilterMode').value, grace:+$('#dGrace').value||0,
     notify:$('#dNotify').value, restart:$('#dRestart').value, dop:$('#dDO').value, maxTime:+$('#dMaxTime').value||60,
     graceOn:$('#dGraceOn').checked, graceMin:+$('#dGraceMin').value||1440, countdown:+$('#dCountdown').value||15, snooze:+$('#dSnooze').value||0,
@@ -2723,6 +2792,8 @@ function intentsOf(c){ return c.method==='rings' ? (c.rings.some(r=>r.group)?[c.
 function updateDlg(){
   const c=dlgCfg(), it=intentsOf(c), hasAvail=it.includes('available'), hasReq=it.some(x=>x!=='available'), onlyUninst=it.length>0 && it.every(x=>x==='uninstall');
   $('#dGroupsBox').hidden=c.method!=='groups'; $('#dRingsBox').hidden=c.method!=='rings';
+  $('#dUpdateOnly').closest('.check').hidden=isStoreApp() || c.method!=='rings';
+  const mixed=c.method==='groups' && !isStoreApp() && asgKinds(c).length>1;
   $('#dGraceWrap').hidden=c.ringIntent==='available';
   $('#dAsgSum').textContent=cfgSummary(c);
   $('#dGraceOnWrap').classList.toggle('off',!hasReq); $('#dGraceOn').disabled=!hasReq;
@@ -2739,8 +2810,9 @@ function updateDlg(){
   if(c.method==='groups'){
     c.assignments.forEach((a,i)=>{ if((a.target==='group'||a.mode==='exclude') && !a.group) w.push('Assignment '+(i+1)+' needs a group. Start typing its name to pick it.');
       if(a.mode!=='exclude' && a.intent!=='available' && a.start && a.deadline && a.deadline < a.start) w.push('Assignment '+(i+1)+': the deadline is before the start.'); });
-    const seen={}; c.assignments.filter(a=>a.target==='group'&&a.group&&a.mode!=='exclude').forEach(a=>{ const k=a.group.toLowerCase(); if(seen[k]&&seen[k]!==a.intent) w.push('\u201c'+a.group+'\u201d has two different intents. Intune doesn\u2019t allow that for one group.'); seen[k]=a.intent; });
-    if(!c.updateOnly && c.assignments.some(a=>a.mode!=='exclude'&&a.intent==='required'&&a.target!=='group')) w.push('Required for All devices or All users installs the app everywhere. Turn on Update only if you just want to patch existing installs.');
+    const seen={}; c.assignments.filter(a=>a.target==='group'&&a.group&&a.mode!=='exclude').forEach(a=>{ const k=(isStoreApp()?'':a.kind)+'|'+a.group.toLowerCase(); if(seen[k]&&seen[k]!==a.intent) w.push('\u201c'+a.group+'\u201d has two different intents in the same deployment. Intune doesn\u2019t allow that for one group.'); seen[k]=a.intent; });
+    if(c.assignments.some(a=>a.mode!=='exclude'&&a.intent==='required'&&a.target!=='group'&&(isStoreApp()||a.kind==='install'))) w.push('Required for All devices or All users with Install puts the app on every device. Choose Update only if you just want to patch existing installs.');
+    if(c.assignments.some(a=>a.mode!=='exclude'&&a.kind==='update'&&a.intent==='available'&&!isStoreApp())) w.push('Update only with Available shows the update in Company Portal only to people who already have the app.');
   }
   if(onlyUninst) w.push('Uninstall uses the version already in Intune. Apps published before this update need to be published once more first.');
   if((c.conflict==='Notify'||c.conflict==='Wait') && c.maxTime < c.confMin+30) w.push('Maximum install time will be raised to '+(c.confMin+30)+' minutes so the wait doesn\u2019t time out.');
@@ -2748,9 +2820,9 @@ function updateDlg(){
   if(c.detect==='script' && !c.detectScript) w.push('Enter a detection script, or switch back to the recommended detection.');
   if(c.graceOn && c.restart!=='basedOnReturnCode' && it.some(x=>x!=='available')) w.push('The restart grace period only applies when Restart behavior is “Based on return codes”.');
   if(c.restart==='force' && c.notify==='hideAll') w.push('Devices will restart without any notification. Consider showing restart notifications.');
-  $('#dWarn').innerHTML=w.map(x=>'<div class="note">'+esc(x)+'</div>').join('');
+  $('#dWarn').innerHTML=(mixed?'<div class="note ok-note">This creates two apps in Intune and publishes them together: an <b>update-only</b> app for the Update only assignments, and an <b>install</b> app for the Install assignments. Exclusions apply to both.</div>':'')+w.map(x=>'<div class="note">'+esc(x)+'</div>').join('');
 }
-$('#dAsgAdd').addEventListener('click',()=>{ ASG.push(newAssignment(ASG.length?ASG[ASG.length-1].intent:'required')); renderAsg(); updateDlg(); });
+$('#dAsgAdd').addEventListener('click',()=>{ const last=ASG.filter(a=>a.mode!=='exclude').pop(); ASG.push(newAssignment(last?last.intent:'required', last?last.kind:($('#dUpdateOnly').checked?'update':'install'))); renderAsg(); updateDlg(); });
 $('#dAsgList').addEventListener('click', e=>{ const b=e.target.closest('[data-arm]'); if(!b) return; ASG.splice(+b.dataset.arm,1); renderAsg(); updateDlg(); });
 function asgField(e){ const el=e.target.closest('[data-af]'); if(!el) return false; const i=+el.closest('[data-ai]').dataset.ai, k=el.dataset.af; ASG[i][k]=el.value; if(k==='group') ASG[i].groupName=''; if(k==='mode'&&el.value==='exclude') ASG[i].target='group'; return k; }
 $('#dAsgList').addEventListener('input', e=>{ asgField(e); if(e.target.dataset.gpick!==undefined) groupSearch(e.target); });
@@ -2771,8 +2843,9 @@ $('#dAsgList').addEventListener('mousedown', e=>{ const b=e.target.closest('[dat
 $('#dAsgList').addEventListener('keydown', e=>{ const inp=e.target.closest('[data-gpick]'); if(!inp) return; const list=inp.parentElement.querySelector('.gpick-list');
   if(e.key==='Escape'){ list.hidden=true; } else if(e.key==='Enter' && !list.hidden){ const first=list.querySelector('[data-gid]'); if(first){ e.preventDefault(); first.dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); } } });
 $('#dAsgList').addEventListener('focusout', e=>{ const inp=e.target.closest('[data-gpick]'); if(inp) setTimeout(()=>{ const l=inp.parentElement&&inp.parentElement.querySelector('.gpick-list'); if(l) l.hidden=true; },150); });
-$('#dAsgList').addEventListener('change', e=>{ const k=asgField(e); if(k==='intent'||k==='mode'||k==='target') renderAsg(); });
-function finalCfg(){ const c=dlgCfg(), it=intentsOf(c); if((c.conflict==='Notify'||c.conflict==='Wait') && c.maxTime < c.confMin+30) c.maxTime=c.confMin+30; if(!it.some(x=>x!=='available')) c.graceOn=false; if(!it.includes('available')){ c.autoUpd=false; c.allowUninst=false; } return c; }
+$('#dAsgList').addEventListener('change', e=>{ const k=asgField(e); if(k==='intent'||k==='mode'||k==='target'||k==='kind'){ if(k==='mode'){ const r=ASG[+e.target.closest('[data-ai]').dataset.ai]; if(r.mode!=='exclude'&&!r.kind) r.kind='update'; } renderAsg(); updateDlg(); } });
+function tidyCfg(c){ const it=intentsOf(c); if((c.conflict==='Notify'||c.conflict==='Wait') && c.maxTime < c.confMin+30) c.maxTime=c.confMin+30; if(!it.some(x=>x!=='available')) c.graceOn=false; if(!it.includes('available')){ c.autoUpd=false; c.allowUninst=false; } return c; }
+function finalCfg(){ return tidyCfg(dlgCfg()); }
 function rememberCfg(c){ S.pubPrefs=S.pubPrefs||{}; const k=JSON.parse(JSON.stringify(c)); delete k.rings; S.pubPrefs[current.id]=k; save(); }
 function canCloudPublish(){ return liveMode() && (currentRole()==='admin' || currentRole()==='owner'); }
 const JOB_LABEL={queued:['Queued','p-neutral'],running:['Publishing','p-upd'],succeeded:['Published','p-cur'],failed:['Failed','p-vuln']};
@@ -2800,12 +2873,18 @@ $('#dPublishNow').addEventListener('click', async ()=>{
   const c=finalCfg(); rememberCfg(c); const app=current; const btn=$('#dPublishNow');
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Starting\u2026';
   try{
-    const r=await api('/publish','POST',{ app:{name:app.name, winget:app.winget, reg:app.reg, vendor:app.vendor, source:app.source||'winget', catalogId:app.sharedId||'', storeProductId:app.storeProductId||'', appStoreUrl:app.appStoreUrl||''}, options:Object.assign({}, c, {summary:cfgSummary(c)}) });
-    watchJob(r.jobId, app, c);
-    $('#pubDlg').close(); toast('Publishing '+app.name+'. Follow it on Deployments.'); location.hash='#deployments';
+    const parts=splitDeployments(c);
+    await startPublishJobs(app, parts);
+    $('#pubDlg').close(); toast('Publishing '+app.name+(parts.length>1?' as '+parts.length+' Intune apps (update only and install)':'')+'. Follow it on Deployments.'); location.hash='#deployments';
   }catch(e){ toast('Couldn\u2019t start publishing. '+e.message); }
   finally{ btn.disabled=false; btn.textContent='Publish to Intune'; }
 });
+async function startPublishJobs(app, parts){
+  for(const part of parts){
+    const r=await api('/publish','POST',{ app:{name:app.name, winget:app.winget, reg:app.reg, vendor:app.vendor, source:app.source||'winget', catalogId:app.sharedId||'', storeProductId:app.storeProductId||'', appStoreUrl:app.appStoreUrl||''}, options:Object.assign({}, part, {summary:cfgSummary(part)}) });
+    watchJob(r.jobId, app, part);
+  }
+}
 function openPublish(id){
   if(currentRole()==='viewer'){ toast('Viewers can’t publish apps. Ask an owner for the Admin role.'); return; }
   current=S.apps.find(a=>a.id===id);
@@ -2832,7 +2911,7 @@ function openPublish(id){
 $('#pubDlg').addEventListener('input', e=>{ if(!e.target.closest('#dCodeWrap')) updateDlg(); });
 $('#pubDlg').addEventListener('change', e=>{ if(!e.target.closest('#dCodeWrap')) updateDlg(); });
 $('#dReset').addEventListener('click',()=>{ setCfg(defaultCfg(current)); $('#dCodeWrap').hidden=true; toast('Recommended settings restored'); });
-$('#dGen').addEventListener('click',()=>{ const c=finalCfg(); rememberCfg(c); setCode('dCode', publishScript(current, c)); $('#dCodeWrap').hidden=false; $('#dCodeWrap').scrollIntoView({behavior:'smooth',block:'nearest'}); });
+$('#dGen').addEventListener('click',()=>{ const c=finalCfg(); rememberCfg(c); const parts=splitDeployments(c); setCode('dCode', parts.map((p,i)=>(parts.length>1?'# ---- '+(p.updateOnly?'Update-only app':'Install app')+' ('+(i+1)+' of '+parts.length+') ----\n':'')+publishScript(current, p)).join('\n\n')); $('#dCodeWrap').hidden=false; $('#dCodeWrap').scrollIntoView({behavior:'smooth',block:'nearest'}); });
 $('#dMark').addEventListener('click',()=>{ const c=finalCfg(); rememberCfg(c); S.deployments.unshift({id:Date.now().toString(36),appId:current.id,name:current.name,version:current.latest,summary:cfgSummary(c),method:c.method,assignments:c.method==='groups'?c.assignments:[],rings:c.method==='rings'?c.rings:[],ringIntent:c.ringIntent,grace:c.ringIntent==='available'?0:c.grace,notify:c.notify,conflict:c.conflict,at:new Date().toISOString()}); save(); $('#pubDlg').close(); toast(current.name+' recorded as published'); location.hash='#deployments'; });
 $('#pubClose').addEventListener('click',()=>$('#pubDlg').close());
 function showCode(title,note,code){ $('#codeTitle').textContent=title; $('#codeNote').textContent=note; setCode('codeOut',code); $('#codeDlg').showModal(); }
@@ -3173,8 +3252,9 @@ function renderReports(){
 
   const beh=S.apps.map(a=>({a:a,behind:a.fleet[1]+a.fleet[2]+a.fleet[3]})).filter(r=>r.behind>0).sort((x,y)=>y.behind-x.behind);
   REP.behind={head:['App','Installs behind','Of which vulnerable','Latest version','Auto-publish'],rows:beh.map(r=>[r.a.name,r.behind,r.a.fleet[3],r.a.latest,S.auto[r.a.id]?'On':'Off'])};
-  $('#repBehind').innerHTML=thead(REP.behind.head)+'<tbody>'+(beh.length?REP.behind.rows.map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+r[1]+'</td><td>'+(r[2]?'<span class="pill p-vuln">'+r[2]+'</span>':'0')+'</td><td>'+esc(r[3])+'</td><td>'+r[4]+'</td></tr>').join(''):emptyRow(5,'Every tracked install is on the latest version.'))+'</tbody>';
-  showRepTab(REP_TAB);
+  const upd=canCloudPublish();
+  $('#repBehind').innerHTML=thead(REP.behind.head.concat(upd?['']:[]))+'<tbody>'+(beh.length?REP.behind.rows.map((r,i)=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+r[1]+'</td><td>'+(r[2]?'<span class="pill p-vuln">'+r[2]+'</span>':'0')+'</td><td>'+esc(r[3])+'</td><td>'+r[4]+'</td>'+(upd?'<td>'+(beh[i].a.source!=='msstore'&&beh[i].a.latest?'<button class="btn small'+(r[2]?' primary':'')+'" type="button" data-quickupd="'+esc(beh[i].a.id)+'">Update now</button>':'')+'</td>':'')+'</tr>').join(''):emptyRow(upd?6:5,'Every tracked install is on the latest version.'))+'</tbody>';
+  showRepTab(REP_TAB); if(REP_TAB==='exec') renderExec();
 }
 function resultsScript(){
   return '# NexpatchOnline – export install results for NexpatchOnline apps from Intune\n# Needs: Install-Module Microsoft.Graph.Authentication -Scope CurrentUser\n\n' +
@@ -3245,7 +3325,80 @@ $$('.nav-h').forEach(b=>b.addEventListener('click',()=>{ const g=b.closest('.nav
   let c=navCollapsed().filter(x=>x!==g.dataset.group); if(!open) c.push(g.dataset.group); try{ localStorage.setItem(NAV_KEY,JSON.stringify(c)); }catch(e){} }));
 
 /* ---------- App report tabs ---------- */
-let REP_TAB='apps';
+
+/* ---------- Executive summary report (in the app and as a downloadable, printable file) ---------- */
+const EX={vu:null,pub:null,at:0};
+const SEV_COLOR={CRITICAL:'var(--c-crit)',HIGH:'var(--c-high)',MEDIUM:'var(--c-med)',LOW:'var(--c-low)'};
+function donutSVG(parts, big, small){
+  const tot=parts.reduce((n,p)=>n+p.v,0)||1, R=70, C=2*Math.PI*R; let off=0;
+  const arcs=parts.filter(p=>p.v>0).map(p=>{ const len=C*p.v/tot, a='<circle r="'+R+'" cx="90" cy="90" fill="none" stroke="'+p.c+'" stroke-width="26" stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 90 90)"><title>'+esc(p.l)+': '+p.v.toLocaleString()+'</title></circle>'; off+=len; return a; }).join('');
+  return '<svg viewBox="0 0 180 180" width="180" height="180" role="img" aria-label="'+esc(parts.map(p=>p.l+' '+p.v).join(', '))+'" style="display:block;margin:0 auto"><circle r="'+R+'" cx="90" cy="90" fill="none" stroke="var(--line)" stroke-width="26"/>'+arcs+'<text x="90" y="88" text-anchor="middle" font-size="26" font-weight="700" fill="var(--ink)">'+esc(big)+'</text><text x="90" y="110" text-anchor="middle" font-size="12" fill="var(--muted)">'+esc(small)+'</text></svg>';
+}
+// Horizontal stacked bars (HTML, so text stays readable at any width): rows [{label, parts:[{v,c,l}]}]
+function hbarSVG(rows){
+  if(!rows.length) return '<p class="empty">Nothing to show.</p>';
+  const max=Math.max(1,...rows.map(r=>r.parts.reduce((n,p)=>n+p.v,0)));
+  return '<div class="ex-hbars">'+rows.map(r=>{ const tot=r.parts.reduce((n,p)=>n+p.v,0);
+    return '<div class="ex-hrow"><span class="ex-hlab" title="'+esc(r.label)+'">'+esc(r.label)+'</span><span class="ex-htrack" role="img" aria-label="'+esc(r.label+': '+r.parts.map(p=>p.v+' '+p.l).join(', '))+'">'+r.parts.filter(p=>p.v>0).map(p=>'<i style="width:'+(100*p.v/max).toFixed(2)+'%;background:'+p.c+'" title="'+esc(p.v+' '+p.l)+'"></i>').join('')+'</span><b>'+tot.toLocaleString()+'</b></div>'; }).join('')+'</div>';
+}
+// Vertical stacked bars by week (HTML): cols [{label, parts:[{v,c,l}]}]
+function colSVG(cols){
+  if(!cols.length) return '<p class="empty">No publishing in this period.</p>';
+  const max=Math.max(1,...cols.map(c=>c.parts.reduce((n,p)=>n+p.v,0)));
+  return '<div class="ex-cols">'+cols.map(c=>{ const tot=c.parts.reduce((n,p)=>n+p.v,0);
+    return '<div class="ex-col"><b>'+tot+'</b><span class="ex-ctrack" role="img" aria-label="'+esc(c.label+': '+c.parts.map(p=>p.v+' '+p.l).join(', '))+'">'+c.parts.slice().reverse().filter(p=>p.v>0).map(p=>'<i style="height:'+(100*p.v/max).toFixed(2)+'%;background:'+p.c+'" title="'+esc(p.v+' '+p.l)+'"></i>').join('')+'</span><span class="ex-clab">'+esc(c.label)+'</span></div>'; }).join('')+'</div>';
+}
+const legend=items=>'<div class="ex-legend">'+items.map(i=>'<span><i style="background:'+i[1]+'"></i>'+esc(i[0])+'</span>').join('')+'</div>';
+function execModel(){
+  const f=fleetStats(), vu=EX.vu, pub=EX.pub, s=vu&&vu.summary;
+  const behind=S.apps.map(a=>({a, cur:a.fleet[0], beh:a.fleet[1]+a.fleet[2], vul:a.fleet[3]})).filter(r=>r.beh+r.vul>0).sort((x,y)=>(y.beh+y.vul)-(x.beh+x.vul)).slice(0,8);
+  return { org:(SERVER.me&&SERVER.me.tenant&&SERVER.me.tenant.name)||(SERVER.me&&SERVER.me.partner&&SERVER.me.partner.customerName)||'Your organization',
+    when:new Date(), f, vu, s, pub, behind, sample:!S.imported&&isSampleData() };
+}
+function execHTML(m){
+  const f=m.f, s=m.s, pub=m.pub;
+  const kev=s?s.knownExploited:null, crit=s?(s.cves.CRITICAL||0):null;
+  const lede=[f.total?'<b>'+f.pct+'%</b> of '+f.total.toLocaleString()+' app installs are on the latest version'+(f.pct>=95?', above the 95% target.':', against a 95% target.'):'No app inventory has been synced yet.',
+    s?(kev?'<b>'+kev+' known exploited flaw'+(kev>1?'s':'')+'</b> affect '+s.knownExploitedInstalls+' device install'+(s.knownExploitedInstalls===1?'':'s')+' and should be fixed first.':s.appsAffected?s.appsAffected+' app'+(s.appsAffected>1?'s have':' has')+' known flaws, none of them known to be exploited.':'No installed app version has a known flaw in the apps checked.'):'',
+    pub&&pub.total?pub.succeeded+' of '+pub.total+' updates published in the last 30 days succeeded'+(pub.failed?' ('+pub.failed+' failed).':'.'):''].filter(Boolean).join(' ');
+  const kpi=(v,l,c)=>'<div style="--k:'+c+'"><b>'+v+'</b><span>'+l+'</span></div>';
+  const top=(m.vu?m.vu.exposures:[]).slice(0,6);
+  const weeks=pub?pub.weeks.slice(-8).map(w=>({label:new Date(w.week).toLocaleDateString(undefined,{month:'short',day:'numeric'}),parts:[{v:w.succeeded,c:'var(--c-cur)',l:'succeeded'},{v:w.failed,c:'var(--c-vul)',l:'failed'}]})):[];
+  return '<div class="ex">'+
+    '<div class="ex-head"><div><h2>'+esc(m.org)+'</h2><p>Patch and vulnerability summary</p></div><p>'+esc(m.when.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}))+'</p></div>'+
+    '<p class="ex-lede">'+lede+'</p>'+
+    '<div class="ex-kpis">'+kpi(f.total?f.pct+'%':'—','installs on the latest version',f.pct>=95?'var(--c-cur)':f.pct>=80?'var(--c-beh)':'var(--c-vul)')+kpi(f.vuln.toLocaleString(),'installs on a vulnerable version',f.vuln?'var(--c-vul)':'var(--c-cur)')+
+      kpi(kev==null?'—':kev,'known exploited flaws',kev?'var(--c-crit)':'var(--c-cur)')+kpi(pub&&pub.successRate!=null?pub.successRate+'%':'—','publishes succeeded, 30 days',pub&&pub.failed?'var(--c-beh)':'var(--teal)')+'</div>'+
+    '<div class="ex-grid"><div class="ex-card"><h3>Install status</h3><p class="small">Every tracked app install</p>'+donutSVG([{l:'Latest version',v:f.cur,c:'var(--c-cur)'},{l:'Behind',v:Math.max(0,f.behind-f.vuln),c:'var(--c-beh)'},{l:'Vulnerable version',v:f.vuln,c:'var(--c-vul)'}],f.total?f.pct+'%':'—','up to date')+
+      legend([['Latest version','var(--c-cur)'],['Behind','var(--c-beh)'],['Vulnerable','var(--c-vul)']])+'</div>'+
+      '<div class="ex-card"><h3>Compliance over time</h3><p class="small">Share of installs on the latest version</p>'+trendSVG()+'</div></div>'+
+    (s?'<div class="ex-grid"><div class="ex-card"><h3>Flaws by severity</h3><p class="small">Distinct flaws in installed versions</p>'+hbarSVG(['CRITICAL','HIGH','MEDIUM','LOW'].map(k=>({label:k[0]+k.slice(1).toLowerCase(),parts:[{v:s.cves[k]||0,c:SEV_COLOR[k],l:'flaws'}]})))+'</div>'+
+      '<div class="ex-card"><h3>Fix these first</h3><p class="small">Known exploited and most severe first</p>'+(top.length?'<div style="overflow-x:auto"><table class="ex-table"><thead><tr><th>App and version</th><th>Devices</th><th>Severity</th><th>Fix</th></tr></thead><tbody>'+top.map(e=>'<tr><td><b>'+esc(e.app)+'</b> '+esc(e.version)+(e.knownExploited?'<br><span class="ex-sev" style="background:var(--c-crit)">'+e.knownExploited+' exploited</span>':'')+'</td><td>'+e.devices+'</td><td><span class="ex-sev" style="background:'+(SEV_COLOR[e.maxSeverity]||'var(--c-low)')+'">'+esc((e.maxSeverity||'').toLowerCase())+'</span> '+e.cveCount+'</td><td class="small">'+(e.fix.status==='fixed'?'Update to '+esc(e.fix.version):e.fix.status==='partial'?esc(e.fix.version)+' (partial)':'Not known')+'</td></tr>').join('')+'</tbody></table></div>':'<p class="empty">No installed version has a known flaw.</p>')+'</div></div>':'')+
+    '<div class="ex-card" style="margin-bottom:16px"><h3>Apps furthest behind</h3><p class="small">Installs not on the latest version</p>'+hbarSVG(m.behind.map(r=>({label:r.a.name,parts:[{v:r.vul,c:'var(--c-vul)',l:'vulnerable'},{v:r.beh,c:'var(--c-beh)',l:'behind'}]})))+legend([['Vulnerable version','var(--c-vul)'],['Behind','var(--c-beh)']])+'</div>'+
+    (pub?'<div class="ex-card"><h3>Updates published</h3><p class="small">Last 30 days, by week</p>'+colSVG(weeks)+legend([['Succeeded','var(--c-cur)'],['Failed','var(--c-vul)']])+'</div>':'')+
+    '<p class="ex-foot">'+(m.sample?'Sample data: connect your organization for real numbers. ':'')+'Sources: Intune app inventory'+(s?', U.S. National Vulnerability Database and CISA known exploited list'+(m.vu.dataAsOf?' (as of '+esc(new Date(m.vu.dataAsOf).toLocaleDateString())+')':''):'')+(pub?', NexpatchOnline publishing log':'')+'. Generated by NexpatchOnline.</p></div>';
+}
+async function renderExec(force){
+  const box=$('#execBody');
+  if(liveMode() && (force || Date.now()-EX.at>5*60e3)){
+    box.innerHTML='<p class="empty">Building the summary…</p>';
+    const [vu,pub]=await Promise.all([api('/reports/vulnerabilities').catch(()=>null), api('/reports/publishing?days=30').catch(()=>null)]);
+    EX.vu=vu&&vu.summary&&Array.isArray(vu.exposures)?vu:null; EX.pub=pub&&Array.isArray(pub.weeks)?pub:null; EX.at=Date.now();
+  }
+  box.innerHTML=execHTML(execModel());
+}
+const EXPORT_CSS=`:root{--bg:#fff;--surface:#fff;--sunk:#F7F8FC;--ink:#161B2E;--muted:#555E78;--line:#D5DAE8;--teal:#3B4FD8;--teal-soft:#E4E8FC;--amber:#A86E08;--red:#B13A30;--green:#2D7A4C}
+*{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+main{max-width:1000px;margin:0 auto;padding:32px 24px}h2,h3{line-height:1.25}.small{font-size:.85rem;color:var(--muted)}.empty{color:var(--muted)}
+@page{size:A4;margin:14mm}@media print{main{padding:0}.ex-card,.ex-kpis{break-inside:avoid}}`;
+function execDocument(){
+  const m=execModel(), body=execHTML(m);
+  const css=[...document.styleSheets].flatMap(sh=>{ try{ return [...sh.cssRules].map(r=>r.cssText).filter(t=>/^(\.ex|@media \(max-width: ?820px\))/.test(t)); }catch(e){ return []; } }).join('\n');
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(m.org)+' patch and vulnerability summary</title><style>'+EXPORT_CSS+'\n'+css+'</style></head><body><main>'+body+'</main></body></html>';
+}
+$('#execDownload').addEventListener('click',async()=>{ await renderExec(); const blob=new Blob([execDocument()],{type:'text/html'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='nexpatch-summary-'+new Date().toISOString().slice(0,10)+'.html'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); toast('Report downloaded. Open it in any browser, or print it to PDF.'); });
+$('#execPrint').addEventListener('click',async()=>{ await renderExec(); const w=window.open('','_blank'); if(!w){ toast('Allow pop-ups for this site to print, or use Download report.'); return; } w.document.open(); w.document.write(execDocument()); w.document.close(); w.focus(); setTimeout(()=>w.print(),400); });
+let REP_TAB='exec';
 function showRepTab(t){ REP_TAB=t; $$('[data-reptab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.reptab===t))); $$('[data-reppanel]').forEach(p=>{ p.hidden=p.dataset.reppanel!==t; }); }
 
 /* ---------- Publishing report ---------- */
@@ -3262,7 +3415,7 @@ async function loadPubRep(){ const st=$('#pubRepStats');
   }catch(e){ st.innerHTML='<div class="note">'+esc(e.message)+'</div>'; } }
 $('#pubRepDays').addEventListener('change',loadPubRep);
 $('#pubRepCsv').addEventListener('click',()=>{ if(!PUBREP) return; downloadFile('nexpatchonline-publishing-'+new Date().toISOString().slice(0,10)+'.csv', agCsv([['App','Publishes','Succeeded','Failed','Success rate %','Typical minutes','Last version','Last publish','Last error'],...PUBREP.apps.map(a=>[a.app,a.total,a.succeeded,a.failed,a.successRate==null?'':a.successRate,a.medianMinutes,a.lastVersion,a.lastAt,a.lastError])])); });
-$$('[data-reptab]').forEach(b=>b.addEventListener('click',()=>{ showRepTab(b.dataset.reptab); if(b.dataset.reptab==='publishing') loadPubRep(); }));
+$$('[data-reptab]').forEach(b=>b.addEventListener('click',()=>{ showRepTab(b.dataset.reptab); if(b.dataset.reptab==='publishing') loadPubRep(); if(b.dataset.reptab==='exec') renderExec(); }));
 
 let DEV=null;
 function downloadFile(name,text,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:type||'text/csv;charset=utf-8'})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); }
@@ -3520,13 +3673,60 @@ async function loadVulns(){ const note=$('#vuNote'); note.innerHTML='';
   try{ VU.data=await api('/reports/vulnerabilities'); drawVulns(); }catch(e){ note.innerHTML='<div class="note">'+esc(e.message)+'</div>'; } }
 function vuRows(){ const d=VU.data||{exposures:[]}, q=$('#vuSearch').value.trim().toLowerCase(), f=$('#vuFilter').value;
   return d.exposures.filter(e=>(!q||(e.app+' '+e.version+' '+e.top.map(c=>c.id).join(' ')).toLowerCase().includes(q))&&(f==='all'||(f==='kev'&&e.knownExploited)||(f==='critical'&&e.maxSeverity==='CRITICAL')||(f==='high'&&['CRITICAL','HIGH'].includes(e.maxSeverity)))); }
+
+/* ---------- One-click update / CVE fix ---------- */
+// Publishes the newest version as an update-only, Required deployment: Intune installs it only on devices that already
+// have the app, so "All devices" reaches exactly the exposed devices. Uses the saved publish settings for the app.
+const FIX={app:null};
+const pad2=n=>String(n).padStart(2,'0');
+const toLocalInput=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+'T'+pad2(d.getHours())+':'+pad2(d.getMinutes());
+function ringsReady(){ return (S.settings.rings||[]).some(r=>r.group); }
+function quickUpdateCfg(app, who, hours){
+  current=app;
+  const saved=(S.pubPrefs||{})[app.id];
+  const c=Object.assign(defaultCfg(app), migrateCfg(JSON.parse(JSON.stringify(saved||{}))), {rings:JSON.parse(JSON.stringify(S.settings.rings))}, {updateOnly:true, supersede:false});
+  if(who==='rings'){ c.method='rings'; c.ringIntent='required'; }
+  else { c.method='groups'; c.assignments=[Object.assign(newAssignment('required','update'),{target:'allDevices', deadline:hours?toLocalInput(new Date(Date.now()+hours*36e5)):''})]; }
+  return tidyCfg(c);
+}
+function openQuickUpdate(app, info={}){
+  if(!canCloudPublish()){ toast('Only owners and admins can publish updates.'); return; }
+  if(!app || app.source==='msstore'){ toast('Microsoft Store apps are updated by the Store.'); return; }
+  FIX.app=app; FIX.info=info;
+  $('#fixTitle').textContent=(info.cves?'Fix ':'Update ')+app.name;
+  const v=info.version||app.latest||'the latest version';
+  $('#fixWhat').innerHTML='<p style="margin:0 0 10px">Publishes <b>'+esc(app.name)+' '+esc(v)+'</b> as an update. Intune installs it only on devices that already have '+esc(app.name)+'.</p>'+
+    (info.cves?'<div class="fix-sum"><div><b>'+(info.devices||0)+'</b><span>device installs exposed</span></div><div><b>'+info.cves+'</b><span>flaws fixed</span></div><div><b'+(info.kev?' style="color:var(--red)"':'')+'>'+(info.kev||0)+'</b><span>known exploited</span></div></div>':'')+
+    (info.partial?'<div class="note">'+esc(v)+' still has '+info.partial+' known flaw'+(info.partial>1?'s':'')+'. It is the newest version the vendor has released, so it is still the best fix available.</div>':'');
+  const rings=ringsReady();
+  $('#fixRingsOpt').hidden=!rings; $('#fixRingsTxt').textContent=rings?'Each ring gets it after its delay ('+S.settings.rings.filter(r=>r.group).map(r=>r.name).join(', ')+').':'';
+  $$('input[name=fixWho]').forEach(r=>r.checked=r.value===(info.kev||!rings?'now':'rings'));
+  $('#fixDeadline').value=info.kev?'24':'72'; fixToggle();
+  $('#fixDlg').showModal();
+}
+function fixToggle(){ $('#fixDeadlineWrap').hidden=($('input[name=fixWho]:checked')||{}).value==='rings'; }
+$$('input[name=fixWho]').forEach(r=>r.addEventListener('change',fixToggle));
+['fixClose','fixCancel'].forEach(id=>$('#'+id).addEventListener('click',()=>$('#fixDlg').close()));
+$('#fixGo').addEventListener('click',async ()=>{
+  const app=FIX.app, b=$('#fixGo'); if(!app) return;
+  const c=quickUpdateCfg(app, ($('input[name=fixWho]:checked')||{}).value||'now', +$('#fixDeadline').value||0);
+  b.disabled=true; b.innerHTML='<span class="spin"></span>Starting…';
+  try{ await startPublishJobs(app,[c]); $('#fixDlg').close(); toast('Publishing the '+app.name+' update. Follow it on Deployments.'); location.hash='#deployments'; }
+  catch(e){ toast('Couldn’t start the update. '+e.message); }
+  finally{ b.disabled=false; b.textContent='Publish the update'; }
+});
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-vufix]'); if(!b) return;
+  const x=(VU.data&&VU.data.exposures||[]).filter(r=>r.appId===b.dataset.vufix);
+  const app=S.apps.find(a=>a.sharedId===b.dataset.vufix); if(!app){ toast('This app isn’t in your catalog list. Open the App catalog and refresh it.'); return; }
+  const f=x[0].fix; openQuickUpdate(app,{version:f.version, devices:x.reduce((n,r)=>n+r.devices,0), cves:Math.max(...x.map(r=>r.cveCount)), kev:Math.max(0,...x.map(r=>r.knownExploited)), partial:f.status==='partial'?f.remaining:0}); });
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-quickupd]'); if(!b) return; openQuickUpdate(S.apps.find(a=>a.id===b.dataset.quickupd)); });
 function vuFix(x){ return x.status==='fixed'?'Update to '+esc(x.version)+' fixes all':x.status==='partial'?esc(x.version)+' still has '+x.remaining:'Latest version not known'; }
 function drawVulns(){ const d=VU.data, s=d.summary;
   $('#vuStats').innerHTML=[[s.knownExploited,'known exploited flaws'],[s.knownExploitedInstalls,'device installs with them'],[s.appsAffected,'apps affected'],[s.versionsAffected,'versions affected'],[s.deviceInstallsExposed,'device installs exposed'],[s.cves.CRITICAL+' / '+s.cves.HIGH,'critical / high flaws']].map(x=>'<div class="stat"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('');
   const rows=vuRows();
   $('#vuTable').innerHTML=thead(['App and version','Devices','Flaws','Known exploited','Fix',''])+'<tbody>'+(rows.length?rows.map(e=>{ const k=e.appId+'|'+e.version, open=VU.open.has(k), c=e.counts;
     const sev='<span class="vu-sev">'+['CRITICAL','HIGH','MEDIUM','LOW'].filter(x=>c[x]).map(x=>'<span class="'+VU_SEV[x][0]+'">'+c[x]+' '+VU_SEV[x][1].toLowerCase()+'</span>').join('')+'</span>';
-    return '<tr class="'+(open?'vu-open':'')+'"><td><b>'+esc(e.app)+'</b><span class="sub">'+esc(e.version)+'</span></td><td>'+e.devices+'</td><td>'+sev+'</td><td>'+(e.knownExploited?'<span class="vu-kev">'+e.knownExploited+' exploited</span>':'—')+'</td><td class="small">'+vuFix(e.fix)+'</td><td><button class="btn small ghost" type="button" data-vuopen="'+esc(k)+'" aria-expanded="'+open+'">'+(open?'Hide':'Details')+'</button>'+(e.fix.status!=='unknown'?' <a class="btn small" href="#catalog" data-view="catalog">Update</a>':'')+'</td></tr>'
+    return '<tr class="'+(open?'vu-open':'')+'"><td><b>'+esc(e.app)+'</b><span class="sub">'+esc(e.version)+'</span></td><td>'+e.devices+'</td><td>'+sev+'</td><td>'+(e.knownExploited?'<span class="vu-kev">'+e.knownExploited+' exploited</span>':'—')+'</td><td class="small">'+vuFix(e.fix)+'</td><td><button class="btn small ghost" type="button" data-vuopen="'+esc(k)+'" aria-expanded="'+open+'">'+(open?'Hide':'Details')+'</button>'+(e.fix.status!=='unknown'&&canCloudPublish()?' <button class="btn small '+(e.knownExploited?'primary':'')+'" type="button" data-vufix="'+esc(e.appId)+'">'+(e.fix.status==='fixed'?'Fix now':'Update')+'</button>':'')+'</td></tr>'
       +(open?'<tr class="vu-open"><td colspan="6"><ul class="vu-list">'+e.top.map(v=>'<li><b><a href="https://nvd.nist.gov/vuln/detail/'+encodeURIComponent(v.id)+'" target="_blank" rel="noopener">'+esc(v.id)+'</a></b> <span class="vu-sev"><span class="'+(VU_SEV[v.sev]||VU_SEV.UNKNOWN)[0]+'">'+(v.score!=null?v.score+' ':'')+(VU_SEV[v.sev]||VU_SEV.UNKNOWN)[1]+'</span></span>'+(v.kev?' <span class="vu-kev">Known exploited since '+esc(v.kev)+'</span>'+(v.kevDue?' <span class="small">CISA fix-by date '+esc(v.kevDue)+'</span>':''):'')+'<div class="small">'+esc(v.sum)+'</div></li>').join('')+(e.cveCount>e.top.length?'<li class="small">And '+(e.cveCount-e.top.length)+' more lower-scored flaws.</li>':'')+'</ul></td></tr>':'');
   }).join(''):emptyRow(6,VU.data.exposures.length?'Nothing matches.':'No known flaws in the checked app versions. Check that your inventory is synced.'))+'</tbody>';
   const nc=d.notChecked||[]; $('#vuNotPanel').hidden=!nc.length;
@@ -4012,7 +4212,7 @@ async function loadPartners(){ const panel=$('#orgPartners'); if(!liveMode()||(S
   }catch(e){ $('#orgPartnerTable').innerHTML='<tbody>'+emptyRow(1,esc(e.message))+'</tbody>'; } }
 $('#orgPartnerForm').addEventListener('submit',async e=>{ e.preventDefault(); const m=$('#orgPartnerMsg'); m.textContent='Checking the code…';
   try{ const r=await api('/partner/accept','POST',{code:$('#orgPartnerCode').value,access:$('#orgPartnerAccess').value}); $('#orgPartnerCode').value=''; m.textContent=r.partner.name+' now has '+r.partner.accessName+' access.'; loadPartners(); }catch(err){ m.textContent=err.message; } });
-if (TEST_HOOK) { TEST_HOOK.drawCtxBanner = drawCtxBanner; TEST_HOOK.setSession = setSession; TEST_HOOK.server = SERVER; TEST_HOOK.route = route; }
+if (TEST_HOOK) { TEST_HOOK.state = () => S; TEST_HOOK.openPublish = openPublish; TEST_HOOK.execDocument = execDocument; TEST_HOOK.drawCtxBanner = drawCtxBanner; TEST_HOOK.setSession = setSession; TEST_HOOK.server = SERVER; TEST_HOOK.route = route; }
 initAuth().catch(()=>{}).finally(()=>{ route(); loadFromServer(); });
 })();
 </script>

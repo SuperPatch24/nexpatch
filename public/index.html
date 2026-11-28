@@ -56,7 +56,7 @@ a{color:var(--teal)}
 
 .shell{display:grid;grid-template-columns:232px 1fr;min-height:100%}
 /* products the platform operator has switched off for this company */
-body[data-off~=appControl] .nav-group[data-group=appcontrol],body[data-off~=automation] .nav a[data-view=automation],body[data-off~=apps] .nav a[data-view=catalog],body[data-off~=apps] .nav a[data-view=agent],body[data-off~=apps] .nav a[data-view=discovery],body[data-off~=apps] .nav a[data-view=deployments],body[data-off~=deviceReports] .nav a[data-view=devices]{display:none}
+body[data-off~=appControl] .nav-group[data-group=appcontrol],body[data-off~=automation] .nav a[data-view=automation],body[data-off~=apps] .nav a[data-view=catalog],body[data-off~=apps] .nav a[data-view=agent],body[data-off~=apps] .nav a[data-view=vulnerabilities],body[data-off~=apps] .nav a[data-view=discovery],body[data-off~=apps] .nav a[data-view=deployments],body[data-off~=deviceReports] .nav a[data-view=devices]{display:none}
 .nav{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent;position:sticky;top:env(safe-area-inset-top,0px);align-self:start;height:calc(100vh - env(safe-area-inset-top,0px));padding:24px 14px;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:4px}
 .brand{display:flex;align-items:center;gap:10px;padding:0 10px 22px;font-weight:700;font-size:1.15rem}
 .brand svg{flex:none}
@@ -523,6 +523,7 @@ html.lp-rv .rv:nth-child(2){transition-delay:.08s}html.lp-rv .rv:nth-child(3){tr
 .ag-tabs button[aria-pressed=true]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 .ag-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
 .ag-tools input[type=search]{flex:1 1 220px;min-width:0}
+.ag-tools select{width:auto;flex:0 0 auto;max-width:100%}
 .ag-issues{margin:0;padding-left:18px;font-size:.88rem}
 .ag-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--line);min-width:90px}
 .ag-bar i{display:block;height:100%}
@@ -531,18 +532,40 @@ html.lp-rv .rv:nth-child(2){transition-delay:.08s}html.lp-rv .rv:nth-child(3){tr
 tr[data-agopen]{cursor:pointer}
 tr[data-agopen]:hover td{background:var(--sunk, rgba(0,0,0,.03))}
 
+
+/* ---- Vulnerabilities ---- */
+.vu-sev{display:inline-flex;gap:4px;flex-wrap:wrap}
+.vu-sev span{font-size:.75rem;font-weight:700;padding:1px 7px;border-radius:999px}
+.vu-c{background:var(--red-soft);color:var(--red)}.vu-h{background:var(--amber-soft);color:var(--amber)}.vu-m{background:var(--teal-soft);color:var(--ink)}.vu-l{background:var(--line);color:var(--muted)}
+.ctx-banner{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:.92rem;background:var(--teal);color:#fff}
+.ctx-banner b{font-weight:800}
+.ctx-banner .btn{background:#fff;color:var(--teal);border-color:#fff}
+body.in-partner .nav a[data-view=customers],body.in-partner .nav a[data-view=users]{display:none}
+.cu-att{margin:4px 0 0;padding:0;list-style:none;font-size:.82rem;color:var(--red)}
+.cu-att li+li{margin-top:2px}
+.cu-code{font:700 1.25rem/1.2 ui-monospace,Consolas,monospace;letter-spacing:.04em;padding:10px 14px;border:1px dashed var(--teal);border-radius:8px;background:var(--teal-soft);color:var(--ink);display:inline-block}
+.cu-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:16px}
+.cu-form .field{margin:0}
+.cu-form input,.cu-form select{width:100%}
+.cu-form3{grid-template-columns:minmax(0,1fr) auto auto}
+@media (max-width:600px){ .cu-form,.cu-form3{grid-template-columns:1fr} }
+.cu-steps{margin:8px 0 0;padding-left:20px;line-height:1.6}
+.vu-kev{display:inline-block;font-size:.75rem;font-weight:800;padding:2px 8px;border-radius:6px;background:var(--red);color:#fff;white-space:nowrap}
+tr.vu-open>td{background:var(--sunk, rgba(0,0,0,.02))}
+.vu-list{list-style:none;margin:0;padding:0}.vu-list li{padding:8px 0;border-top:1px solid var(--line)}.vu-list li:first-child{border-top:0}
+.vu-list b a{color:inherit}
 /* ---- Layout: fit any screen ---- */
 /* App: use wide screens for data, keep reading text at a comfortable width */
 main{max-width:min(1720px,100%)}
 @media (min-width:1700px){ main{padding-left:56px;padding-right:56px} }
 .table-wrap th{white-space:nowrap}
 /* Stat tiles: as many per row as fit, with even dividers at any count */
-.stats{grid-template-columns:repeat(auto-fit,minmax(min(100%,168px),1fr));gap:1px;background:var(--line)}
-.stats .stat,.stats .stat:first-child{border:0;background:var(--surface)}
+.stats{grid-template-columns:repeat(auto-fit,minmax(min(100%,168px),1fr));gap:0;background:var(--surface)}
+.stats .stat,.stats .stat:first-child{border:0;box-shadow:1px 0 0 var(--line),0 1px 0 var(--line)}
 @media (max-width:700px){ .stats{grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))} .stats .stat:nth-child(n){border:0} }
 /* Search boxes and small selects look like the other fields */
-input[type=search]{padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;min-width:0}
-input[type=search]:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+input[type=search],.cu-form input{padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;min-width:0}
+input[type=search]:focus-visible,.cu-form input:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 #pubRepDays{width:auto}
 /* Public header: drop the less-used links before anything overflows */
 .pub-header .linkbtn{white-space:nowrap}
@@ -814,6 +837,7 @@ td,th,.sub,code{overflow-wrap:break-word}
     <a href="#discovery" data-view="discovery">Discovery</a>
     <a href="#deployments" data-view="deployments">Deployments</a>
     <a href="#reports" data-view="reports">App reports</a>
+    <a href="#vulnerabilities" data-view="vulnerabilities">Vulnerabilities</a>
     <a href="#apple" data-view="apple">Apple apps & devices</a>
     </div></div>
     <div class="nav-group" data-group="appcontrol"><button type="button" class="nav-h" aria-expanded="true" aria-controls="ng-appcontrol">App Control</button><div class="nav-items" id="ng-appcontrol">
@@ -824,6 +848,7 @@ td,th,.sub,code{overflow-wrap:break-word}
     </div></div>
     <div class="nav-group" data-group="organization"><button type="button" class="nav-h" aria-expanded="true" aria-controls="ng-organization">Organization</button><div class="nav-items" id="ng-organization">
     <a href="#organization" data-view="organization">Company profile</a>
+    <a href="#customers" data-view="customers">Customers</a>
     <a href="#users" data-view="users">Users and access</a>
     <a href="#notifications" data-view="notifications">Notifications</a>
     <a href="#connect" data-view="connect" data-contab-link="setup">Connect to Intune</a>
@@ -841,6 +866,7 @@ td,th,.sub,code{overflow-wrap:break-word}
   </nav>
 
   <main>
+    <div class="ctx-banner" id="ctxBanner" role="status" hidden></div>
     <div class="plan-banner" id="planBanner" hidden></div>
     <div id="noticeBanner" aria-live="polite"></div>
     <!-- OVERVIEW -->
@@ -1107,6 +1133,27 @@ td,th,.sub,code{overflow-wrap:break-word}
           <div class="table-wrap"><table class="compact" id="agTable"></table></div>
           <p class="small muted" id="agFoot"></p>
         </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-vulnerabilities" aria-labelledby="vuTitle">
+      <h1 id="vuTitle">Vulnerabilities</h1>
+      <p class="lede">Known security flaws (CVEs) in the app versions installed on your devices, from the U.S. National Vulnerability Database. Flaws that attackers are known to be using (listed by CISA) come first. Updating usually fixes them.</p>
+      <div id="vuNote"></div>
+      <div id="vuBody">
+        <div class="stats" id="vuStats"></div>
+        <div class="panel">
+          <div class="ag-tools"><input type="search" id="vuSearch" placeholder="Search apps or CVE numbers" aria-label="Search vulnerabilities"><select id="vuFilter" aria-label="Show"><option value="all">All affected versions</option><option value="kev">Known exploited only</option><option value="critical">Critical only</option><option value="high">High or critical</option></select><button class="btn small" type="button" id="vuCsv">Download CSV</button><button class="btn small ghost" type="button" id="vuRefresh">Refresh</button></div>
+          <div class="table-wrap"><table class="compact" id="vuTable"></table></div>
+          <p class="small muted" id="vuFoot"></p>
+        </div>
+        <div class="panel" id="vuNotPanel" hidden><div class="panel-head"><div><h2>Installed apps not checked yet</h2><p class="small" style="margin:0">These catalog apps are installed but NexpatchOnline hasn’t linked them to the vulnerability database yet. NexpatchOnline adds the links; nothing is needed from you.</p></div></div><div class="table-wrap"><table class="compact" id="vuNot"></table></div></div>
+        <details class="small" style="margin-top:16px"><summary>How this works</summary><ul style="margin:8px 0 0;padding-left:18px;line-height:1.6">
+          <li>Versions come from Intune’s list of apps found on your devices (synced daily).</li>
+          <li>Each catalog app is linked to its product in the National Vulnerability Database. NexpatchOnline downloads the product’s flaws every day and checks which installed versions fall inside the affected version ranges.</li>
+          <li>“Known exploited” means CISA lists the flaw as actively used by attackers, with a date by which U.S. agencies must fix it.</li>
+          <li>The database isn’t perfect: some flaws list affected versions loosely, and apps outside the catalog aren’t checked. Treat this as a strong guide, not a full security audit.</li>
+        </ul></details>
       </div>
     </section>
     <section class="view" id="view-apple" aria-labelledby="appleTitle">
@@ -1399,10 +1446,39 @@ td,th,.sub,code{overflow-wrap:break-word}
             <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Subscription</h2><span class="row" style="gap:8px"><button class="btn small" type="button" id="orgBilling" hidden>Manage billing</button><button class="btn small primary" type="button" id="orgChangePlan" hidden>Change plan</button></span></div><dl class="pk-review" id="orgSub"></dl><div id="orgPlanReq" class="small" style="margin-top:12px"></div></div>
           </div>
         </div>
+        <div class="panel" style="margin-top:20px" id="orgPartners"><div class="panel-head"><div><h2>IT partners</h2><p class="small" style="margin:0">Let your IT partner or managed service provider work in NexpatchOnline for you. They can never change your users, billing or terms.</p></div></div>
+          <div class="table-wrap"><table class="compact" id="orgPartnerTable"></table></div>
+          <form id="orgPartnerForm" class="cu-form cu-form3"><label class="field"><span>Code from your IT partner</span><input id="orgPartnerCode" placeholder="NXP-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="24"></label><label class="field"><span>Their access</span><select id="orgPartnerAccess"><option value="admin">Manage</option><option value="viewer">View only</option></select></label><button class="btn primary" type="submit">Give access</button></form>
+          <p class="small" id="orgPartnerMsg" role="status"></p></div>
         <div class="panel" style="margin-top:20px"><div class="panel-head"><h2>Update sync</h2><button class="btn small" type="button" id="orgSyncNow">Sync now</button></div><dl class="pk-review" id="orgSync"></dl><p class="small" id="orgSyncMsg" role="status"></p></div>
       </div>
     </section>
 
+    <section class="view" id="view-customers" aria-labelledby="cuTitle">
+      <h1 id="cuTitle">Customers</h1>
+      <p class="lede">For IT partners and managed service providers: see every customer organization you look after in one place, and open any of them to work in it. Each customer approves your access and can remove it at any time.</p>
+      <div id="cuNote"></div>
+      <div id="cuBody">
+        <div class="stats" id="cuStats"></div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Your customers</h2><p class="small" style="margin:0">Customers that need attention come first.</p></div><button class="btn small ghost" type="button" id="cuRefresh">Refresh</button></div>
+          <div class="ag-tools"><input type="search" id="cuSearch" placeholder="Search customers" aria-label="Search customers"><select id="cuFilter" aria-label="Show"><option value="all">All customers</option><option value="attention">Need attention</option><option value="ok">All good</option></select></div>
+          <div class="table-wrap"><table class="compact" id="cuTable"></table></div>
+        </div>
+        <div class="panel" id="cuInvitePanel">
+          <div class="panel-head"><div><h2>Add a customer</h2><p class="small" style="margin:0">Create a one-time code and send it to the customer. It works for 7 days.</p></div></div>
+          <form id="cuInviteForm" class="cu-form"><label class="field"><span>Who is it for? (only you see this)</span><input id="cuInviteNote" maxlength="120" placeholder="For example, Fabrikam Ltd"></label><button class="btn primary" type="submit" id="cuInviteBtn">Create code</button></form>
+          <div id="cuInviteOut" hidden style="margin-top:16px"></div>
+          <h3 style="margin-top:22px">Codes not used yet</h3>
+          <div class="table-wrap"><table class="compact" id="cuInvites"></table></div>
+          <details class="small" style="margin-top:16px"><summary>What the customer does</summary><ol class="cu-steps">
+            <li>Signs in to NexpatchOnline with their own Microsoft account and connects their Intune tenant (once).</li>
+            <li>Opens Company profile, IT partners, and enters your code.</li>
+            <li>Chooses View only or Manage. Manage lets you deploy and update apps, but never change their users, billing or terms.</li>
+          </ol></details>
+        </div>
+      </div>
+    </section>
     <section class="view" id="view-notifications" aria-labelledby="ntTitle">
       <h1 id="ntTitle">Notifications</h1>
       <p class="lede">Tell your people about a service outage, slowdown or planned maintenance. Send an email, show a banner in this portal, or download a Windows notification script that you deploy to devices yourself.</p>
@@ -1782,8 +1858,9 @@ const KEY = 'nexpatch-v1';
 let S;
 function freshDemo(){ return {apps:JSON.parse(JSON.stringify(SEED_APPS)),auto:{chrome:true,acrobat:true,zoom:true},deployments:[],settings:JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),policy:JSON.parse(JSON.stringify(DEFAULT_POLICY)),events:JSON.parse(JSON.stringify(SEED_EVENTS)),reviewed:{},imported:false,eventsImported:false,history:seedHistory(),results:JSON.parse(JSON.stringify(SEED_RESULTS)),resultsImported:false,inventory:null,discIgnored:{},discMatches:{}}; }
 // Each signed-in organization gets its own empty workspace in this browser; sample data is only for "Explore with sample data".
+let CTX=''; try{ CTX=sessionStorage.getItem('nx-ctx')||''; }catch(e){}
 function sessionScope(){ let ss=null; try{ ss=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){ ss=window.__nxSession||null; }
-  return !ss || ss.demo ? 'demo' : 'org-'+(ss.tenantId||'unknown'); }
+  return !ss || ss.demo ? 'demo' : 'org-'+(ss.tenantId||'unknown')+(CTX?'-as-'+CTX:''); }
 function isSampleData(){ return sessionScope()==='demo'; }
 function freshOrg(){ const f=freshDemo(); f.apps.forEach(a=>{ a.fleet=[0,0,0,0]; a.cves=0; a.latest=''; }); f.auto={}; f.history=[]; f.results=[]; f.events=[]; f.policy.pubs=[]; return f; }
 function fresh(){ return isSampleData() ? freshDemo() : freshOrg(); }
@@ -2262,7 +2339,7 @@ function policyScript(){
 }
 
 /* ---------- Router ---------- */
-const VIEWS=['overview','devices','agent','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation','notifications','organization','automation'];
+const VIEWS=['overview','devices','agent','vulnerabilities','catalog','discovery','deployments','reports','apple','app-control','users','connect','documentation','requests','remediation','notifications','organization','automation','customers'];
 let SESSION=null; try{ SESSION=JSON.parse(localStorage.getItem('nexpatch-session')||'null'); }catch(e){}
 function setSession(s){ const before=sessionScope(); SESSION=s; window.__nxSession=s; try{ if(s) localStorage.setItem('nexpatch-session', JSON.stringify(s)); else localStorage.removeItem('nexpatch-session'); }catch(e){} if(sessionScope()!==before) S=load(); }
 function showPublic(p){ $('#app').hidden=true; $('#public').hidden=false; document.body.classList.add('is-public'); $('#pub-home').hidden=p!=='home'; $('#pub-login').hidden=p!=='login'; $('#pubCta').textContent=SESSION?'Open console':'Sign in'; $('#loginErr').textContent = p==='login' ? LOGIN_MSG : ''; LOGIN_MSG=''; const n=$('#loginNote'); n.hidden=!!(CFG.clientId && window.msal); n.textContent=!CFG.clientId ? 'Microsoft sign-in isn’t set up on this site yet. Add your app’s client ID to config.js. Until then, explore with sample data.' : 'The Microsoft sign-in library didn’t load. Check that vendor/msal-browser.min.js is deployed.'; window.scrollTo(0,0); }
@@ -2278,7 +2355,7 @@ function route(){ const h0=location.hash.slice(1); const h = AC_TAB_HASH[h0] ? '
   applyNavGroups(); render(v); window.scrollTo(0,0); }
 window.addEventListener('hashchange', route);
 
-function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog'){ renderCatalog(); loadLastUpdated(); } if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports'){ renderReports(); loadDeviceReports(); loadIos(); } if(v==='devices') loadDeviceReports(); if(v==='agent') loadAgent(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='organization') loadOrg(); if(v==='automation'){ loadAutomation(); permNotice('automation','#autoPermNote'); } if(v==='app-control') permNotice('appcontrol','#acPermNote'); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
+function render(v){ renderNav(); if(v==='overview') renderOverview(); if(v==='catalog'){ renderCatalog(); loadLastUpdated(); } if(v==='discovery') renderDiscovery(); if(v==='deployments') renderDeployments(); if(v==='reports'){ renderReports(); loadDeviceReports(); loadIos(); } if(v==='devices') loadDeviceReports(); if(v==='agent') loadAgent(); if(v==='vulnerabilities') loadVulns(); if(v==='apple') loadApple(); if(v==='catalog') loadPackageDrafts(); if(v==='users') renderUsers(); if(v==='app-control') renderAC(); if(v==='connect') renderConnect(); if(v==='documentation') renderDocumentation(); if(v==='requests') loadMyRequests(); if(v==='remediation') loadRemediationPortal(); if(v==='notifications') loadNotices(); if(v==='organization'){ loadOrg(); loadPartners(); } if(v==='customers') loadCustomers(); if(v==='automation'){ loadAutomation(); permNotice('automation','#autoPermNote'); } if(v==='app-control') permNotice('appcontrol','#acPermNote'); if(v==='documentation') loadCustomDocsPortal(); loadNoticeBanner(); }
 const ROLE_NAME={viewer:'Viewer',admin:'Admin',owner:'Admin'};
 function liveMode(){ return !!(typeof API_ON!=='undefined' && API_ON && SESSION && !SESSION.demo && SERVER.me && SERVER.me.tenant && SERVER.me.tenant.status==='active'); }
 function currentRole(){ return liveMode() ? (SERVER.me.role || 'none') : 'owner'; }
@@ -2365,6 +2442,7 @@ async function reportSignIn(){
   try{ await api('/session/signin','POST',{ country }); }catch(e){}
 }
 // Browser tests on this machine only: a test can answer API calls with sample data. Ignored on any real address.
+function apiHeaders(path, token, json){ const h={ Authorization:'Bearer '+token }; if(json) h['Content-Type']='application/json'; if(CTX && !/^\/(session|legal|partner)\//.test(path)) h['x-nexpatch-context']=CTX; return h; }
 const TEST_HOOK = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && window.__NX_TEST ? window.__NX_TEST : null;
 async function api(path, method, body, retried){
   if (TEST_HOOK && TEST_HOOK.api) return TEST_HOOK.api(path, method, body);
@@ -2380,7 +2458,7 @@ async function api(path, method, body, retried){
   }
   catch(e){ if(window.msal && e instanceof msal.InteractionRequiredAuthError){ await PCA.acquireTokenRedirect({ scopes:[API_SCOPE], account }); return new Promise(()=>{}); } throw new Error(friendlyAuthError(e)); }
   let res;
-  try{ res=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+path, { method:method||'GET', headers: body ? { Authorization:'Bearer '+token, 'Content-Type':'application/json' } : { Authorization:'Bearer '+token }, body: body ? JSON.stringify(body) : undefined }); }
+  try{ res=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+path, { method:method||'GET', headers: apiHeaders(path, token, !!body), body: body ? JSON.stringify(body) : undefined }); }
   catch(e){ throw new Error('Couldn\u2019t reach the NexpatchOnline backend. Check apiBaseUrl in config.js and the CORS setting.'); }
   let out={}; try{ out=await res.json(); }catch(e){}
   if(res.status===401 && out.code) return sessionChallenge(out, account, ()=>api(path, method, body), retried);
@@ -2441,6 +2519,8 @@ async function loadFromServer(){
     if(SERVER.pendingActivate){ SERVER.pendingActivate=false; await activateTenant(); CONSENT_MSG={ok:true,text:'Your organization is connected. Pulling your inventory from Intune now.'}; route(); SERVER.me=await api('/me'); await mergeSharedCatalog(); await syncNow(); return; }
     SERVER.me=await api('/me');
     if(SERVER.me.legal && (SERVER.me.legal.needsTerms||SERVER.me.legal.needsDpa)){ await legalGate(SERVER.me.legal); SERVER.me=await api('/me'); }
+    if(CTX && !SERVER.me.partner){ setContext(''); return; }
+    drawCtxBanner();
     $('#adminCenterLink').hidden=!SERVER.me.platformAdmin;
     const t=SERVER.me.tenant;
     await mergeSharedCatalog();
@@ -2450,7 +2530,7 @@ async function loadFromServer(){
       if(inv.apps && inv.apps.length) applyInventory(inv.apps);
     }
     save(); route();
-  }catch(e){ SERVER.error=e.message; CONSENT_MSG={ok:false,text:e.message}; route(); }
+  }catch(e){ if(CTX && (e.status===403||e.status===404)){ try{ sessionStorage.setItem('nx-ctx-msg',e.message); }catch(_){} setContext(''); return; } SERVER.error=e.message; CONSENT_MSG={ok:false,text:e.message}; route(); }
 }
 function startSignIn(email){
   if(!PCA){ $('#loginErr').textContent = !CFG.clientId ? 'Microsoft sign-in isn\u2019t set up on this site yet.' : 'Microsoft sign-in isn\u2019t available right now. Reload the page and try again.'; return; }
@@ -3430,6 +3510,34 @@ $('#agRevoke').addEventListener('click',async()=>{ const d=AG.open; if(!d||!conf
   try{ await api('/agent/devices/'+encodeURIComponent(d.id)+'/revoke','POST',{}); toast('Device revoked'); $('#agDlg').close(); loadAgent(); }catch(e){ toast(e.message); } });
 $('#agRemove').addEventListener('click',async()=>{ const d=AG.open; if(!d||!confirm('Remove the record for '+(d.name||'this device')+'? If the agent is still installed it will enroll again.')) return;
   try{ await api('/agent/devices/'+encodeURIComponent(d.id),'DELETE'); toast('Record removed'); $('#agDlg').close(); loadAgent(); }catch(e){ toast(e.message); } });
+
+/* ---------- Vulnerabilities ---------- */
+const VU={data:null,open:new Set()};
+const VU_SEV={CRITICAL:['vu-c','Critical'],HIGH:['vu-h','High'],MEDIUM:['vu-m','Medium'],LOW:['vu-l','Low'],UNKNOWN:['vu-l','Unscored'],NONE:['vu-l','None']};
+async function loadVulns(){ const note=$('#vuNote'); note.innerHTML='';
+  if(!liveMode()){ note.innerHTML='<div class="note">Connect your organization to see which installed app versions have known security flaws.</div>'; $('#vuBody').hidden=true; return; }
+  $('#vuBody').hidden=false; $('#vuTable').innerHTML='<tbody>'+emptyRow(1,'Checking…')+'</tbody>';
+  try{ VU.data=await api('/reports/vulnerabilities'); drawVulns(); }catch(e){ note.innerHTML='<div class="note">'+esc(e.message)+'</div>'; } }
+function vuRows(){ const d=VU.data||{exposures:[]}, q=$('#vuSearch').value.trim().toLowerCase(), f=$('#vuFilter').value;
+  return d.exposures.filter(e=>(!q||(e.app+' '+e.version+' '+e.top.map(c=>c.id).join(' ')).toLowerCase().includes(q))&&(f==='all'||(f==='kev'&&e.knownExploited)||(f==='critical'&&e.maxSeverity==='CRITICAL')||(f==='high'&&['CRITICAL','HIGH'].includes(e.maxSeverity)))); }
+function vuFix(x){ return x.status==='fixed'?'Update to '+esc(x.version)+' fixes all':x.status==='partial'?esc(x.version)+' still has '+x.remaining:'Latest version not known'; }
+function drawVulns(){ const d=VU.data, s=d.summary;
+  $('#vuStats').innerHTML=[[s.knownExploited,'known exploited flaws'],[s.knownExploitedInstalls,'device installs with them'],[s.appsAffected,'apps affected'],[s.versionsAffected,'versions affected'],[s.deviceInstallsExposed,'device installs exposed'],[s.cves.CRITICAL+' / '+s.cves.HIGH,'critical / high flaws']].map(x=>'<div class="stat"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('');
+  const rows=vuRows();
+  $('#vuTable').innerHTML=thead(['App and version','Devices','Flaws','Known exploited','Fix',''])+'<tbody>'+(rows.length?rows.map(e=>{ const k=e.appId+'|'+e.version, open=VU.open.has(k), c=e.counts;
+    const sev='<span class="vu-sev">'+['CRITICAL','HIGH','MEDIUM','LOW'].filter(x=>c[x]).map(x=>'<span class="'+VU_SEV[x][0]+'">'+c[x]+' '+VU_SEV[x][1].toLowerCase()+'</span>').join('')+'</span>';
+    return '<tr class="'+(open?'vu-open':'')+'"><td><b>'+esc(e.app)+'</b><span class="sub">'+esc(e.version)+'</span></td><td>'+e.devices+'</td><td>'+sev+'</td><td>'+(e.knownExploited?'<span class="vu-kev">'+e.knownExploited+' exploited</span>':'—')+'</td><td class="small">'+vuFix(e.fix)+'</td><td><button class="btn small ghost" type="button" data-vuopen="'+esc(k)+'" aria-expanded="'+open+'">'+(open?'Hide':'Details')+'</button>'+(e.fix.status!=='unknown'?' <a class="btn small" href="#catalog" data-view="catalog">Update</a>':'')+'</td></tr>'
+      +(open?'<tr class="vu-open"><td colspan="6"><ul class="vu-list">'+e.top.map(v=>'<li><b><a href="https://nvd.nist.gov/vuln/detail/'+encodeURIComponent(v.id)+'" target="_blank" rel="noopener">'+esc(v.id)+'</a></b> <span class="vu-sev"><span class="'+(VU_SEV[v.sev]||VU_SEV.UNKNOWN)[0]+'">'+(v.score!=null?v.score+' ':'')+(VU_SEV[v.sev]||VU_SEV.UNKNOWN)[1]+'</span></span>'+(v.kev?' <span class="vu-kev">Known exploited since '+esc(v.kev)+'</span>'+(v.kevDue?' <span class="small">CISA fix-by date '+esc(v.kevDue)+'</span>':''):'')+'<div class="small">'+esc(v.sum)+'</div></li>').join('')+(e.cveCount>e.top.length?'<li class="small">And '+(e.cveCount-e.top.length)+' more lower-scored flaws.</li>':'')+'</ul></td></tr>':'');
+  }).join(''):emptyRow(6,VU.data.exposures.length?'Nothing matches.':'No known flaws in the checked app versions. Check that your inventory is synced.'))+'</tbody>';
+  const nc=d.notChecked||[]; $('#vuNotPanel').hidden=!nc.length;
+  $('#vuNot').innerHTML=thead(['App','Devices','Why'])+'<tbody>'+nc.map(n=>'<tr><td>'+esc(n.app)+'</td><td>'+n.devices+'</td><td class="small">'+(n.reason==='not-linked'?'Not linked to the vulnerability database yet':'Vulnerability data not downloaded yet')+'</td></tr>').join('')+'</tbody>';
+  $('#vuFoot').textContent='Source: '+(d.source||'NVD')+'. Vulnerability data from '+(d.dataAsOf?new Date(d.dataAsOf).toLocaleString():'—')+'; inventory synced '+(d.inventorySyncedAt?new Date(d.inventorySyncedAt).toLocaleString():'never')+'.'; }
+$('#vuSearch').addEventListener('input',()=>VU.data&&drawVulns());
+$('#vuFilter').addEventListener('change',()=>VU.data&&drawVulns());
+$('#vuRefresh').addEventListener('click',loadVulns);
+$('#vuTable').addEventListener('click',e=>{ const b=e.target.closest('[data-vuopen]'); if(!b) return; const k=b.dataset.vuopen; VU.open.has(k)?VU.open.delete(k):VU.open.add(k); drawVulns(); });
+$('#vuCsv').addEventListener('click',()=>{ if(!VU.data) return; const rows=[]; for(const e of vuRows()) for(const v of e.top) rows.push([e.app,e.version,e.devices,v.id,v.score==null?'':v.score,v.sev,v.kev?'Yes':'',v.kevDue,e.fix.status==='fixed'?'Update to '+e.fix.version:e.fix.status==='partial'?e.fix.version+' still affected':'',v.sum]);
+  downloadFile('nexpatchonline-vulnerabilities-'+new Date().toISOString().slice(0,10)+'.csv', agCsv([['App','Version','Devices','CVE','Score','Severity','Known exploited','CISA fix-by','Fix','Summary'],...rows])); });
 /* ---------- Automation ---------- */
 const AUTO={rules:[],editing:'',max:10};
 const durText=m=>{m=Number(m)||0;if(m===0)return'right away';const u=m%1440===0?[m/1440,'day']:m%60===0?[m/60,'hour']:[m,'minute'];return u[0]+' '+u[1]+(u[0]===1?'':'s')};
@@ -3863,7 +3971,48 @@ $('#appRequestForm').addEventListener('submit',async e=>{e.preventDefault();cons
 if(CFG.apiBaseUrl){fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/site-content').then(r=>r.ok?r.json():null).then(d=>{if(d){if(d.announcement){const n=$('#siteAnnouncement');n.textContent=d.announcement;n.hidden=false;}if(d.heroTitle)$('#heroTitle').textContent=d.heroTitle;if(d.heroSubtitle)$('#heroSubtitle').textContent=d.heroSubtitle;if(d.supportEmail){const a=$('#siteSupportLink');a.href='mailto:'+d.supportEmail;a.textContent='Contact support';a.hidden=false;}SITE_THEME=d.defaultTheme||'';applyTheme();applySiteIcon(d.siteIconUrl);}}).catch(()=>{});}
 $('#salesForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,st=$('#salesStatus'),btn=f.querySelector('[type=submit]');st.textContent='Sending…';btn.disabled=true;try{if(!CFG.apiBaseUrl)throw new Error('Sales enquiries are not configured on this site yet.');const data=Object.fromEntries(new FormData(f).entries());data.consent=f.elements.consent.checked;const res=await fetch(CFG.apiBaseUrl.replace(/[/]+$/,'')+'/sales/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const out=await res.json().catch(()=>({}));if(!res.ok)throw new Error(out.error||'Could not send your enquiry.');f.reset();st.textContent='Thank you. Your enquiry has been received.';}catch(err){st.textContent=err.message;}finally{btn.disabled=false;}});
 
-if (TEST_HOOK) { TEST_HOOK.setSession = setSession; TEST_HOOK.server = SERVER; TEST_HOOK.route = route; }
+
+/* ---------- IT partners (MSP) ---------- */
+const CU={data:null};
+function setContext(id){ try{ if(id) sessionStorage.setItem('nx-ctx',id); else sessionStorage.removeItem('nx-ctx'); }catch(e){} location.hash=id?'#overview':'#customers'; location.reload(); }
+function drawCtxBanner(){ let m=''; try{ m=sessionStorage.getItem('nx-ctx-msg')||''; sessionStorage.removeItem('nx-ctx-msg'); }catch(e){} if(m) toast(m);
+  const p=SERVER.me&&SERVER.me.partner, b=$('#ctxBanner'); document.body.classList.toggle('in-partner',!!p); b.hidden=!p; if(!p) return;
+  b.innerHTML='<span>Working in <b>'+esc(p.customerName||'a customer')+'</b> as their IT partner ('+esc(p.accessName)+').</span><button class="btn small" type="button" id="ctxBack">Back to my organization</button>';
+  $('#ctxBack').onclick=()=>setContext(''); }
+function cuWhen(x){ if(!x) return 'Never'; const h=(Date.now()-Date.parse(x))/36e5; return h<1?'Within the hour':h<24?Math.round(h)+' h ago':Math.round(h/24)+' days ago'; }
+async function loadCustomers(){ const note=$('#cuNote'); note.innerHTML='';
+  if(!liveMode()){ $('#cuBody').hidden=true; note.innerHTML='<div class="note">Connect your organization first. Then you can add the customers you manage and see them all here.</div>'; return; }
+  $('#cuBody').hidden=false; const owner=currentRole()==='owner'; $('#cuInvitePanel').hidden=!owner;
+  $('#cuTable').innerHTML='<tbody>'+emptyRow(1,'Loading…')+'</tbody>';
+  try{ CU.data=await api('/partner/customers'); drawCustomers(); }catch(e){ note.innerHTML='<div class="note">'+esc(e.message)+'</div>'; }
+  if(owner) loadInvites(); }
+function drawCustomers(){ const d=CU.data, t=d.totals, owner=currentRole()==='owner';
+  $('#cuStats').innerHTML=[[t.customers,'customers'],[t.needAttention,'need attention'],[t.devices.toLocaleString(),'devices'],[t.knownExploited,'known exploited flaws'],[t.critical,'critical flaws'],[t.failedPublishes,'failed publishes, 30 days']].map(x=>'<div class="stat"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('');
+  const q=$('#cuSearch').value.trim().toLowerCase(), f=$('#cuFilter').value, rows=d.customers.filter(c=>(!q||c.name.toLowerCase().includes(q))&&(f==='all'||c.status===f));
+  const vul=v=>!v?'<span class="muted">Not checked</span>':(v.knownExploited?'<span class="vu-kev">'+v.knownExploited+' exploited</span> ':'')+'<span class="small">'+v.critical+' critical, '+v.high+' high</span>';
+  $('#cuTable').innerHTML=thead(['Customer','Devices','Vulnerabilities','Device agent','Publishing, 30 days','Last sync',''])+'<tbody>'+(rows.length?rows.map(c=>'<tr><td><b>'+esc(c.name)+'</b><span class="sub">'+esc(c.accessName)+' access</span>'+(c.attention.length?'<ul class="cu-att">'+c.attention.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul>':'<span class="pill p-cur" style="margin-top:4px">All good</span>')+'</td><td>'+(c.devices==null?'—':c.devices)+'</td><td>'+vul(c.vulnerabilities)+'</td><td>'+(c.agent?c.agent.devices+' reporting'+(c.agent.attention?'<span class="sub">'+c.agent.attention+' need attention</span>':''):'—')+'</td><td>'+c.publishing.succeeded30d+' done'+(c.publishing.failed30d?', <span class="pill p-vuln">'+c.publishing.failed30d+' failed</span>':'')+'</td><td>'+esc(cuWhen(c.lastSyncAt))+'</td><td style="white-space:nowrap"><button class="btn small primary" type="button" data-cuopen="'+esc(c.tenantId)+'"'+(c.connected?'':' disabled')+'>Open</button>'+(owner?' <button class="btn small ghost" type="button" data-curm="'+esc(c.tenantId)+'" data-name="'+esc(c.name)+'">Remove</button>':'')+'</td></tr>').join(''):emptyRow(7,d.customers.length?'No customers match.':'No customers yet. Create a code below and send it to your first customer.'))+'</tbody>'; }
+async function loadInvites(){ try{ const r=await api('/partner/invites');
+  $('#cuInvites').innerHTML=thead(['For','Created','Expires',''])+'<tbody>'+(r.invites.length?r.invites.map(i=>'<tr><td>'+esc(i.note||'No note')+'<span class="sub">by '+esc(i.createdBy||'')+'</span></td><td>'+esc(new Date(i.createdAt).toLocaleDateString())+'</td><td>'+(i.expired?'<span class="pill p-neutral">Expired</span>':esc(new Date(i.expiresAt).toLocaleDateString()))+'</td><td><button class="btn small ghost" type="button" data-cuinv="'+esc(i.id)+'">Remove</button></td></tr>').join(''):emptyRow(4,'No open codes.'))+'</tbody>'; }catch(e){ $('#cuInvites').innerHTML='<tbody>'+emptyRow(1,esc(e.message))+'</tbody>'; } }
+$('#cuSearch').addEventListener('input',()=>CU.data&&drawCustomers());
+$('#cuFilter').addEventListener('change',()=>CU.data&&drawCustomers());
+$('#cuRefresh').addEventListener('click',loadCustomers);
+$('#cuInviteForm').addEventListener('submit',async e=>{ e.preventDefault(); const b=$('#cuInviteBtn'); b.disabled=true;
+  try{ const r=await api('/partner/invites','POST',{note:$('#cuInviteNote').value.trim()}); $('#cuInviteNote').value=''; const o=$('#cuInviteOut'); o.hidden=false;
+    o.innerHTML='<p class="small" style="margin:0 0 8px">Send this code to the customer. It is shown only once and works until '+esc(new Date(r.expiresAt).toLocaleDateString(undefined,{month:'long',day:'numeric'}))+'.</p><span class="cu-code" id="cuCodeVal">'+esc(r.code)+'</span> <button class="btn small" type="button" data-copy="cuCodeVal">Copy</button>';
+    loadInvites(); }catch(err){ toast(err.message); } finally{ b.disabled=false; } });
+document.addEventListener('click',async e=>{ const o=e.target.closest('[data-cuopen]'); if(o){ setContext(o.dataset.cuopen); return; }
+  const r=e.target.closest('[data-curm]'); if(r){ if(!confirm('Stop managing '+r.dataset.name+'? You lose access straight away. The customer keeps all their data.')) return; try{ await api('/partner/customers/'+encodeURIComponent(r.dataset.curm),'DELETE'); toast('Removed '+r.dataset.name); loadCustomers(); }catch(err){ toast(err.message); } return; }
+  const i=e.target.closest('[data-cuinv]'); if(i){ try{ await api('/partner/invites/'+encodeURIComponent(i.dataset.cuinv),'DELETE'); loadInvites(); }catch(err){ toast(err.message); } return; }
+  const pa=e.target.closest('[data-prm]'); if(pa){ if(!confirm('Remove '+pa.dataset.name+'? They lose access to your organization straight away.')) return; try{ await api('/partner/managers/'+encodeURIComponent(pa.dataset.prm),'DELETE'); $('#orgPartnerMsg').textContent=pa.dataset.name+' no longer has access.'; loadPartners(); }catch(err){ $('#orgPartnerMsg').textContent=err.message; } } });
+document.addEventListener('change',async e=>{ const s=e.target.closest('[data-pacc]'); if(!s) return; try{ const r=await api('/partner/managers/'+encodeURIComponent(s.dataset.pacc),'PUT',{access:s.value}); $('#orgPartnerMsg').textContent='Access changed to '+r.accessName+'.'; }catch(err){ $('#orgPartnerMsg').textContent=err.message; loadPartners(); } });
+async function loadPartners(){ const panel=$('#orgPartners'); if(!liveMode()||(SERVER.me&&SERVER.me.partner)){ panel.hidden=true; return; } panel.hidden=false;
+  const owner=currentRole()==='owner'; $('#orgPartnerForm').hidden=!owner;
+  try{ const r=await api('/partner/managers');
+    $('#orgPartnerTable').innerHTML=thead(['Partner','Access','Since',''])+'<tbody>'+(r.partners.length?r.partners.map(p=>'<tr><td><b>'+esc(p.name)+'</b>'+(p.approvedBy?'<span class="sub">Approved by '+esc(p.approvedBy)+'</span>':'')+'</td><td>'+(owner?'<select data-pacc="'+esc(p.tenantId)+'" aria-label="Access for '+esc(p.name)+'" style="width:auto"><option value="admin"'+(p.access==='admin'?' selected':'')+'>Manage</option><option value="viewer"'+(p.access==='viewer'?' selected':'')+'>View only</option></select>':esc(p.accessName))+'</td><td>'+esc(p.since?new Date(p.since).toLocaleDateString():'')+'</td><td>'+(owner?'<button class="btn small ghost" type="button" data-prm="'+esc(p.tenantId)+'" data-name="'+esc(p.name)+'">Remove</button>':'')+'</td></tr>').join(''):emptyRow(4,owner?'No IT partners. If someone manages your devices for you, ask them for a code and enter it below.':'No IT partners.'))+'</tbody>';
+  }catch(e){ $('#orgPartnerTable').innerHTML='<tbody>'+emptyRow(1,esc(e.message))+'</tbody>'; } }
+$('#orgPartnerForm').addEventListener('submit',async e=>{ e.preventDefault(); const m=$('#orgPartnerMsg'); m.textContent='Checking the code…';
+  try{ const r=await api('/partner/accept','POST',{code:$('#orgPartnerCode').value,access:$('#orgPartnerAccess').value}); $('#orgPartnerCode').value=''; m.textContent=r.partner.name+' now has '+r.partner.accessName+' access.'; loadPartners(); }catch(err){ m.textContent=err.message; } });
+if (TEST_HOOK) { TEST_HOOK.drawCtxBanner = drawCtxBanner; TEST_HOOK.setSession = setSession; TEST_HOOK.server = SERVER; TEST_HOOK.route = route; }
 initAuth().catch(()=>{}).finally(()=>{ route(); loadFromServer(); });
 })();
 </script>

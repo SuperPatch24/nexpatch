@@ -28,7 +28,7 @@ app.http('me', {
       platformRole: platformRole(user),
       plan: t && t.status === 'active' ? planStatus(t) : null,
       features: t ? featureMap(t) : null,
-      tenant: t ? { tenantId: t.rowKey, status: t.status, activatedAt: t.activatedAt, lastSyncAt: t.lastSyncAt || null, lastSyncCount: t.lastSyncCount || 0, lastSyncError: t.lastSyncError || '' } : null
+      tenant: t ? { tenantId: t.rowKey, name: t.name || '', status: t.status, activatedAt: t.activatedAt, lastSyncAt: t.lastSyncAt || null, lastSyncCount: t.lastSyncCount || 0, lastSyncError: t.lastSyncError || '' } : null
     };
   }, 'any')
 });

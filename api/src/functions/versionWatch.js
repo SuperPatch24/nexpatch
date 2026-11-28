@@ -21,12 +21,13 @@ async function watch(opts, context) {
   return out;
 }
 
-// Every two hours, a batch of the apps that were checked longest ago (each app at most about once a day).
-// Runs before the daily tenant sync so customers see fresh "Latest" versions.
+// Every hour, a batch of the apps that were checked longest ago. With a GITHUB_TOKEN each app is checked about every
+// 4 hours (new versions show up the same morning); without one GitHub allows only 60 calls an hour, so about once a day.
+export const watchPace = (hasToken = !!process.env.GITHUB_TOKEN) => hasToken ? { limit: 150, minAgeHours: 4 } : { limit: 40, minAgeHours: 20 };
 app.timer('versionWatch', {
-  schedule: '0 15 */2 * * *',
+  schedule: '0 15 * * * *',
   handler: async (_t, context) => {
-    const out = await watch({ limit: 80 }, context);
+    const out = await watch(watchPace(), context);
     if (out.changes.length && process.env.VERSION_WATCH_EMAIL === 'on' && emailIsConfigured()) {
       try {
         const body = out.changes.slice(0, 40).map(c => `- ${c.name}: ${c.from} to ${c.to}`).join('\n');

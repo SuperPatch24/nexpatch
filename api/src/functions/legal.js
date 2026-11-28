@@ -6,7 +6,7 @@ import { audit } from '../lib/store.js';
 
 // GET /api/legal/status – what the signed-in person still has to accept.
 app.http('legalStatus', { methods: ['GET'], authLevel: 'anonymous', route: 'legal/status',
-  handler: withUser(async (_req, _ctx, user) => ({ ...(await legalStatus(user, user.role)), urls: DOC_URLS }), 'viewer', { skipLegal: true }) });
+  handler: withUser(async (_req, _ctx, user) => ({ ...(await legalStatus(user, user.role)), urls: DOC_URLS }), 'viewer', { skipLegal: true, partner: false }) });
 
 // POST /api/legal/accept { terms: true, dpa: true } – record acceptance of the current versions.
 app.http('legalAccept', { methods: ['POST'], authLevel: 'anonymous', route: 'legal/accept',
@@ -18,4 +18,4 @@ app.http('legalAccept', { methods: ['POST'], authLevel: 'anonymous', route: 'leg
     const what = [r.accepted.terms && 'Terms of Service and Privacy Policy', r.accepted.dpa && 'Data Processing Agreement'].filter(Boolean).join(' and ');
     if (what) await audit(user.tenantId, user.email || user.userId, 'accepted legal terms', what);
     return r;
-  }, 'viewer', { skipLegal: true }) });
+  }, 'viewer', { skipLegal: true, partner: false }) });

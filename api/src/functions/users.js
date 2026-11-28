@@ -24,7 +24,7 @@ app.http('usersList', {
   handler: withUser(async (_req, _ctx, user) => {
     const rows = await listMemberRows(user.tenantId);
     return { you: { userId: user.userId, role: user.role, access: user.access }, people: rows.map(shape) };
-  }, 'viewer')
+  }, 'viewer', { partner: false })
 });
 
 // POST /api/users – invite someone from the same organization by their sign-in name.
@@ -57,7 +57,7 @@ app.http('usersInvite', {
       tags: ['nexpatchonline', 'user-invitation']
     });
     return { ...shape(row), emailSent: !!emailResult.sent, emailReason: emailResult.sent ? '' : (emailResult.reason || 'email-not-configured'), emailStatus: emailResult.status || null };
-  }, 'admin')
+  }, 'admin', { partner: false })
 });
 
 // PATCH /api/users/{id} – change someone's role.
@@ -77,7 +77,7 @@ app.http('usersUpdate', {
     clearAccessCache(user.tenantId);
     await audit(user.tenantId, user.email || user.userId, 'changed role', `${row.email || row.name}: ${row.role} \u2192 ${role}`);
     return shape(updated);
-  }, 'admin')
+  }, 'admin', { partner: false })
 });
 
 // DELETE /api/users/{id} – remove someone's access, or cancel an invitation.
@@ -94,7 +94,7 @@ app.http('usersRemove', {
     clearAccessCache(user.tenantId);
     await audit(user.tenantId, user.email || user.userId, row.kind === 'invite' ? 'cancelled invitation' : row.kind === 'group' ? 'removed group access' : 'removed access', row.email || row.name || row.groupName);
     return { removed: true };
-  }, 'admin')
+  }, 'admin', { partner: false })
 });
 
 // GET /api/audit – recent activity for this organization.
@@ -120,5 +120,5 @@ app.http('usersGroupAdd', {
     clearAccessCache(user.tenantId);
     await audit(user.tenantId, user.email || user.userId, 'gave a group access', `${groupName || groupId} as ${role}`);
     return shape(row);
-  }, 'admin')
+  }, 'admin', { partner: false })
 });

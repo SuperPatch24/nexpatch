@@ -120,7 +120,7 @@ app.http('pkgToCatalog', { methods: ['POST'], authLevel: 'anonymous', route: 'pl
     await putRow('Catalog', 'global', id, { name: c.settings.name, vendor: c.settings.vendor, source: 'package', winget: '', storeProductId: '', appStoreUrl: '', storeType: '', verificationStatus: 'verified',
       reg: c.settings.detection.displayName || c.settings.name, procs: '', exe: '', category: c.settings.category || 'Packaged', enabled: true, packageId: r.rowKey, packageVersion: c.settings.version,
       latestVersion: c.settings.version, latestCheckedAt: now, latestChangedAt: existing?.packageVersion !== c.settings.version ? now : (existing?.latestChangedAt || now), previousVersion: existing?.packageVersion || '',
-      versionSource: 'none', updatedBy: user.email || user.userId, updatedAt: now }, 'Replace');
+      versionSource: 'none', cpe: existing?.cpe || '', updatedBy: user.email || user.userId, updatedAt: now }, 'Replace');
     if (existing?.packageId && existing.packageId !== r.rowKey) await putRow(T, P, existing.packageId, { status: 'replaced', updatedAt: now });
     await putRow(T, P, r.rowKey, { status: 'in-catalog', catalogId: id, settings: JSON.stringify(c.settings), updatedAt: now });
     await audit(P, user.email || user.userId, 'package.added-to-catalog', `${c.settings.name} ${c.settings.version} as ${id}`);

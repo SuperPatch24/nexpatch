@@ -14,11 +14,14 @@ app.http('me', {
   handler: withUser(async (_req, _ctx, user) => {
     const t = await getTenant(user.tenantId);
     // What the person still has to accept; the app shows the "Before you continue" box when needed.
-    const legal = user.role ? await legalStatus(user, user.role).then(l => ({ ...l, urls: DOC_URLS })).catch(() => null) : null;
+    // A partner working in a customer accepts NexpatchOnline's terms for their own organization, not the customer's.
+    const legalUser = user.partner ? { ...user, tenantId: user.partner.homeTenantId } : user, legalRole = user.partner ? user.partner.homeRole : user.role;
+    const legal = legalRole ? await legalStatus(legalUser, legalRole).then(l => ({ ...l, urls: DOC_URLS })).catch(() => null) : null;
     return {
       legal,
       user: { tenantId: user.tenantId, userId: user.userId, name: user.name, email: user.email },
       role: user.role,
+      partner: user.partner ? { customerTenantId: user.partner.customerTenantId, customerName: user.partner.customerName, access: user.partner.access, accessName: user.partner.accessName, homeTenantId: user.partner.homeTenantId, homeRole: user.partner.homeRole } : null,
       access: user.access,
       accessStatus: user.tenantStatus || 'active', accessMessage: user.tenantMessage || '',
       platformAdmin: isPlatformAdmin(user),

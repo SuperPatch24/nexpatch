@@ -1,3 +1,4 @@
+import { cleanCpeProduct } from '../lib/cve.js';
 import { app } from '@azure/functions';
 import { withUser, HttpError, readJson } from '../lib/http.js';
 import { getRow, putRow, deleteRow, listRows, listAllTenants, saveTenant, getTenant, getJob, audit } from '../lib/store.js';
@@ -20,7 +21,7 @@ const STORE_ID = /^[A-Z0-9]{8,16}$/i;
 const ID = /^[a-z0-9-]{2,80}$/;
 const GLOBAL = 'global';
 const shape = r => ({ id: r.rowKey, name: r.name, vendor: r.vendor || '', winget: r.winget || '', reg: r.reg || r.name, procs: r.procs || '', exe: r.exe || '',
-  category: r.category || '', source: r.source === 'msstore' ? 'msstore' : r.source === 'package' ? 'package' : 'winget', packageId: r.packageId || '', packageVersion: r.packageVersion || '',
+  category: r.category || '', source: r.source === 'msstore' ? 'msstore' : r.source === 'package' ? 'package' : 'winget', packageId: r.packageId || '', packageVersion: r.packageVersion || '', cpe: r.cpe || '',
   storeProductId: r.storeProductId || '', appStoreUrl: r.appStoreUrl || '', storeType: r.storeType || '',
   verificationStatus: r.verificationStatus || (r.source === 'msstore' ? 'candidate' : 'verified'),
   deployable: r.source === 'msstore' ? !!(r.storeProductId && r.appStoreUrl && r.verificationStatus === 'verified') : r.source === 'package' ? !!r.packageId : !!r.winget,
@@ -69,13 +70,14 @@ app.http('platformCatalogSave', { methods: ['PUT'], authLevel: 'anonymous', rout
     if (source === 'msstore' && b.storeVerified === true && (!storeProductId || !appStoreUrl || !vendor)) throw new HttpError(400, 'A verified Store entry needs a product ID, Microsoft Store URL and verified publisher.');
     if (source === 'msstore' && storeProductId && appStoreUrl && !appStoreUrl.toUpperCase().includes(storeProductId)) throw new HttpError(400, 'The Store URL must contain the same Product ID entered above.');
     const vs = cleanVersionSource(b); if (vs.error) throw new HttpError(400, vs.error);
+    const cpe = cleanCpeProduct(b.cpe === undefined ? prev.cpe : b.cpe); if (cpe.error) throw new HttpError(400, cpe.error);
     await putRow('Catalog', GLOBAL, id, {
       ...vs.value, latestVersion: prev.latestVersion || '', latestCheckedAt: prev.latestCheckedAt || '', latestChangedAt: prev.latestChangedAt || '', previousVersion: prev.previousVersion || '', latestError: prev.latestError || '',
       name, source, winget: source === 'winget' ? winget : '', storeProductId, appStoreUrl,
       storeType: String(b.storeType || '').slice(0, 40), verificationStatus,
       vendor, reg: String(b.reg || name).slice(0, 200),
       procs: String(b.procs || '').slice(0, 300), exe: String(b.exe || '').slice(0, 400), category: String(b.category || '').slice(0, 60),
-      enabled: b.enabled !== false, updatedBy: user.email || user.userId, updatedAt: new Date().toISOString(),
+      enabled: b.enabled !== false, cpe: cpe.value, updatedBy: user.email || user.userId, updatedAt: new Date().toISOString(),
       ...(isPackage ? { packageId: prev.packageId || '', packageVersion: prev.packageVersion || '', latestVersion: prev.latestVersion || prev.packageVersion || '', versionSource: 'none', reg: String(b.reg || prev.reg || name).slice(0, 200) } : {})
     }, 'Replace');
     return shape(await getRow('Catalog', GLOBAL, id));

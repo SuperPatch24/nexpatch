@@ -67,7 +67,7 @@ app.http('orgSave', { methods: ['PUT'], authLevel: 'anonymous', route: 'org', ha
   await putRow('OrgProfiles', user.tenantId, 'profile', { ...c.value, updatedAt: new Date().toISOString(), updatedBy: user.email || user.userId }, 'Merge');
   await audit(user.tenantId, user.email || user.userId, 'org.profile.updated', c.value.companyName);
   return { companyName: c.value.companyName };
-}, 'admin') });
+}, 'admin', { partner: false }) });
 
 app.http('orgLogoGet', { methods: ['GET'], authLevel: 'anonymous', route: 'org/logo', handler: withUser(async (_r, _c, user) => ({ logo: await readLogo(user.tenantId) }), 'viewer') });
 
@@ -82,10 +82,10 @@ app.http('orgLogoSave', { methods: ['PUT'], authLevel: 'anonymous', route: 'org/
   await c.getBlockBlobClient(logoName(user.tenantId)).uploadData(buf, { blobHTTPHeaders: { blobContentType: type } });
   await audit(user.tenantId, user.email || user.userId, 'org.logo.updated', type);
   return { logo: { contentType: type, dataUrl: `data:${type};base64,${buf.toString('base64')}` } };
-}, 'admin') });
+}, 'admin', { partner: false }) });
 
 app.http('orgLogoDelete', { methods: ['DELETE'], authLevel: 'anonymous', route: 'org/logo', handler: withUser(async (_r, _c, user) => {
   await container().getBlockBlobClient(logoName(user.tenantId)).deleteIfExists();
   await audit(user.tenantId, user.email || user.userId, 'org.logo.removed', '');
   return { removed: true };
-}, 'admin') });
+}, 'admin', { partner: false }) });

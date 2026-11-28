@@ -21,11 +21,11 @@ app.http('sessionSignIn', { methods: ['POST'], authLevel: 'anonymous', route: 's
     const b = await readJson(req).catch(() => ({}));
     await recordSignIn(user, b.country);
     return { policy: describe(await policyFor(user.tenantId)), authTimePresent: !!user.authTime };
-  }, 'any', { skipSession: true }) });
+  }, 'any', { skipSession: true, partner: false }) });
 
 // GET /api/session/policy – the rules for the caller's organization, so the app can warn before an idle timeout.
 app.http('sessionPolicy', { methods: ['GET'], authLevel: 'anonymous', route: 'session/policy',
-  handler: withUser(async (_r, _c, user) => ({ policy: describe(await policyFor(user.tenantId)) }), 'any', { skipSession: true }) });
+  handler: withUser(async (_r, _c, user) => ({ policy: describe(await policyFor(user.tenantId)) }), 'any', { skipSession: true, partner: false }) });
 
 // GET/PUT /api/platform/security – platform-wide defaults. These two endpoints skip the session rules
 // on purpose, so a platform administrator can always undo a setting that locked people out.

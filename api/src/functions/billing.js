@@ -44,7 +44,7 @@ app.http('billingCheckout', { methods: ['POST'], authLevel: 'anonymous', route: 
     const session = await stripe('/checkout/sessions', { params: c.params });
     await audit(user.tenantId, user.email || user.userId, 'started checkout', `${r.tier}, ${r.billing}${r.appControl ? ', with App Control' : ''}`);
     return { url: session.url };
-  }, 'admin') });
+  }, 'admin', { partner: false }) });
 
 // Stripe's own page for payment method, invoices and cancelling.
 app.http('billingPortal', { methods: ['POST'], authLevel: 'anonymous', route: 'billing/portal',
@@ -53,13 +53,13 @@ app.http('billingPortal', { methods: ['POST'], authLevel: 'anonymous', route: 'b
     if (!t?.stripeCustomerId) throw new HttpError(404, 'There is no online subscription to manage yet.');
     const s = await stripe('/billing_portal/sessions', { params: { customer: t.stripeCustomerId, return_url: `${SITE()}/#organization` } });
     return { url: s.url };
-  }, 'admin') });
+  }, 'admin', { partner: false }) });
 
 app.http('billingInvoices', { methods: ['GET'], authLevel: 'anonymous', route: 'billing/invoices',
   handler: withUser(async (_r, _c, user) => {
     const rows = await listRows('Invoices', user.tenantId, 200);
     return { invoices: rows.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(r => ({ id: r.rowKey, number: r.number, status: r.status, total: r.total, currency: r.currency, createdAt: r.createdAt, hostedUrl: r.hostedUrl })) };
-  }, 'admin') });
+  }, 'admin', { partner: false }) });
 
 // ---- Stripe tells us what happened ----------------------------------------------------------------------------------
 

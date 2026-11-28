@@ -23,11 +23,11 @@ app.http('orgPlanRequest', { methods: ['POST'], authLevel: 'anonymous', route: '
         textContent: `${who} (${user.tenantId}) asked for ${TIERS[r.tier].label}, ${r.billing}${r.appControl ? ', with App Control' : ''}. ${r.note}` }, ctx);
     } catch { /* the request is saved either way; the operator also sees it in the Admin Center */ }
     return { request: planRequestOf(await getTenant(user.tenantId)) };
-  }, 'admin') });
+  }, 'admin', { partner: false }) });
 
 app.http('orgPlanRequestCancel', { methods: ['DELETE'], authLevel: 'anonymous', route: 'org/plan-request',
   handler: withUser(async (_req, _c, user) => {
     await saveTenant(user.tenantId, CLEAR);
     await audit(user.tenantId, user.email || user.userId, 'cancelled plan change request', '');
     return { ok: true };
-  }, 'admin') });
+  }, 'admin', { partner: false }) });

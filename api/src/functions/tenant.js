@@ -35,5 +35,5 @@ app.http('tenantActivate', {
     }
     await audit(tid, user.email || user.userId, 'connected', 'Connected the organization to NexpatchOnline');
     return { tenantId: t.rowKey, status: t.status, activatedAt: t.activatedAt };
-  }, 'any')
+  }, 'any', { partner: false })
 });

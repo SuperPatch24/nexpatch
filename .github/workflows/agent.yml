@@ -29,6 +29,6 @@ jobs:
         run: |
           cp api/assets/agent/nexpatch-agent.exe /tmp/shipped.exe
           cp api/src/lib/agentrelease.js /tmp/shipped-release.js
-          agent/build.sh
+          bash agent/build.sh
           cmp /tmp/shipped.exe api/assets/agent/nexpatch-agent.exe || { echo "The shipped agent does not match the source. Run agent/build.sh and commit both files."; exit 1; }
           cmp /tmp/shipped-release.js api/src/lib/agentrelease.js || { echo "agentrelease.js is out of date. Run agent/build.sh."; exit 1; }

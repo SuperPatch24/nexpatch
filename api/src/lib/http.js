@@ -3,6 +3,9 @@ import { verifyUser } from './auth.js';
 import { resolveAccess, rank } from './access.js';
 import { enforceSession, countRequest } from './sessions.js';
 import { legalStatus } from './legal.js';
+import { getRow, getTenant } from './store.js';
+import { partnerDecision, ACCESS } from './partners.js';
+import { accessOf } from './tenantsettings.js';
 
 export class HttpError extends Error {
   constructor(status, message, code) { super(message); this.status = status; if (code) this.code = code; }
@@ -36,6 +39,7 @@ export function withUser(handler, minRole = 'viewer', options = {}) {
         // connecting the organization, platform administration) are not gated.
         if (!options.skipLegal) { const lg = await legalStatus(user, access.role); if (lg.needsTerms || lg.needsDpa) throw new HttpError(428, 'Please accept the Terms of Service to continue.', 'legal_required'); }
       }
+      await applyPartnerContext(request, user, minRole, options);
       const body = await handler(request, context, user);
       return json(200, body ?? {});
     } catch (err) {
@@ -44,6 +48,22 @@ export function withUser(handler, minRole = 'viewer', options = {}) {
       return json(500, { error: 'Something went wrong on the server. Please try again.' });
     }
   };
+}
+
+// A partner (MSP) working in a customer's organization sends x-nexpatch-context: <customer tenant ID>.
+// Everything above (sign-in, session rules, role, Terms) was checked for the partner's own organization. Here the
+// request moves into the customer's organization with the lower of the partner's role and the access the customer
+// approved. Routes marked { partner: false } (users, billing, company details, connecting, partner settings) refuse it.
+async function applyPartnerContext(request, user, minRole, options) {
+  const ctx = String(request.headers?.get?.('x-nexpatch-context') || '').trim().toLowerCase();
+  if (!ctx || ctx === String(user.tenantId || '').toLowerCase()) return;
+  const blocked = options.partner === false;
+  const link = blocked || !user.role ? null : await getRow('PartnerLinks', user.tenantId, ctx);
+  const t = link ? await getTenant(ctx) : null;
+  const d = partnerDecision({ blocked, homeRole: user.role, link, tenant: t, tenantStatus: t ? accessOf(t) : 'active', minRole });
+  if (d.error) throw new HttpError(d.error.status, d.error.message);
+  user.partner = { homeTenantId: user.tenantId, homeRole: user.role, customerTenantId: ctx, customerName: t.name || link.customerName || '', access: link.access, accessName: ACCESS[link.access] };
+  user.tenantId = ctx; user.role = d.role; user.access = 'partner'; user.tenantStatus = d.tenantStatus;
 }
 
 export async function readJson(request) {
